@@ -36,8 +36,8 @@ source <(fzf --zsh)
 bindkey -v
 bindkey ^R history-incremental-search-backward
 bindkey ^S history-incremental-search-forward
-#bindkey "^I" complete-word
 bindkey "^I" menu-complete
+bindkey "$terminfo[kcbt]" reverse-menu-complete
 
 #History
 export HISTFILE=~/.histfile
