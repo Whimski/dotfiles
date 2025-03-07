@@ -65,7 +65,6 @@ def split_list(config_list):
     full_names.append(config.name)
   return installed, not_installed, installed_names, not_installed_names, full_names
 
-
 def install_config(names):
   for name in names:
     if not name in not_installed_names:
@@ -74,12 +73,7 @@ def install_config(names):
     for x in not_installed_list:
       if name == x.name:
         try:
-          directory = dirname(full_path(x.destination))
-          sub_directory = dirname(dirname(full_path(x.destination)))
-          if not isdir(sub_directory):
-            os.mkdir(sub_directory)
-          if not isdir(directory):
-            os.mkdir(directory)
+          os.makedirs(dirname(full_path(x.destination)))
           if isfile(full_path(x.destination)):
             print(f"File found at [bold cyan]{x.destination}[/bold cyan], removing...")
             os.remove(full_path(x.destination))
@@ -90,12 +84,7 @@ def install_config(names):
           exit(1)
         if not x.destination2 == "":
           try:
-            directory = dirname(full_path(x.destination2))
-            sub_directory = dirname(dirname(full_path(x.destination2)))
-            if not isdir(sub_directory):
-              os.mkdir(sub_directory)
-            if not isdir(directory):
-              os.mkdir(directory)
+            os.makedirs(dirname(full_path(x.destination2)))
             if isfile(full_path(x.destination2)):
               print(f"File found at [bold cyan]{x.destination}[/bold cyan], removing...")
               os.remove(full_path(x.destination2))
