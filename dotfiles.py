@@ -3,13 +3,14 @@ import csv
 import itertools
 import os
 import shutil
-from   os.path              import expanduser, abspath, isfile, islink, isdir, dirname
-from   pydantic.dataclasses import dataclass
-from   rich                 import box
-from   rich                 import print
-from   rich.console         import Console
-from   rich.table           import Table
-from   typing               import Union,      Optional
+from os.path              import expanduser, abspath, isfile, islink, isdir, dirname
+from pydantic.dataclasses import dataclass
+from rich                 import box
+from rich                 import print
+from rich.console         import Console
+from rich.table           import Table
+from rich_argparse        import RichHelpFormatter
+from typing               import Union,      Optional
 
 CONFIG = "./configurations.csv"
 
@@ -73,7 +74,7 @@ def install_config(names):
     for x in not_installed_list:
       if name == x.name:
         try:
-          os.makedirs(dirname(full_path(x.destination)))
+          os.makedirs(dirname(full_path(x.destination)), exist_ok=True)
           if isfile(full_path(x.destination)):
             print(f"File found at [bold cyan]{x.destination}[/bold cyan], removing...")
             os.remove(full_path(x.destination))
@@ -84,7 +85,7 @@ def install_config(names):
           exit(1)
         if not x.destination2 == "":
           try:
-            os.makedirs(dirname(full_path(x.destination2)))
+            os.makedirs(dirname(full_path(x.destination2)), exist_ok=True)
             if isfile(full_path(x.destination2)):
               print(f"File found at [bold cyan]{x.destination}[/bold cyan], removing...")
               os.remove(full_path(x.destination2))
@@ -150,16 +151,16 @@ full_config_list = config_init()
 write_config(full_config_list)
 installed_list, not_installed_list, installed_names, not_installed_names, full_names = split_list(full_config_list)
 
-parser = argparse.ArgumentParser("dotfiles_installer")
-manage = parser.add_argument_group()
+parser = argparse.ArgumentParser("dotfiles_installer", formatter_class=RichHelpFormatter)
+parser.add_argument("-l", "--list", help="List configs", action="store_true")
+manage = parser.add_argument_group(title="Manage")
 manage.add_argument("-i", "--install", help="Install configs", nargs="+")
 manage.add_argument("-r", "--remove", help="Remove configs", nargs="+")
-parser.add_argument("-l", "--list", help="List configs", action="store_true")
-modify = parser.add_argument_group()
-modify.add_argument("-d", "--delete", help="Delete configs", nargs="+")
+modify = parser.add_argument_group(title="Add/Delete")
 mutual = modify.add_mutually_exclusive_group()
 mutual.add_argument("-a", "--add", help="Add new configs (3 vars)", nargs=3, metavar=("NAME", "SOURCE", "DESTINATION"))
 mutual.add_argument("-ae", "--add-extra", help="Add new configs (5 vars)", nargs=5, metavar=("NAME", "SOURCE", "DESTINATION", "SOURCE2", "DESTINATION2"))
+modify.add_argument("-d", "--delete", help="Delete configs", nargs="+")
 args = parser.parse_args()
 
 if args.install:
