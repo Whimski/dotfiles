@@ -3,6 +3,7 @@ import csv
 import itertools
 import os
 import shutil
+import sys
 from os.path              import expanduser, abspath, isfile, islink, isdir, dirname
 from pydantic.dataclasses import dataclass
 from rich                 import box
@@ -10,9 +11,14 @@ from rich                 import print
 from rich.console         import Console
 from rich.table           import Table
 from rich_argparse        import RichHelpFormatter
-from typing               import Union,      Optional
+from typing               import Union, Optional
 
 CONFIG = "./configurations.csv"
+
+RichHelpFormatter.group_name_formatter = str.upper
+RichHelpFormatter.styles["argparse.groups"] = "bold salmon1"
+RichHelpFormatter.styles["argparse.metavar"] = "grey50"
+RichHelpFormatter.styles["argparse.prog"] = "bold sea_green1"
 
 @dataclass
 class default_config:
@@ -51,11 +57,11 @@ def add_config(name, source, destination, source2, destination2):
     csvfile.write(f"{name},{source},{destination},{source2},{destination2}\n")
 
 def split_list(config_list):
-  installed           = []
-  not_installed       = []
-  installed_names     = []
-  not_installed_names = []
   full_names          = []
+  installed           = []
+  installed_names     = []
+  not_installed       = []
+  not_installed_names = []
   for config in config_list:
     if islink(full_path(config.destination)):
       installed.append(config)
@@ -70,7 +76,7 @@ def install_config(names):
   for name in names:
     if not name in not_installed_names:
       print(f"Either [bold red]{name}[/bold red] does not exist or not found...")
-      exit(1)
+      sys.exit(1)
     for x in not_installed_list:
       if name == x.name:
         try:
@@ -82,7 +88,7 @@ def install_config(names):
           os.symlink(full_path(x.source), full_path(x.destination))
         except Exception as e:
           print(f"Error installing [bold red]{x.name}[/bold red]. Go fix it. \n [bold red]{e}[/bold red]")
-          exit(1)
+          sys.exit(1)
         if not x.destination2 == "":
           try:
             os.makedirs(dirname(full_path(x.destination2)), exist_ok=True)
@@ -93,7 +99,7 @@ def install_config(names):
             os.symlink(full_path(x.source2), full_path(x.destination2))
           except Exception as e:
             print(f"Error installing [bold red]{x.name}[/bold red]. Go fix it. \n [bold red]{e}[/bold red]")
-            exit(1)
+            sys.exit(1)
 
 def remove_config(names):
   for name in names:
@@ -106,21 +112,21 @@ def remove_config(names):
           os.remove(full_path(x.destination))
         except Exception as e:
           print(f"[bold red]{e}[/bold red]")
-          exit(1)
+          sys.exit(1)
         try:
           if not x.destination2 == "":
             print(f"Removing {x.destination2}")
             os.remove(full_path(x.destination2))
         except Exception as e:
           print(f"[bold red]{e}[/bold red]")
-          exit(1)
+          sys.exit(1)
 
 def delete_config(names):
   remove_config(names)
   for name in names:
     if not name in full_names:
       print(f"Either [bold red]{name}[/bold red] does not exist or not found...a")
-      exit(1)
+      sys.exit(1)
     print("Are you sure you want to [bold]delete[/bold]?")
     response = input("Type 'delete' to confirm: ")
     if response.lower() == "delete":
@@ -141,11 +147,11 @@ def delete_config(names):
                 shutil.rmtree(full_path(x.source2))
           except Exception as e:
             print(f"Error deleting [bold red]{x.name}[/bold red]. Go fix it. \n [bold red]{e}[/bold red]")
-            exit(1)
+            sys.exit(1)
       write_config(full_config_list)
     else:
       print("Canceling...")
-      os.exit(0)
+      sys.exit(0)
 
 full_config_list = config_init()
 write_config(full_config_list)
