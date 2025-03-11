@@ -8,7 +8,6 @@ from os.path              import expanduser, abspath, isfile, islink, isdir, dir
 from pydantic.dataclasses import dataclass
 from rich                 import box
 from rich                 import print
-from rich.console         import Console
 from rich.prompt          import Prompt
 from rich.table           import Table
 from rich_argparse        import RichHelpFormatter
@@ -181,7 +180,6 @@ elif args.list:
         list_installed.append(x.name)
     for x in not_installed_list:
         list_not_installed.append(x.name)
-    console = Console()
     table = Table(show_header=True)
     table.row_styles = ["none", "dim"]
     table.box = box.SIMPLE
@@ -189,7 +187,7 @@ elif args.list:
     table.add_column("[bold red]Not Installed")
     for x, y in itertools.zip_longest(list_installed, list_not_installed):
       table.add_row(x, y)
-    console.print(table)
+    print(table)
 elif args.add:
   name, source, destination = args.add
   source2 = ""
