@@ -9,6 +9,7 @@ from pydantic.dataclasses import dataclass
 from rich                 import box
 from rich                 import print
 from rich.console         import Console
+from rich.prompt          import Prompt
 from rich.table           import Table
 from rich_argparse        import RichHelpFormatter
 from typing               import Union, Optional
@@ -104,7 +105,7 @@ def install_config(names):
 def remove_config(names):
   for name in names:
     if not name in installed_names:
-      print(f"Either [bold red]{name}[/bold red] does not exist or not found...")
+      print(f"Either [bold red]{name}[/bold red] is not installed.")
     for x in installed_list:
       if name == x.name:
         try:
@@ -125,10 +126,10 @@ def delete_config(names):
   remove_config(names)
   for name in names:
     if not name in full_names:
-      print(f"Either [bold red]{name}[/bold red] does not exist or not found...a")
+      print(f"Either [bold red]{name}[/bold red] does not exist or not found...")
       sys.exit(1)
-    print("Are you sure you want to [bold]delete[/bold]?")
-    response = input("Type 'delete' to confirm: ")
+    print(f"Are you sure you want to [bold]delete[/bold] {names}?")
+    response = Prompt.ask("Type 'delete' to confirm")
     if response.lower() == "delete":
       for x in full_config_list:
         if name == x.name:
