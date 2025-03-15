@@ -179,7 +179,7 @@ label:focus {
 }
 
 #network.disconnected {
-    background-color: @red;
+    color: @red;
 }
 
 #network.wifi {
