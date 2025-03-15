@@ -39,26 +39,11 @@
   },
   "network": {
       // "interface": "wlp2s0", // (Optional) To force the use of this interface
+      "family": "ipv4",
       "format-wifi": "{essid} ({signalStrength}%): {ipaddr}/{cidr} ",
       "format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
-      "format-disconnected": "Disconnected ⚠"
-  },
-  "pulseaudio": {
-      "scroll-step": 5,
-      "format": "{volume}% {icon}",
-      "format-bluetooth": "{volume}% {icon}",
-      "format-muted": "",
-      "format-icons": {
-          "headphones": "🎧",
-          "handsfree": "",
-          "headset": "🎧",
-          "phone": "📱",
-          "portable": "",
-          "car": "",
-          "default": ["", ""]
-      },
-      "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
-      "ignored-sinks": ["Easy Effects Sink", "Meteor condenser microphone Analog Stereo"],
+      "format-disconnected": "Disconnected ⚠",
+      "tooltip": false,
   },
   "wireplumber": {
       "scroll-step": 5,
@@ -81,5 +66,6 @@
       "format": "{} 🌎",
       "interval": 30,
       "exec": "curl --ipv4 ifconfig.me",
+      "on-click": "curl --ipv4 ifconfig.me | wl-copy",
   },
 }
