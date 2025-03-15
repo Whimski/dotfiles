@@ -6,7 +6,7 @@
   // Choose the order of the modules
   "modules-left": ["hyprland/workspaces",],
   "modules-center": [],
-  "modules-right": ["pulseaudio", "network", "custom/external_ip", "battery", "tray", "clock"],
+  "modules-right": ["wireplumber", "network", "custom/external_ip", "battery", "tray", "clock"],
   "hyprland/workspaces": {
     "format": "{icon}" 
   },
@@ -57,7 +57,24 @@
           "car": "",
           "default": ["", ""]
       },
-      "on-click": "pavucontrol",
+      "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+      "ignored-sinks": ["Easy Effects Sink", "Meteor condenser microphone Analog Stereo"],
+  },
+  "wireplumber": {
+      "scroll-step": 5,
+      "format": "{volume}% {icon}",
+      "format-bluetooth": "{volume}% {icon}",
+      "format-muted": "",
+      "format-icons": {
+          "headphones": "🎧",
+          "handsfree": "",
+          "headset": "🎧",
+          "phone": "📱",
+          "portable": "",
+          "car": "",
+          "default": ["", ""]
+      },
+      "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
       "ignored-sinks": ["Easy Effects Sink", "Meteor condenser microphone Analog Stereo"],
   },
   "custom/external_ip": {
