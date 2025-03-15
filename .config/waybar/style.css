@@ -52,7 +52,7 @@ button:hover {
 
 #workspaces button.focused {
     background-color: @base;
-    box-shadow: inset 0 -1px @orange;
+    box-shadow: inset 0 -1px @peach;
 }
 
 #workspaces button.urgent {
@@ -220,7 +220,8 @@ label:focus {
 }
 
 #tray {
-    background-color: #2980b9;
+    background-color: @base;
+    box-shadow: inset 0 -1px @text;
 }
 
 #tray > .passive {

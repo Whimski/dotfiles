@@ -1,4 +1,5 @@
 {
+  "reload_style_on_change": true,
   "layer": "top", // Waybar at top layer
   "position": "top", // Waybar at the bottom of your screen
   "height": 20, // Waybar height
