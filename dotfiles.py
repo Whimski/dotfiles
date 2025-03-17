@@ -5,7 +5,7 @@ import os
 import shutil
 import sys
 from os.path              import expanduser, abspath, isfile, islink, isdir, dirname
-from pydantic.dataclasses import dataclass
+from dataclasses import dataclass
 from rich                 import box
 from rich                 import print
 from rich.prompt          import Prompt
