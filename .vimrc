@@ -29,6 +29,7 @@ autocmd BufEnter *.py highlight Normal guibg=NONE ctermbg=NONE
 autocmd BufEnter *.py highlight Pmenu ctermfg=15 ctermbg=0
 autocmd BufEnter *.py highlight Search ctermfg=15 ctermbg=0
 autocmd FileType python setlocal shiftwidth=2 tabstop=2 softtabstop=2 expandtab
+autocmd BufEnter * highlight Normal guibg=NONE ctermbg=NONE
 
 call plug#begin()
 
@@ -61,7 +62,8 @@ Plug 'catppuccin/vim', { 'as': 'catppuccin' }
 Plug 'rsaraf/vim-advanced-lint'
 Plug 'sheerun/vim-polyglot'
 Plug 'chriskempson/base16-vim'
-Plug 'Valloric/YouCompleteMe'
+Plug 'bfrg/vim-c-cpp-modern'
+" Plug 'Valloric/YouCompleteMe'
 
 call plug#end()
 
@@ -98,7 +100,8 @@ nmap ga <Plug>(EasyAlign)
 nmap <F8> :TagbarToggle<CR>
 map ; :Files<CR>
 
-colorscheme catppuccin_mocha
+" colorscheme catppuccin_mocha
+colorscheme base16-black-metal
 autocmd ColorScheme * highlight Normal guibg=NONE ctermbg=NONE
 
 hi SpellBad cterm=underline ctermfg=red ctermbg=NONE
