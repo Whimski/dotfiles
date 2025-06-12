@@ -11,3 +11,4 @@ vim,.vimrc,~/.vimrc,,
 waybar,.config/waybar,~/.config/waybar,,
 xorg,.Xresources,~/.Xresources,.Xresources,~/.Xdefaults
 zsh,.zshrc,~/.zshrc,.zsh,~/.zsh
+quickshell,.config/quickshell,~/.config/quickshell,,
