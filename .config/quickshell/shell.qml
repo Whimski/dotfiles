@@ -7,5 +7,5 @@ ShellRoot {
     //Background {}
     Drawers {}
 
-    Shortcuts {}
+    //Shortcuts {}
 }
