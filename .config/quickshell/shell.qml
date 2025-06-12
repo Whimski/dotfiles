@@ -4,7 +4,7 @@ import "modules/background"
 import Quickshell
 
 ShellRoot {
-    Background {}
+    //Background {}
     Drawers {}
 
     Shortcuts {}
