@@ -4,3 +4,5 @@ monitors.conf
 windowrules.conf
 startup.conf
 hyprpaper.conf
+id_*
+known_hosts*
