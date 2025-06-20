@@ -7,6 +7,3 @@
 [submodule ".vim/bundle/tabular"]
 	path = .vim/bundle/tabular
 	url = https://github.com/godlygeek/tabular.git
-[submodule ".ssh"]
-	path = .ssh
-	url = https://github.com/TobiZehPanda/ssh.git
