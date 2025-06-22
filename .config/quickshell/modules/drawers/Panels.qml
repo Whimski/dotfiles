@@ -20,7 +20,7 @@ Item {
     readonly property Notifications.Wrapper notifications: notifications
     readonly property Session.Wrapper session: session
     readonly property Launcher.Wrapper launcher: launcher
-    // readonly property Dashboard.Wrapper dashboard: dashboard
+    readonly property Dashboard.Wrapper dashboard: dashboard
     readonly property BarPopouts.Wrapper popouts: popouts
 
     anchors.fill: parent

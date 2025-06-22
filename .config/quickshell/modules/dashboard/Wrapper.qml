@@ -16,7 +16,8 @@ Item {
         when: root.visibilities.dashboard
 
         PropertyChanges {
-            root.implicitHeight: content.implicitHeight
+            // root.implicitHeight: content.implicitHeight
+            root.implicitHeight: 0
         }
     }
 
