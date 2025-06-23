@@ -60,7 +60,7 @@ MouseArea {
         }
 
         // Show dashboard on hover
-        visibilities.dashboard = inTopPanel(panels.dashboard, x, y);
+        // visibilities.dashboard = inTopPanel(panels.dashboard, x, y);
 
         // Show popouts on hover
         const popout = panels.popouts;
