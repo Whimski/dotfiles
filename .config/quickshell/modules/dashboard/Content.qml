@@ -17,18 +17,18 @@ Item {
     implicitWidth: nonAnimWidth
     implicitHeight: tabs.implicitHeight + tabs.anchors.topMargin + view.implicitHeight + viewWrapper.anchors.margins * 2
 
-    Tabs {
-        id: tabs
+    // Tabs {
+    //     id: tabs
 
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.topMargin: Appearance.padding.normal
-        anchors.margins: Appearance.padding.large
+    //     anchors.top: parent.top
+    //     anchors.left: parent.left
+    //     anchors.right: parent.right
+    //     anchors.topMargin: Appearance.padding.normal
+    //     anchors.margins: Appearance.padding.large
 
-        nonAnimWidth: root.nonAnimWidth
-        currentIndex: view.currentIndex
-    }
+    //     nonAnimWidth: root.nonAnimWidth
+    //     currentIndex: view.currentIndex
+    // }
 
     ClippingRectangle {
         id: viewWrapper
