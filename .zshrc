@@ -16,6 +16,7 @@ export PF_ASCII="Catppuccin"
 export PF_COL3=1
 export PASTEL_COLOR_MODE=24bit
 
+
 alias ls='ls --color=auto'
 alias grep='grep --color'
 alias ip='ip -color=auto'
@@ -47,9 +48,3 @@ export HISTSIZE=1000000
 export SAVEHIST=1000000
 setopt appendhistory
 
-# bun completions
-[ -s "/home/tobi/.bun/_bun" ] && source "/home/tobi/.bun/_bun"
-
-# bun
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
