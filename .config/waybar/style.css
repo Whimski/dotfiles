@@ -194,6 +194,10 @@ label:focus {
     color: @sky;
 }
 
+#network.module.speed {
+    color: @blue;
+}
+
 #custom-external_ip {
     background-color: @base;
     color: @peach;
