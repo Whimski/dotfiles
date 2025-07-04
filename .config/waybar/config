@@ -2,12 +2,11 @@
   "reload_style_on_change": true,
   "layer": "top", // Waybar at top layer
   "position": "top", // Waybar at the bottom of your screen
-  "height": 20, // Waybar height
+  "height": 22, // Waybar height
   // "width": 1366, // Waybar width
-  // Choose the order of the modules
-  "modules-left": ["hyprland/workspaces",],
+  "modules-left": ["hyprland/workspaces", "hyprland/window"],
   "modules-center": [],
-  "modules-right": ["wireplumber", "network", "custom/external_ip", "battery", "tray", "clock"],
+  "modules-right": ["wireplumber", "network", "custom/external_ip", "network#speed", "battery", "tray", "clock"],
   "hyprland/workspaces": {
     "format": "{icon}" 
   },
@@ -35,15 +34,23 @@
           "critical": 15
       },
       "format": "{capacity}% {icon}",
-      "format-icons": ["", "", "", "", ""],
-      "format-charging": "*{capacity}% {icon}",
+       "format-icons": {
+            "charging": ["󰢜", "󰂆", "󰂇", "󰂈", "󰢝", "󰂉", "󰢞", "󰂊", "󰂋", "󰂅"],
+            "default": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
+        },
+  },
+  "network#speed": {
+      // "interface": "wlp2s0", // (Optional) To force the use of this interface
+      "family": "ipv4",
+      "format": " {bandwidthUpBytes} :  {bandwidthDownBytes}",
+      "tooltip": false,
   },
   "network": {
       // "interface": "wlp2s0", // (Optional) To force the use of this interface
       "family": "ipv4",
       "format-wifi": "{essid} ({signalStrength}%): {ipaddr}/{cidr} ",
       "format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
-      "format-disconnected": "Disconnected ⚠",
+      "format-disconnected": "Disconnected ",
       "tooltip": false,
   },
   "wireplumber": {
@@ -52,10 +59,10 @@
       "format-bluetooth": "{volume}% {icon}",
       "format-muted": "",
       "format-icons": {
-          "headphones": "🎧",
-          "handsfree": "",
-          "headset": "🎧",
-          "phone": "📱",
+          "headphones": "",
+          "handsfree": "",
+          "headset": "",
+          "phone": "",
           "portable": "",
           "car": "",
           "default": ["", ""]
@@ -64,7 +71,7 @@
       "ignored-sinks": ["Easy Effects Sink", "Meteor condenser microphone Analog Stereo"],
   },
   "custom/external_ip": {
-      "format": "{} 🌎",
+      "format": "{} ",
       "interval": 30,
       "exec": "curl --ipv4 ifconfig.me",
       "on-click": "curl --ipv4 ifconfig.me | wl-copy",
