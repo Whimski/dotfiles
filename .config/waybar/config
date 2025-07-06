@@ -29,15 +29,18 @@
   "battery": {
       //"bat": "BAT0",
       "states": {
-          "good": 55,
-          "warning": 30,
-          "critical": 15
+          "good": 75,
+          "warning": 50,
+          "critical": 25
       },
       "format": "{capacity}% {icon}",
        "format-icons": {
             "charging": ["󰢜", "󰂆", "󰂇", "󰂈", "󰢝", "󰂉", "󰢞", "󰂊", "󰂋", "󰂅"],
             "default": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
         },
+  },
+  "backlight": {
+    "format": "{percent}%",
   },
   "bluetooth": {
     "interval": 5,
