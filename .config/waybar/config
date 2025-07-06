@@ -6,7 +6,7 @@
   // "width": 1366, // Waybar width
   "modules-left": ["hyprland/workspaces", "hyprland/window"],
   "modules-center": [],
-  "modules-right": ["wireplumber", "network", "custom/external_ip", "network#speed", "battery", "tray", "clock"],
+  "modules-right": ["wireplumber", "network", "custom/external_ip", "network#speed", "bluetooth", "battery", "tray", "clock"],
   "hyprland/workspaces": {
     "format": "{icon}" 
   },
@@ -39,11 +39,21 @@
             "default": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
         },
   },
+  "bluetooth": {
+    "interval": 5,
+    "format": "󰂯",
+    "format-connected": "",
+    "format-connected-battery": "{device_battery_percentage}% {icon}",
+    "format-icons": ["󰤾", "󰤿", "󰥀", "󰥁", "󰥂", "󰥃", "󰥄", "󰥅", "󰥆"],
+    "tooltip-format": "{device_alias} • {device_address}",
+    "format-no-controller": ""
+  },
   "network#speed": {
       // "interface": "wlp2s0", // (Optional) To force the use of this interface
       "family": "ipv4",
       "format": " {bandwidthUpBytes} :  {bandwidthDownBytes}",
       "tooltip": false,
+      "interval": 1,
   },
   "network": {
       // "interface": "wlp2s0", // (Optional) To force the use of this interface
@@ -73,7 +83,7 @@
   "custom/external_ip": {
       "format": "{} ",
       "interval": 30,
-      "exec": "curl --ipv4 ifconfig.me",
-      "on-click": "curl --ipv4 ifconfig.me | wl-copy",
+      "exec": "curl --ipv4 ifconfig.me > /dev/null 2>&1",
+      "on-click": "curl --ipv4 ifconfig.me > /dev/null 2>&1 | wl-copy",
   },
 }

@@ -82,9 +82,11 @@ button:hover {
 #scratchpad,
 #power-profiles-daemon,
 #mpd,
+#bluetooth,
 #custom-external_ip {
     padding: 0 10px;
     color: @text;
+    margin: 5px 5px 5px 0px;
 }
 
 #window,
@@ -132,6 +134,23 @@ button:hover {
     animation-timing-function: steps(12);
     animation-iteration-count: infinite;
     animation-direction: alternate;
+}
+
+#bluetooth {
+  background-color: @base;
+}
+
+#bluetooth.on {
+  color: @sky;
+}
+
+#bluetooth.connected {
+  color: @green;
+}
+
+#bluetooth.off,
+#bluetooth.disabled {
+  color: @red;
 }
 
 #power-profiles-daemon {
