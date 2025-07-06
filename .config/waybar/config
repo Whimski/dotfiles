@@ -94,7 +94,7 @@
   "custom/external_ip": {
       "format": "{} ",
       "interval": 30,
-      "exec": "curl --ipv4 ifconfig.me > /dev/null 2>&1",
-      "on-click": "curl --ipv4 ifconfig.me > /dev/null 2>&1 | wl-copy",
+      "exec": "curl --ipv4 ifconfig.me",
+      "on-click": "curl --ipv4 ifconfig.me | wl-copy",
   },
 }
