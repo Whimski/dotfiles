@@ -1,9 +1,9 @@
 {
   "reload_style_on_change": true,
-  "layer": "top", // Waybar at top layer
-  "position": "top", // Waybar at the bottom of your screen
-  // "height": 22, // Waybar height
-  // "width": 1366, // Waybar width
+  "layer": "top",
+  "position": "top",
+  // "height": 22,
+  // "width": 1366,
   "modules-left": ["hyprland/workspaces", "hyprland/window"],
   "modules-center": [],
   "modules-right": ["wireplumber", "network", "custom/external_ip", "network#speed", "bluetooth", "power-profiles-daemon", "tray", "battery", "clock"],
@@ -29,7 +29,7 @@
   "battery": {
       //"bat": "BAT0",
       "states": {
-          // "good": 95,
+          "good": 55,
           "warning": 30,
           "critical": 15
       },
@@ -49,14 +49,14 @@
     "format-no-controller": ""
   },
   "network#speed": {
-      // "interface": "wlp2s0", // (Optional) To force the use of this interface
+      // "interface": "wlp2s0",
       "family": "ipv4",
       "format": " {bandwidthUpBytes} :  {bandwidthDownBytes}",
       "tooltip": false,
       "interval": 1,
   },
   "network": {
-      // "interface": "wlp2s0", // (Optional) To force the use of this interface
+      // "interface": "wlp2s0",
       "family": "ipv4",
       "format-wifi": "{essid} ({signalStrength}%): {ipaddr}/{cidr} ",
       "format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
