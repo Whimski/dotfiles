@@ -2,11 +2,11 @@
   "reload_style_on_change": true,
   "layer": "top", // Waybar at top layer
   "position": "top", // Waybar at the bottom of your screen
-  "height": 22, // Waybar height
+  // "height": 22, // Waybar height
   // "width": 1366, // Waybar width
   "modules-left": ["hyprland/workspaces", "hyprland/window"],
   "modules-center": [],
-  "modules-right": ["wireplumber", "network", "custom/external_ip", "network#speed", "bluetooth", "battery", "tray", "clock"],
+  "modules-right": ["wireplumber", "network", "custom/external_ip", "network#speed", "bluetooth", "power-profiles-daemon", "tray", "battery", "clock"],
   "hyprland/workspaces": {
     "format": "{icon}" 
   },
@@ -79,6 +79,17 @@
       },
       "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
       "ignored-sinks": ["Easy Effects Sink", "Meteor condenser microphone Analog Stereo"],
+  },
+  "power-profiles-daemon": {
+    "format": "{icon}",
+    "tooltip-format": "Driver: {driver}",
+    "tooltip": true,
+    "format-icons": {
+      "default": "",
+      "performance": "",
+      "balanced": "",
+      "power-saver": ""
+    },
   },
   "custom/external_ip": {
       "format": "{} ",
