@@ -112,8 +112,16 @@ button:hover {
     color: @text;
 }
 
-#battery.charging, #battery.plugged {
+#battery.charging, #battery.plugged, #battery.good {
     color: @green;
+}
+
+#battery.warning {
+    color: @peach;
+}
+
+#battery.critical {
+    color: @red;
 }
 
 @keyframes blink {
