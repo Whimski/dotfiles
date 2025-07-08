@@ -1,3 +1,4 @@
+
 autoload -Uz vcs_info
 precmd() { vcs_info }
 
@@ -48,3 +49,13 @@ export HISTSIZE=1000000
 export SAVEHIST=1000000
 setopt appendhistory
 
+
+
+# The following lines were added by compinstall
+
+zstyle ':completion:*' completer _complete _ignored _correct _approximate
+zstyle :compinstall filename '/home/tobi/.zshrc'
+
+autoload -Uz compinit
+compinit
+# End of lines added by compinstall
