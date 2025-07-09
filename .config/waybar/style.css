@@ -108,11 +108,11 @@ button:hover {
 #clock {
 }
 
-#battery {
+#battery, #battery.good {
     color: @text;
 }
 
-#battery.charging, #battery.plugged, #battery.good {
+#battery.charging, #battery.plugged {
     color: @green;
 }
 
