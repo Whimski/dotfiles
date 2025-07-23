@@ -63,6 +63,7 @@ Plug 'rsaraf/vim-advanced-lint'
 Plug 'sheerun/vim-polyglot'
 Plug 'chriskempson/base16-vim'
 Plug 'bfrg/vim-c-cpp-modern'
+Plug 'pseewald/vim-anyfold'
 " Plug 'Valloric/YouCompleteMe'
 
 call plug#end()
@@ -108,3 +109,13 @@ hi SpellBad cterm=underline ctermfg=red ctermbg=NONE
 hi ALEWarning cterm=underline ctermfg=red ctermbg=NONE
 hi Pmenu ctermfg=15 ctermbg=0
 hi Search ctermfg=15 ctermbg=0
+
+autocmd Filetype * AnyFoldActivate
+set foldlevel=99
+hi Folded term=NONE cterm=NONE ctermbg=NONE
+
+augroup remember_folds
+  autocmd!
+  autocmd BufWinLeave * mkview
+  autocmd BufWinEnter * silent! loadview
+augroup END
