@@ -12,4 +12,4 @@ waybar,.config/waybar,~/.config/waybar,,
 xorg,.Xresources,~/.Xresources,.Xresources,~/.Xdefaults
 zsh,.zshrc,~/.zshrc,.zsh,~/.zsh
 quickshell,.config/quickshell,~/.config/quickshell,,
-keyd,.config/keyd,~/.config/keyd,,
+keyd,.config/keyd/default.conf,/etc/keyd/default.conf,,
