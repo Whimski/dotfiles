@@ -1,1 +1,0 @@
-paru -S q ttf-material-symbols-variable-git ttf-jetbrains-mono-nerd ttf-ibm-plex app2unit-git fd python-aubio python-pyaudio python-numpy cava networkmanager bluez-utils ddcutil brightnessctl imagemagick
