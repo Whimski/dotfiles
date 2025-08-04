@@ -6,7 +6,7 @@
   // "width": 1366,
   "modules-left": ["hyprland/workspaces", "hyprland/window"],
   "modules-center": [],
-  "modules-right": ["wireplumber", "network", "custom/external_ip", "network#speed", "bluetooth", "power-profiles-daemon", "tray", "battery", "clock"],
+  "modules-right": ["wireplumber","network#wireguard", "network", "custom/external_ip", "network#speed", "bluetooth", "power-profiles-daemon", "tray", "battery", "clock"],
   "hyprland/workspaces": {
     "format": "{icon}" 
   },
@@ -38,6 +38,7 @@
             "charging": ["󰢜", "󰂆", "󰂇", "󰂈", "󰢝", "󰂉", "󰢞", "󰂊", "󰂋", "󰂅"],
             "default": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
         },
+      "interval": 10,
   },
   "backlight": {
     "format": "{percent}%",
@@ -64,7 +65,14 @@
       "format-wifi": "{essid} ({signalStrength}%): {ipaddr}/{cidr} ",
       "format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
       "format-disconnected": "Disconnected ",
-      "tooltip": false,
+      "tooltip-format": "{gwaddr}",
+  },
+  "network#wireguard": {
+      "interface": "wg*",
+      "family": "ipv4",
+      "format-wifi": "{essid} ({signalStrength}%): {ipaddr}/{cidr} ",
+      "format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
+      "tooltip-format": "{gwaddr}",
   },
   "wireplumber": {
       "scroll-step": 5,

@@ -31,6 +31,7 @@ alias rm="rm --interactive=never"
 alias sync_status="watch -d grep -e Dirty: -e Writeback: /proc/meminfo"
 alias rsync_backup="rsync -aAXHv --exclude='/dev/*' --exclude='/proc/*' --exclude='/sys/*' --exclude='/tmp/*' --exclude='/run/*' --exclude='/mnt/*' --exclude='/media/*' --exclude='/lost+found/'"
 alias gitupdateall="git pull && git submodule update --init --recursive --remote"
+alias paru="paru --color=always"
 
 source ~/.zsh/catppuccin_mocha-zsh-syntax-highlighting.zsh
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh

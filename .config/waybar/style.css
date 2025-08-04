@@ -117,7 +117,7 @@ button:hover {
 }
 
 #battery.warning {
-    color: @peach;
+    color: @yellow;
 }
 
 #battery.critical {
