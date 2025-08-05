@@ -14,31 +14,30 @@
     "separate-outputs": true
   },
   "tray": {
-      // "icon-size": 21,
-      "spacing": 10
+    "spacing": 10
   },
   "clock": {
-      "format-alt": "{:%Y-%m-%d}"
+    "format-alt": "{:%Y-%m-%d}"
   },
   "cpu": {
-      "format": "{usage}% "
+    "format": "{usage}% "
   },
   "memory": {
-      "format": "{}% "
+    "format": "{}% "
   },
   "battery": {
-      //"bat": "BAT0",
-      "states": {
-          "good": 75,
-          "warning": 50,
-          "critical": 25
-      },
-      "format": "{capacity}% {icon}",
-       "format-icons": {
-            "charging": ["󰢜", "󰂆", "󰂇", "󰂈", "󰢝", "󰂉", "󰢞", "󰂊", "󰂋", "󰂅"],
-            "default": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
-        },
-      "interval": 10,
+    //"bat": "BAT0",
+    "states": {
+      "good": 75,
+      "warning": 50,
+      "critical": 25
+    },
+    "format": "{capacity}% {icon}",
+    "format-icons": {
+      "charging": ["󰢜", "󰂆", "󰂇", "󰂈", "󰢝", "󰂉", "󰢞", "󰂊", "󰂋", "󰂅"],
+      "default": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
+    },
+    "interval": 10,
   },
   "backlight": {
     "format": "{percent}%",
@@ -53,43 +52,43 @@
     "format-no-controller": ""
   },
   "network#speed": {
-      // "interface": "wlp2s0",
-      "family": "ipv4",
-      "format": " {bandwidthUpBytes} :  {bandwidthDownBytes}",
-      "tooltip": false,
-      "interval": 1,
+    // "interface": "wlp2s0",
+    "family": "ipv4",
+    "format": " {bandwidthUpBytes} :  {bandwidthDownBytes}",
+    "tooltip": false,
+    "interval": 1,
   },
   "network": {
-      // "interface": "wlp2s0",
-      "family": "ipv4",
-      "format-wifi": "{essid} ({signalStrength}%): {ipaddr}/{cidr} ",
-      "format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
-      "format-disconnected": "Disconnected ",
-      "tooltip-format": "{gwaddr}",
+    // "interface": "wlp2s0",
+    "family": "ipv4",
+    "format-wifi": "{essid} ({signalStrength}%): {ipaddr}/{cidr} ",
+    "format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
+    "format-disconnected": "Disconnected ",
+    "tooltip-format": "{gwaddr}",
   },
   "network#wireguard": {
-      "interface": "wg*",
-      "family": "ipv4",
-      "format-wifi": "{essid} ({signalStrength}%): {ipaddr}/{cidr} ",
-      "format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
-      "tooltip-format": "{gwaddr}",
+    "interface": "wg*",
+    "family": "ipv4",
+    "format-wifi": "{essid} ({signalStrength}%): {ipaddr}/{cidr} ",
+    "format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
+    "tooltip-format": "{gwaddr}",
   },
   "wireplumber": {
-      "scroll-step": 5,
-      "format": "{volume}% {icon}",
-      "format-bluetooth": "{volume}% {icon}",
-      "format-muted": "",
-      "format-icons": {
-          "headphones": "",
-          "handsfree": "",
-          "headset": "",
-          "phone": "",
-          "portable": "",
-          "car": "",
-          "default": ["", ""]
+    "scroll-step": 5,
+    "format": "{volume}% {icon}",
+    "format-bluetooth": "{volume}% {icon}",
+    "format-muted": "",
+    "format-icons": {
+      "headphones": "",
+      "handsfree": "",
+      "headset": "",
+      "phone": "",
+      "portable": "",
+      "car": "",
+      "default": ["", ""]
       },
-      "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
-      "ignored-sinks": ["Easy Effects Sink", "Meteor condenser microphone Analog Stereo"],
+    "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+    "ignored-sinks": ["Easy Effects Sink", "Meteor condenser microphone Analog Stereo"],
   },
   "power-profiles-daemon": {
     "format": "{icon}",
@@ -103,9 +102,9 @@
     },
   },
   "custom/external_ip": {
-      "format": "{} ",
-      "interval": 30,
-      "exec": "curl --ipv4 ifconfig.me",
-      "on-click": "curl --ipv4 ifconfig.me | wl-copy",
+    "format": "{} ",
+    "interval": 30,
+    "exec": "curl --ipv4 ifconfig.me",
+    "on-click": "curl --ipv4 ifconfig.me | wl-copy",
   },
 }

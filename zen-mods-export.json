@@ -122,5 +122,91 @@
     "updatedAt": "2025-07-15",
     "preferences": "https://raw.githubusercontent.com/zen-browser/theme-store/main/themes/03a8e7ef-cf00-4f41-bf24-a90deeafc9db/preferences.json",
     "enabled": true
+  },
+  "d8b79d4a-6cba-4495-9ff6-d6d30b0e94fe": {
+    "id": "d8b79d4a-6cba-4495-9ff6-d6d30b0e94fe",
+    "name": "Better Active Tab",
+    "description": "Adds a bright line next to the active tab to better highlight it.",
+    "homepage": "https://github.com/HliasOuzounis/zen-browser-better-active-tab-indicator",
+    "style": "https://raw.githubusercontent.com/zen-browser/theme-store/main/themes/d8b79d4a-6cba-4495-9ff6-d6d30b0e94fe/chrome.css",
+    "readme": "https://raw.githubusercontent.com/zen-browser/theme-store/main/themes/d8b79d4a-6cba-4495-9ff6-d6d30b0e94fe/readme.md",
+    "image": "https://raw.githubusercontent.com/zen-browser/theme-store/main/themes/d8b79d4a-6cba-4495-9ff6-d6d30b0e94fe/image.png",
+    "author": "HliasOuzounis",
+    "version": "1.0.3",
+    "tags": [
+      "tabs"
+    ],
+    "createdAt": "2024-09-07",
+    "updatedAt": "2025-01-26",
+    "enabled": true
+  },
+  "1e86cf37-a127-4f24-b919-d265b5ce29a0": {
+    "id": "1e86cf37-a127-4f24-b919-d265b5ce29a0",
+    "name": "Cleaner Extensions",
+    "description": "Clean up the Unified Extension Menu, grid the buttons, show the puzzle button only on hover.. or hide it completely",
+    "homepage": "",
+    "style": "https://raw.githubusercontent.com/zen-browser/theme-store/main/themes/1e86cf37-a127-4f24-b919-d265b5ce29a0/chrome.css",
+    "readme": "https://raw.githubusercontent.com/zen-browser/theme-store/main/themes/1e86cf37-a127-4f24-b919-d265b5ce29a0/readme.md",
+    "image": "https://raw.githubusercontent.com/zen-browser/theme-store/main/themes/1e86cf37-a127-4f24-b919-d265b5ce29a0/image.png",
+    "author": "KiKaraage",
+    "version": "2.2",
+    "preferences": "https://raw.githubusercontent.com/zen-browser/theme-store/main/themes/1e86cf37-a127-4f24-b919-d265b5ce29a0/preferences.json",
+    "tags": [],
+    "createdAt": "2024-09-03",
+    "updatedAt": "2025-06-11",
+    "enabled": true
+  },
+  "e74cb40a-f3b8-445a-9826-1b1b6e41b846": {
+    "id": "e74cb40a-f3b8-445a-9826-1b1b6e41b846",
+    "name": "Custom uiFont",
+    "description": "Customize the interface font, the default is consistent with the serif font in the settings.",
+    "homepage": "",
+    "style": "https://raw.githubusercontent.com/zen-browser/theme-store/main/themes/e74cb40a-f3b8-445a-9826-1b1b6e41b846/chrome.css",
+    "readme": "https://raw.githubusercontent.com/zen-browser/theme-store/main/themes/e74cb40a-f3b8-445a-9826-1b1b6e41b846/readme.md",
+    "image": "https://raw.githubusercontent.com/zen-browser/theme-store/main/themes/e74cb40a-f3b8-445a-9826-1b1b6e41b846/image.png",
+    "author": "lindongbin",
+    "version": "1.0.1",
+    "tags": [],
+    "createdAt": "2025-05-03",
+    "updatedAt": "2025-07-24",
+    "preferences": "https://raw.githubusercontent.com/zen-browser/theme-store/main/themes/e74cb40a-f3b8-445a-9826-1b1b6e41b846/preferences.json",
+    "enabled": true
+  },
+  "fd24f832-a2e6-4ce9-8b19-7aa888eb7f8e": {
+    "id": "fd24f832-a2e6-4ce9-8b19-7aa888eb7f8e",
+    "name": "Quietify",
+    "description": "quietify adds a calm visualizer type of animation to mute button to use with style and ease",
+    "homepage": "https://github.com/wysh3/Zen-Mods/tree/main/Quietify",
+    "style": "https://raw.githubusercontent.com/zen-browser/theme-store/main/themes/fd24f832-a2e6-4ce9-8b19-7aa888eb7f8e/chrome.css",
+    "readme": "https://raw.githubusercontent.com/zen-browser/theme-store/main/themes/fd24f832-a2e6-4ce9-8b19-7aa888eb7f8e/readme.md",
+    "image": "https://raw.githubusercontent.com/zen-browser/theme-store/main/themes/fd24f832-a2e6-4ce9-8b19-7aa888eb7f8e/image.png",
+    "author": "wysh3",
+    "version": "1.1.0",
+    "tags": [],
+    "createdAt": "2024-12-17",
+    "updatedAt": "2025-02-09",
+    "enabled": true
+  },
+  "a6335949-4465-4b71-926c-4a52d34bc9c0": {
+    "id": "a6335949-4465-4b71-926c-4a52d34bc9c0",
+    "name": "Better Find Bar",
+    "description": "Improves the find bar, making it floating with theme match and customization.",
+    "homepage": "https://github.com/RobotoSkunk/zen-better-findbar",
+    "style": "https://raw.githubusercontent.com/zen-browser/theme-store/main/themes/a6335949-4465-4b71-926c-4a52d34bc9c0/chrome.css",
+    "readme": "https://raw.githubusercontent.com/zen-browser/theme-store/main/themes/a6335949-4465-4b71-926c-4a52d34bc9c0/readme.md",
+    "image": "https://raw.githubusercontent.com/zen-browser/theme-store/main/themes/a6335949-4465-4b71-926c-4a52d34bc9c0/image.png",
+    "author": "RobotoSkunk",
+    "preferences": "https://raw.githubusercontent.com/zen-browser/theme-store/main/themes/a6335949-4465-4b71-926c-4a52d34bc9c0/preferences.json",
+    "version": "1.3.1",
+    "tags": [
+      "find",
+      "bar",
+      "search",
+      "searchbar",
+      "find-bar"
+    ],
+    "createdAt": "2024-11-24",
+    "updatedAt": "2025-07-22",
+    "enabled": true
   }
 }
