@@ -72,7 +72,6 @@
       "family": "ipv4",
       "format-wifi": "{essid} ({signalStrength}%): {ipaddr}/{cidr} ",
       "format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
-      "format-disconnected": "Disconnected ",
       "tooltip-format": "{gwaddr}",
   },
   "wireplumber": {
