@@ -153,7 +153,7 @@
     "tags": [],
     "createdAt": "2025-02-04",
     "updatedAt": "2025-06-22",
-    "preferences": "./zen-transparent.json",
+    "preferences": "https://raw.githubusercontent.com/zen-browser/theme-store/main/themes/642854b5-88b4-4c40-b256-e035532109df/preferences.json",
     "enabled": true
   }
 }
