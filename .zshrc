@@ -32,6 +32,7 @@ alias sync_status="watch -d grep -e Dirty: -e Writeback: /proc/meminfo"
 alias rsync_backup="rsync -aAXHv --exclude='/dev/*' --exclude='/proc/*' --exclude='/sys/*' --exclude='/tmp/*' --exclude='/run/*' --exclude='/mnt/*' --exclude='/media/*' --exclude='/lost+found/'"
 alias gitupdateall="git pull && git submodule update --init --recursive --remote"
 alias paru="paru --color=always"
+alias carbon_make='_carbon() {cd "$(dirname "$0")" && carbon compile "$1" && carbon link "${1%.*}.o" --output=a.out}; _carbon'
 
 source ~/.zsh/catppuccin_mocha-zsh-syntax-highlighting.zsh
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
@@ -49,6 +50,7 @@ export HISTFILESIZE=1000000
 export HISTSIZE=1000000
 export SAVEHIST=1000000
 setopt appendhistory
+export PATH=~/carbon/bin:$PATH
 
 
 
