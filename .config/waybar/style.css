@@ -235,8 +235,10 @@ label:focus {
 }
 
 #pulseaudio.muted {
-  background-color: @red;
+  /* background-color: @red; */
   color: @text;
+  box-shadow: inset 0 -1px @red;
+  border-radius: 6px 6px 0px 0px;
 }
 
 #wireplumber {
@@ -244,12 +246,15 @@ label:focus {
 }
 
 #wireplumber.muted {
-  background-color: @red;
+  /* background-color: @red; */
   color: @text;
+  box-shadow: inset 0 -1px @red;
+  border-radius: 6px 6px 0px 0px;
 }
 
 #tray {
   box-shadow: inset 0 -1px @text;
+  border-radius: 6px 6px 0px 0px;
 }
 
 #tray > .passive {
