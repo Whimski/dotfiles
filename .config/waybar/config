@@ -52,7 +52,7 @@
     "format-connected": "",
     "format-connected-battery": "{device_battery_percentage}% {icon}",
     "format-icons": ["󰤾", "󰤿", "󰥀", "󰥁", "󰥂", "󰥃", "󰥄", "󰥅", "󰥆"],
-    "tooltip-format": "{device_alias} • {device_address}",
+    "tooltip-format-connected": "{device_alias} • {device_address}",
     "format-no-controller": ""
   },
   "network#speed": {
