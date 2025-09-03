@@ -14,3 +14,4 @@ vim,.vimrc,~/.vimrc,,
 waybar,.config/waybar,~/.config/waybar,,
 xorg,.Xresources,~/.Xresources,.Xresources,~/.Xdefaults
 zsh,.zshrc,~/.zshrc,.zsh,~/.zsh
+fonts,.local/share/fonts,~/.local/share/fonts,,
