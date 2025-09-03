@@ -11,7 +11,9 @@
     "format": "{icon}" 
   },
   "hyprland/window": {
-    "separate-outputs": true
+    "separate-outputs": true,
+    "rewrite": {
+    }
   },
   "tray": {
     "spacing": 10
