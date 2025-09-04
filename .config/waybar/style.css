@@ -1,4 +1,4 @@
-@import "mocha.css";
+@import "pastel.css";
 
 * {
   font-family: FontAwesome, Roboto, Helvetica, Arial, sans-serif;
@@ -130,20 +130,27 @@ button:hover {
 
 #battery.charging, #battery.plugged {
   color: @green;
+  box-shadow: inset 0 -1px @green;
+  border-radius: 6px 6px 0px 0px;
 }
 
 #battery.warning {
   color: @yellow;
+  box-shadow: inset 0 -1px @yellow;
+  border-radius: 6px 6px 0px 0px;
 }
 
 #battery.critical {
   color: @red;
+  box-shadow: inset 0 -1px @red;
+  border-radius: 6px 6px 0px 0px;
 }
 
 @keyframes blink {
   to {
-    background-color: @text;
-    color: @base;
+    /* background-color: @text; */
+    /* color: @base; */
+    box-shadow: none;
   }
 }
 
@@ -163,7 +170,8 @@ button:hover {
 }
 
 #bluetooth.on {
-  color: @sky;
+  /* color: @sky; */
+  color: @blue;
 }
 
 #bluetooth.connected {
@@ -180,7 +188,8 @@ button:hover {
 }
 
 #power-profiles-daemon.balanced {
-  color: @sapphire;
+  /* color: @sapphire; */
+  color: @blue;
 }
 
 #power-profiles-daemon.power-saver {
@@ -220,7 +229,8 @@ label:focus {
 }
 
 #network.link {
-  color: @sky;
+  /* color: @sky; */
+  color: @blue;
 }
 
 #network.module.speed {
@@ -228,7 +238,8 @@ label:focus {
 }
 
 #custom-external_ip {
-  color: @peach;
+  /* color: @peach; */
+  color: @orange;
 }
 
 #pulseaudio {
