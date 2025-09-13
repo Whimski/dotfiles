@@ -64,6 +64,7 @@ Plug 'sheerun/vim-polyglot'
 Plug 'chriskempson/base16-vim'
 Plug 'bfrg/vim-c-cpp-modern'
 Plug 'pseewald/vim-anyfold'
+Plug 'jiangmiao/auto-pairs'
 " Plug 'Valloric/YouCompleteMe'
 
 call plug#end()
@@ -93,6 +94,7 @@ let g:rustfmt_autosave = 1
 let g:rust_recommended_style = 0
 
 let g:airline_theme = 'catppuccin_mocha'
+let g:airline_powerline_fonts = 1
 
 au! cursormoved * call PoppyInit()
 

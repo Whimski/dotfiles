@@ -247,6 +247,48 @@ keybinds clear-defaults=true {
         bind "p" { GoToPreviousTab; SwitchToMode "normal"; }
         bind "z" { ToggleFocusFullscreen; SwitchToMode "normal"; }
     }
+    // shared_except "locked" {
+    // bind "Tab t" {
+    //     LaunchOrFocusPlugin "file:~/.config/zellij/plugins/room.wasm" {
+    //         floating true
+    //         ignore_case true
+    //         quick_jump true
+    //     }
+    // }
+ // }
+    shared_except "locked" {
+    bind "Alt ;" {
+        LaunchOrFocusPlugin "file:~/.config/zellij/plugins/ghost.wasm" {
+            floating true
+
+            // Ghost config
+            shell "zsh"      // required ("bash", "fish", "zsh")
+            shell_flag "-ic" // required ("-ic",  "-c",    "-ic")
+
+            // optional config
+            // ghost_launcher "GhostLauncher" // name of the Ghost launcher pane (default GhostLauncher)
+            // debug false                    // display debug info, config, parse command etc
+            // embedded false                 // spawned command pane will be embedded instead of floating pane
+
+            // NOTE: using 'r#"' and '"#' rust like multi string delimeter
+            global_completion r#"
+                cargo build
+                git add . && git commit -m "update" 
+                echo hello
+
+            "#
+        }
+    }
+}
+  shared_except "locked" {
+  bind "Alt m" {
+  LaunchOrFocusPlugin "file:~/.config/zellij/plugins/monocle.wasm" {
+      floating true
+  };
+  SwitchToMode "Normal"
+  
+}
+}
 }
 
 // Plugin aliases - can be used to change the implementation of Zellij
