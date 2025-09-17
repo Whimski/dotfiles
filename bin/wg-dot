@@ -1,0 +1,3 @@
+#!/bin/sh
+
+exec wg-quick "$1" "$HOME/dotfiles/wireguard/$2.conf"
