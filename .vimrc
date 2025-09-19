@@ -9,6 +9,7 @@ set smartcase
 set showmatch
 set hlsearch
 set backupcopy=yes
+set nu rnu
 syntax enable
 
 " Install vim-plug if not found
