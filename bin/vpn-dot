@@ -1,0 +1,4 @@
+#!/bin/sh
+
+cd $HOME/dotfiles/proxies
+exec sudo -b openvpn "$HOME/dotfiles/proxies/$1.ovpn"

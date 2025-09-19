@@ -11,6 +11,7 @@
 	path = .ssh
 	url = https://github.com/TobiZehPanda/ssh
 	branch = main
-[submodule "wireguard"]
-	path = wireguard
-	url = https://github.com/TobiZehPanda/wireguard
+[submodule "proxies"]
+	path = proxies
+	url = https://github.com/TobiZehPanda/proxies
+	branch = main
