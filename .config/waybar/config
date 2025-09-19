@@ -65,16 +65,14 @@
   "network#ethernet": {
     "interface": "e*",
     "family": "ipv4",
-    "format-wifi": "{essid} ({signalStrength}%): {ipaddr}/{cidr} ",
     "format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
-    "format-disconnected": "Disconnected ",
+    "format-disconnected": "",
     "tooltip-format": "{gwaddr}",
   },
   "network#wireless": {
     "interface": "wl*",
     "family": "ipv4",
     "format-wifi": "{essid} ({signalStrength}%): {ipaddr}/{cidr} ",
-    "format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
     "format-disconnected": "Disconnected ",
     "tooltip-format": "{gwaddr}",
   },
