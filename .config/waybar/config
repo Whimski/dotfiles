@@ -6,7 +6,7 @@
   // "width": 1366,
   "modules-left": ["hyprland/workspaces", "hyprland/window"],
   "modules-center": [],
-  "modules-right": ["wireplumber", "network#wireguard", "network#wireguard-pia", "network", "custom/external_ip", "network#speed", "bluetooth", "power-profiles-daemon", "tray", "battery", "clock"],
+  "modules-right": ["wireplumber", "network#wireguard", "network#openvpn", "network#wireless", "network#ethernet", "custom/external_ip", "network#speed", "bluetooth", "power-profiles-daemon", "tray", "battery", "clock"],
   "hyprland/workspaces": {
     "format": "{icon}" 
   },
@@ -62,8 +62,16 @@
     "tooltip": false,
     "interval": 1,
   },
-  "network": {
-    // "interface": "wlp2s0",
+  "network#ethernet": {
+    "interface": "e*",
+    "family": "ipv4",
+    "format-wifi": "{essid} ({signalStrength}%): {ipaddr}/{cidr} ",
+    "format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
+    "format-disconnected": "Disconnected ",
+    "tooltip-format": "{gwaddr}",
+  },
+  "network#wireless": {
+    "interface": "wl*",
     "family": "ipv4",
     "format-wifi": "{essid} ({signalStrength}%): {ipaddr}/{cidr} ",
     "format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
@@ -77,8 +85,8 @@
     "format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
     "tooltip-format": "{gwaddr}",
   },
-  "network#wireguard-pia": {
-    "interface": "pia-*",
+  "network#openvpn": {
+    "interface": "tun*",
     "family": "ipv4",
     "format-wifi": "{essid} ({signalStrength}%): {ipaddr}/{cidr} ",
     "format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
