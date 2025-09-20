@@ -112,6 +112,7 @@ hi SpellBad cterm=underline ctermfg=red ctermbg=NONE
 hi ALEWarning cterm=underline ctermfg=red ctermbg=NONE
 hi Pmenu ctermfg=15 ctermbg=0
 hi Search ctermfg=15 ctermbg=0
+hi LineNr ctermbg=NONE guibg=NONE
 
 autocmd Filetype * AnyFoldActivate
 set foldlevel=99
