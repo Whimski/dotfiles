@@ -65,6 +65,7 @@
   "network#ethernet": {
     "interface": "e*",
     "family": "ipv4",
+    "format": "",
     "format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
     "format-disconnected": "",
     "tooltip-format": "{gwaddr}",
@@ -73,7 +74,7 @@
     "interface": "wl*",
     "family": "ipv4",
     "format-wifi": "{essid} ({signalStrength}%): {ipaddr}/{cidr} ",
-    "format-disconnected": "Disconnected ",
+    "format-discnnected": "Disconnected ",
     "tooltip-format": "{gwaddr}",
   },
   "network#wireguard": {
