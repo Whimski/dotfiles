@@ -2,6 +2,7 @@ caffeine,.config/caffeine/whitelist.txt,/home/tobi/.config/caffeine/whitelist.tx
 darkman,.config/darkman,~/.config/darkman,,
 darkman-folders,.local/share/dark-mode.d,~/.local/share/dark-mode.d,.local/share/light-mode.d,~/.local/share/light-mode.d
 dunst,.config/dunst,~/.config/dunst,,
+fonts,.local/share/fonts,~/.local/share/fonts,,
 hyprland,.config/hypr,~/.config/hypr,,
 i3,.config/i3/config,~/.config/i3/config,,
 keyd*,.config/keyd/default.conf,/etc/keyd/default.conf,,
@@ -13,6 +14,5 @@ tmux,.tmux.conf,~/.tmux.conf,,
 vim,.vimrc,~/.vimrc,,
 waybar,.config/waybar,~/.config/waybar,,
 xorg,.Xresources,~/.Xresources,.Xresources,~/.Xdefaults
-zsh,.zshrc,~/.zshrc,.zsh,~/.zsh
-fonts,.local/share/fonts,~/.local/share/fonts,,
 zellij,.config/zellij,~/.config/zellij,,
+zsh,.zshrc,~/.zshrc,.zsh,~/.zsh
