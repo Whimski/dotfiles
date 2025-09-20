@@ -54,6 +54,7 @@ Plug 'cespare/vim-toml'
 Plug 'Yggdroot/indentLine'
 Plug 'mattn/emmet-vim'
 Plug 'vim-airline/vim-airline'
+Plug 'vim-airline/vim-airline-themes'
 Plug 'prettier/vim-prettier', { 'do': 'yarn install --frozen-lockfile --production' }
 Plug 'majutsushi/tagbar'
 Plug 'universal-ctags/ctags'
@@ -94,7 +95,7 @@ let b:ale_linters = 'all'
 let g:rustfmt_autosave = 1
 let g:rust_recommended_style = 0
 
-let g:airline_theme = 'catppuccin_mocha'
+let g:airline_theme = 'wombat'
 let g:airline_powerline_fonts = 1
 
 au! cursormoved * call PoppyInit()
