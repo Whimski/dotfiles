@@ -70,9 +70,6 @@ Plug 'rsaraf/vim-advanced-lint'
 Plug 'sheerun/vim-polyglot'
 Plug 'chriskempson/base16-vim'
 Plug 'bfrg/vim-c-cpp-modern'
-Plug 'pseewald/vim-anyfold'
-Plug 'jiangmiao/auto-pairs'
-" Plug 'Valloric/YouCompleteMe'
 
 call plug#end()
 

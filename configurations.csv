@@ -16,3 +16,4 @@ waybar,.config/waybar,~/.config/waybar,,
 xorg,.Xresources,~/.Xresources,.Xresources,~/.Xdefaults
 zellij,.config/zellij,~/.config/zellij,,
 zsh,.zshrc,~/.zshrc,.zsh,~/.zsh
+neovim,.config/nvim,~/.config/nvim,,
