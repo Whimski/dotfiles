@@ -49,20 +49,7 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
-require("lazy").setup({
-  -- Add your plugins here:
-  { "RRethy/nvim-base16", lazy = false },
-  { "catppuccin/nvim", name = "catppuccin", priority = 1000 },
-  { "HiPhish/rainbow-delimiters.nvim" },
-  { "godlygeek/tabular" },
-  { "NvChad/nvim-colorizer.lua" },
-  { "vim-airline/vim-airline" },
-  { "vim-airline/vim-airline-themes" },
-  {
-    "tpope/vim-commentary",
-    event = "VeryLazy", -- load on demand
-  },
-})
+require("lazy").setup("plugins")
 
 require("colorizer").setup({
   filetypes = { "css", "scss", "html", "javascript", "lua", "python" },
