@@ -19,7 +19,7 @@ return {
     -- Setup Mason
     mason.setup()
     mason_lspconfig.setup({
-      ensure_installed = { "pyright", "lua_ls", "clangd" },
+      ensure_installed = { "pyright", "lua_ls", "clangd", "bash-language-server" },
     })
 
     -- Use the new recommended setup (avoids deprecated framework)
