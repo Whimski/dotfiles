@@ -51,7 +51,7 @@ end
 vim.opt.rtp:prepend(lazypath)
 
 require("lazy").setup("plugins")
-
+require("keymaps")
 require("colorizer").setup({
   filetypes = { "css", "scss", "html", "javascript", "lua", "python" },
   user_default_options = {

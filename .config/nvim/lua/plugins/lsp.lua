@@ -19,7 +19,7 @@ return {
     -- Setup Mason
     mason.setup()
     mason_lspconfig.setup({
-      ensure_installed = { "pyright", "lua_ls", "clangd", "bash-language-server" },
+      ensure_installed = { "pyright", "lua_ls", "clangd", "bashls" },
     })
 
     -- Use the new recommended setup (avoids deprecated framework)
@@ -35,11 +35,6 @@ return {
         end,
       })
     end
-    local bufopts = { noremap=true, silent=true, buffer=bufnr }
-    vim.keymap.set("n", "<leader>m", "<cmd>Mason<CR>", { desc = "Open Mason" })
-    vim.keymap.set("n", "gd", vim.lsp.buf.definition, bufopts)
-    vim.keymap.set("n", "K", vim.lsp.buf.hover, bufopts)
-    vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, bufopts)
   end,
 }
 
