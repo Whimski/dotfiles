@@ -22,6 +22,7 @@ vim.cmd("syntax enable")
 -- PLUGIN CONFIG
 -- ===========
 vim.g.mapleader = ","
+vim.g.maplocalleader = ","
 vim.g.python_recommended_style = 0
 -- Enable Powerline-style fonts
 vim.g.airline_powerline_fonts = 1

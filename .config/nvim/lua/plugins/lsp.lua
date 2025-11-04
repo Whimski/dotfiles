@@ -30,16 +30,16 @@ return {
           lspconfig[server_name].setup({
             capabilities = capabilities,
             on_attach = function(client, bufnr)
-              -- optional: keymaps for LSP
-              local bufopts = { noremap=true, silent=true, buffer=bufnr }
-              vim.keymap.set("n", "gd", vim.lsp.buf.definition, bufopts)
-              vim.keymap.set("n", "K", vim.lsp.buf.hover, bufopts)
-              vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, bufopts)
             end,
           })
         end,
       })
     end
+    local bufopts = { noremap=true, silent=true, buffer=bufnr }
+    vim.keymap.set("n", "<leader>m", "<cmd>Mason<CR>", { desc = "Open Mason" })
+    vim.keymap.set("n", "gd", vim.lsp.buf.definition, bufopts)
+    vim.keymap.set("n", "K", vim.lsp.buf.hover, bufopts)
+    vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, bufopts)
   end,
 }
 
