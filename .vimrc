@@ -26,7 +26,6 @@ autocmd VimEnter * if len(filter(values(g:plugs), '!isdirectory(v:val.dir)'))
 let g:polyglot_disabled = ['autoindent', 'markdown']
 let g:python_recommended_style = 0
 autocmd BufEnter *.py colorscheme base16-black-metal
-" autocmd BufEnter *.py colorscheme base16-3024
 autocmd BufEnter *.py highlight Normal guibg=NONE ctermbg=NONE
 autocmd BufEnter *.py highlight Pmenu ctermfg=15 ctermbg=0
 autocmd BufEnter *.py highlight Search ctermfg=15 ctermbg=0
@@ -119,11 +118,3 @@ hi LineNr ctermbg=NONE guibg=NONE
 hi Conceal ctermbg=NONE guibg=NONE
 hi Folded ctermbg=NONE guibg=NONE
 
-autocmd Filetype * AnyFoldActivate
-set foldlevel=99
-
-augroup remember_folds
-  autocmd!
-  autocmd BufWinLeave * mkview
-  autocmd BufWinEnter * silent! loadview
-augroup END
