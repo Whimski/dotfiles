@@ -66,6 +66,17 @@ require("colorizer").setup({
   },
 })
 
+-- Define rainbow colors (optional, customize to your theme)
+vim.cmd [[
+  highlight RainbowRed guifg=#E06C75
+  highlight RainbowYellow guifg=#E5C07B
+  highlight RainbowBlue guifg=#61AFEF
+  highlight RainbowOrange guifg=#D19A66
+  highlight RainbowGreen guifg=#98C379
+  highlight RainbowViolet guifg=#C678DD
+  highlight RainbowCyan guifg=#56B6C2
+]]
+
 -- ===========
 -- AUTOCOMMANDS
 -- ===========
