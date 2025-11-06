@@ -24,19 +24,8 @@ vim.cmd("syntax off")
 -- ===========
 vim.g.mapleader = ","
 vim.g.maplocalleader = ","
+
 vim.g.python_recommended_style = 0
--- Enable Powerline-style fonts
-vim.g.airline_powerline_fonts = 1
-
--- Choose a theme
-vim.g.airline_theme = 'wombat'
-
--- Show tabline (buffers on top)
-vim.g["airline#extensions#tabline#enabled"] = 0
-vim.g["airline#extensions#tabline#formatter"] = 'default'
-
--- Optional: enable ALE/LSP indicators
-vim.g["airline#extensions#ale#enabled"] = 1
 
 -- ===========
 -- PLUGIN MANAGEMENT (lazy.nvim)
@@ -53,7 +42,9 @@ vim.opt.rtp:prepend(lazypath)
 
 require("lazy").setup("plugins")
 require("keymaps")
-
+require('lualine').setup{
+  options = { theme = 'ayu_mirage' }
+}
 require('nvim-treesitter.configs').setup {
   ensure_installed = {
     "c", "cpp", "lua", "python", "javascript", "html", "css"
@@ -108,4 +99,11 @@ vim.api.nvim_create_autocmd("BufEnter", {
     vim.cmd("highlight LineNr ctermbg=NONE")
   end,
 })
+
+-- Telescope
+local builtin = require('telescope.builtin')
+vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Telescope find files' })
+vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
+vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
+vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Telescope help tags' })
 
