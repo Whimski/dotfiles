@@ -16,7 +16,8 @@ opt.hlsearch = true
 opt.backupcopy = "yes"
 opt.number = true
 opt.relativenumber = true
-vim.cmd("syntax enable")
+vim.cmd('filetype plugin indent on')
+vim.cmd("syntax off")
 
 -- ===========
 -- PLUGIN CONFIG
@@ -52,6 +53,22 @@ vim.opt.rtp:prepend(lazypath)
 
 require("lazy").setup("plugins")
 require("keymaps")
+
+require('nvim-treesitter.configs').setup {
+  ensure_installed = {
+    "c", "cpp", "lua", "python", "javascript", "html", "css"
+  },
+  sync_install = false,
+  auto_install = true,
+
+  highlight = {
+    enable = true,                    -- Enable Treesitter-based highlighting
+    additional_vim_regex_highlighting = false,
+  },
+
+  indent = { enable = true },         -- Optional, works for C/C++
+}
+
 require("colorizer").setup({
   filetypes = { "css", "scss", "html", "javascript", "lua", "python" },
   user_default_options = {
@@ -65,6 +82,7 @@ require("colorizer").setup({
     css_fn   = true, -- Enable all CSS *functions*
   },
 })
+
 
 -- Define rainbow colors (optional, customize to your theme)
 vim.cmd [[
