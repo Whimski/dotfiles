@@ -63,28 +63,16 @@ require('nvim-treesitter.configs').setup {
 require("colorizer").setup({
   filetypes = { "css", "scss", "html", "javascript", "lua", "python" },
   user_default_options = {
-    RGB      = true, -- #RGB hex codes
-    RRGGBB   = true, -- #RRGGBB hex codes
-    names    = true, -- "Blue" or "red"
-    RRGGBBAA = true, -- #RRGGBBAA hex codes
-    rgb_fn   = true, -- rgb() and rgba()
-    hsl_fn   = true, -- hsl() and hsla()
-    css      = true, -- Enable all CSS features
-    css_fn   = true, -- Enable all CSS *functions*
+    RGB      = true,
+    RRGGBB   = true,
+    names    = true,
+    RRGGBBAA = true,
+    rgb_fn   = true,
+    hsl_fn   = true,
+    css      = true,
+    css_fn   = true,
   },
 })
-
-
--- Define rainbow colors (optional, customize to your theme)
-vim.cmd [[
-  highlight RainbowRed guifg=#E06C75
-  highlight RainbowYellow guifg=#E5C07B
-  highlight RainbowBlue guifg=#61AFEF
-  highlight RainbowOrange guifg=#D19A66
-  highlight RainbowGreen guifg=#98C379
-  highlight RainbowViolet guifg=#C678DD
-  highlight RainbowCyan guifg=#56B6C2
-]]
 
 -- ===========
 -- AUTOCOMMANDS
@@ -111,8 +99,20 @@ vim.api.nvim_create_autocmd("TabEnter", {
   callback = function()
     local ok, ibl = pcall(require, "ibl")
     if ok then
-      ibl.update()  -- forces indent markers to redraw
+      ibl.update()
     end
   end,
 })
 
+vim.api.nvim_create_autocmd("ColorScheme", {
+  callback = function()
+    local hl = vim.api.nvim_set_hl
+    hl(0, "RainbowRed", { fg="#E06C75" })
+    hl(0, "RainbowYellow", { fg="#E5C07B" })
+    hl(0, "RainbowBlue", { fg="#61AFEF" })
+    hl(0, "RainbowOrange", { fg="#D19A66" })
+    hl(0, "RainbowGreen", { fg="#98C379" })
+    hl(0, "RainbowViolet", { fg="#C678DD" })
+    hl(0, "RainbowCyan", { fg="#56B6C2" })
+  end,
+})

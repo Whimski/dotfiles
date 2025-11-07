@@ -5,6 +5,9 @@ return {
     local ibl_ok, ibl = pcall(require, "ibl")
     if not ibl_ok then return end
 
+    local hl = vim.api.nvim_set_hl
+    hl(0, "RainbowCyan", { fg="#56B6C2" })
+
     ibl.setup({
       indent = {
         char = "|",
