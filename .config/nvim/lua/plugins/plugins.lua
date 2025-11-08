@@ -49,28 +49,6 @@ return {
       },
     },
   },
-  {
-    "folke/noice.nvim",
-    event = "VeryLazy",
-    opts = {},
-    dependencies = {
-      "MunifTanjim/nui.nvim",
-    },
-    config = function()
-      require("noice").setup({
-        -- enable cmdline handling
-        cmdline = {
-          enabled = true,
-          view = "cmdline",
-        },
-      })
-    end,
-  },
-  {
-    "j-hui/fidget.nvim",
-    opts = {
-      -- options
-    },
-  },
+  { 'nvim-mini/mini.nvim', version = false },
 }
 
