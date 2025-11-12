@@ -1,23 +1,26 @@
 -- ===========
 -- BASIC SETTINGS
 -- ===========
-local opt = vim.opt
-
-opt.shiftwidth = 2
-opt.tabstop = 2
-opt.softtabstop = 2
-opt.expandtab = true
--- opt.nobackup = true
-opt.incsearch = true
-opt.ignorecase = true
-opt.smartcase = true
-opt.showmatch = true
-opt.hlsearch = true
-opt.backupcopy = "yes"
-opt.number = true
-opt.relativenumber = true
-vim.cmd('filetype plugin indent on')
-vim.cmd("syntax off")
+vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
+    pattern = "*",
+    callback = function()
+      vim.opt.shiftwidth = 2
+      vim.opt.tabstop = 2
+      vim.opt.softtabstop = 2
+      vim.opt.expandtab = true
+      vim.opt.incsearch = true
+      vim.opt.ignorecase = true
+      vim.opt.smartcase = true
+      vim.opt.showmatch = true
+      vim.opt.hlsearch = true
+      vim.opt.backupcopy = "yes"
+      vim.opt.number = true
+      vim.opt.relativenumber = true
+      vim.cmd('filetype plugin indent on')
+      vim.cmd("syntax off")
+      vim.o.termguicolors = true
+    end,
+})
 
 -- ===========
 -- PLUGIN CONFIG
@@ -53,11 +56,12 @@ require('nvim-treesitter.configs').setup {
   auto_install = true,
 
   highlight = {
-    enable = true,                    -- Enable Treesitter-based highlighting
+    enable = true,
+    -- disable = { "csv" },
     additional_vim_regex_highlighting = false,
   },
 
-  indent = { enable = true },         -- Optional, works for C/C++
+  indent = { enable = true },
 }
 
 require("colorizer").setup({
@@ -116,7 +120,6 @@ vim.api.nvim_create_autocmd("ColorScheme", {
     hl(0, "RainbowCyan", { fg="#56B6C2" })
   end,
 })
-
 
 vim.keymap.set('n', '<S-j>', '<C-f>', { noremap = true, silent = true })
 vim.keymap.del('n', '<S-k>')
