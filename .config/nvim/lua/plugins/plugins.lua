@@ -50,5 +50,31 @@ return {
     },
   },
   { 'nvim-mini/mini.nvim', version = false },
+  -- {
+  --   "mechatroner/rainbow_csv",
+  --   ft = { "csv", "tsv" },
+  -- },
+   {
+  "cameron-wags/rainbow_csv.nvim",
+  dependencies = { "nvim-treesitter/nvim-treesitter" },
+  config = true,
+  ft = { "csv", "tsv" },
+},
+{
+  "nvimdev/indentmini.nvim",
+  event = { "BufReadPre", "BufNewFile" },
+  config = function()
+    require("indentmini").setup({
+      char = "|",                -- Character for indent line
+      exclude = { "help", "dashboard", "markdown" },
+      minlevel = 1,              -- Minimum indent level to show
+      only_current = false,      -- Only show current indent scope if true
+    })
+
+    -- Optional: highlight customization
+    vim.api.nvim_set_hl(0, "IndentLine", { fg = "#3B4261" })
+  end,
+},
+
 }
 

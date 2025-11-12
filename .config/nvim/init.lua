@@ -116,3 +116,8 @@ vim.api.nvim_create_autocmd("ColorScheme", {
     hl(0, "RainbowCyan", { fg="#56B6C2" })
   end,
 })
+
+
+vim.keymap.set('n', '<S-j>', '<C-f>', { noremap = true, silent = true })
+vim.keymap.del('n', '<S-k>')
+vim.keymap.set('n', '<S-k>', '<C-b>', { noremap = true, silent = true })
