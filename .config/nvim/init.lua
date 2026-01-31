@@ -124,3 +124,14 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 vim.keymap.set('n', '<S-j>', '<C-f>', { noremap = true, silent = true })
 vim.keymap.del('n', '<S-k>')
 vim.keymap.set('n', '<S-k>', '<C-b>', { noremap = true, silent = true })
+
+-- Carbon Lang
+vim.api.nvim_create_augroup("ft_syntax_enable", { clear = true })
+vim.api.nvim_create_autocmd("FileType", {
+  group = "ft_syntax_enable",
+  pattern = "carbon",
+  callback = function()
+    vim.cmd("syntax enable")
+    vim.bo.syntax = "carbon"
+  end,
+})

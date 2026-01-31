@@ -69,6 +69,7 @@ Plug 'rsaraf/vim-advanced-lint'
 Plug 'sheerun/vim-polyglot'
 Plug 'chriskempson/base16-vim'
 Plug 'bfrg/vim-c-cpp-modern'
+Plug 'carbon-language/vim-carbon-lang'
 
 call plug#end()
 

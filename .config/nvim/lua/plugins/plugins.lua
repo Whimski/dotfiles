@@ -83,6 +83,7 @@ return {
         'RainbowDelimQuoted',
         'RainbowMultiDelim'
     }
-}
+  },
+  { "carbon-language/vim-carbon-lang" },
 }
 
