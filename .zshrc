@@ -52,6 +52,8 @@ export SAVEHIST=1000000
 setopt appendhistory
 export PATH=~/dotfiles/bin:$PATH
 
+export LIBVIRT_DEFAULT_URI="qemu:///system"
+
 
 
 # The following lines were added by compinstall
