@@ -1,93 +1,22 @@
 @import "pastel.css";
 
-* {
-  font-family: FontAwesome, Roboto, Helvetica, Arial, sans-serif;
-  font-size: 13px;
-  border-radius: 0px;
-}
+/* ---------------- GLOBAL ---------------- */
 
-#window {
-  background-color: @base;
-  /* background-color: transparent; */
-  color: @text;
-  transition-property: background-color;
-  transition-duration: .5s;
-  border-radius: 6px;
-  padding: 5px 10px;
-  margin-top: 2px;
-  margin-left: 5px;
+* {
+  font-family: "Inter", "Roboto", "JetBrainsMono Nerd Font", sans-serif;
+  font-size: 13px;
+  border: none;
+  min-height: 0;
 }
 
 window#waybar {
-  background-color: transparent;
+  background: transparent;
 }
 
-window#waybar.hidden {
-  opacity: 0.2;
-}
+/* ---------------- FLOATING MODULE STYLE ---------------- */
 
-window#waybar.empty #window {
-  background-color: transparent;
-}
-
-button {
-  box-shadow: inset 0 -3px transparent;
-  border: none;
-}
-
-button:hover {
-  background: inherit;
-  box-shadow: inset 0 -1px @text;
-}
-
-#workspaces {
-}
-
-#workspaces button {
-  padding: 0 5px;
-  background-color: @crust;
-  color: @text;
-}
-
-#workspaces button:hover {
-  background: rgba(0, 0, 0, 0.2);
-}
-
-#workspaces button.active {
-  background-color: @crust;
-  box-shadow: inset 0 -1px @green;
-}
-
-#workspaces button.focused {
-  background-color: @crust;
-  box-shadow: inset 0 -1px @orange;
-}
-
-#workspaces button.urgent {
-  background-color: @crust;
-  box-shadow: inset 0 -1px @red;
-}
-
+#workspaces,
 #window,
-#workspaces {
-  /* margin: 0 4px; */
-}
-
-/* If workspaces is the leftmost module, omit left margin */
-.modules-left > widget:first-child > #workspaces {
-  margin-left: 0;
-}
-
-/* If workspaces is the rightmost module, omit right margin */
-.modules-right > widget:last-child > #workspaces {
-  margin-right: 0;
-}
-
-#mode {
-  background-color: #64727D;
-  box-shadow: inset 0 -1px @text;
-}
-
 #clock,
 #battery,
 #cpu,
@@ -98,76 +27,87 @@ button:hover {
 #network,
 #pulseaudio,
 #wireplumber,
-#custom-media,
 #tray,
-#mode,
-#idle_inhibitor,
-#scratchpad,
-#power-profiles-daemon,
-#mpd,
 #bluetooth,
-#custom-external_ip {
-  background-color: @crust;
-  padding: 0 10px;
-  color: @text;
-  /*margin: 5px 5px 5px 0px;*/
-  margin-top: 2px;
-  margin-left: 2px;
+#bluetooth.on,
+#bluetooth.off,
+#power-profiles-daemon,
+#custom-external_ip,
+#network.wifi,
+#network.ethernet, 
+#network.module.speed {
+  background-color: alpha(@crust, 0.85);
+  padding: 6px 14px;
+  margin: 6px 4px;
   border-radius: 6px;
-}
-
-
-#clock {
-  margin-right: 2px;
-}
-
-#battery, #battery.good {
   color: @text;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-#battery.charging, #battery.plugged {
-  color: @green;
-  box-shadow: inset 0 -1px @green;
-  border-radius: 6px 6px 0px 0px;
+/* Hover effect */
+#clock:hover,
+#cpu:hover,
+#memory:hover,
+#network:hover,
+#pulseaudio:hover,
+#bluetooth:hover,
+#battery:hover {
+  background-color: alpha(@base, 0.9);
 }
 
-#battery.warning {
-  color: @yellow;
-  box-shadow: inset 0 -1px @yellow;
-  border-radius: 6px 6px 0px 0px;
+/* ---------------- WORKSPACES ---------------- */
+
+#workspaces {
+  padding: 4px;
+  margin-left: 8px;
 }
 
-#battery.critical {
-  color: @red;
-  box-shadow: inset 0 -1px @red;
-  border-radius: 6px 6px 0px 0px;
-}
-
-@keyframes blink {
-  to {
-    /* background-color: @text; */
-    /* color: @base; */
-    box-shadow: none;
-  }
-}
-
-#battery.critical:not(.charging) {
-  /* background-color: @red; */
-  box-shadow: inset 0 -1px @red;
+#workspaces button {
+  padding: 0px 12px;
+  border-radius: 6px;
+  background-color: transparent;
   color: @text;
-  border-radius: 6px 6px 0px 0px;
-  animation-name: blink;
-  animation-duration: 0.5s;
-  animation-timing-function: steps(12);
-  animation-iteration-count: infinite;
-  animation-direction: alternate;
+  transition: all 0.2s ease;
 }
 
-#bluetooth {
+#workspaces button.active {
+  background-color: alpha(@blue, 0.2);
+  color: @blue;
+  box-shadow: inset 0 0 0 1px alpha(@blue, 0.4);
 }
 
+#workspaces button:hover {
+  background-color: alpha(@overlay0, 0.4);
+}
+
+/* ---------------- WINDOW TITLE ---------------- */
+
+#window {
+  font-weight: 500;
+  color: @mauve;
+}
+
+/* ---------------- RIGHT SIDE GROUP (MODERN SEGMENT) ---------------- */
+
+#bluetooth,
+#network,
+#pulseaudio,
+#battery {
+  border-radius: 0;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+
+#battery {
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+  margin-right: 8px;
+}
+
+/* ---------------- STATUS COLORS ---------------- */
 #bluetooth.on {
-  /* color: @sky; */
   color: @blue;
 }
 
@@ -175,8 +115,7 @@ button:hover {
   color: @green;
 }
 
-#bluetooth.off,
-#bluetooth.disabled {
+#bluetooth.off, #bluetooth.disabled {
   color: @red;
 }
 
@@ -185,7 +124,6 @@ button:hover {
 }
 
 #power-profiles-daemon.balanced {
-  /* color: @sapphire; */
   color: @blue;
 }
 
@@ -193,85 +131,51 @@ button:hover {
   color: @green;
 }
 
-label:focus {
-  background-color: @crust;
-}
-
-#cpu {
-  color: @base;
-}
-
-#memory {
-}
-
-#disk {
-}
-
-#backlight {
-}
-
-#network {
-}
-
 #network.disconnected, #network.wifi.disconnected, #network.ethernet.disconnected {
   color: @red;
 }
 
-#network.wifi {
+#network.wifi, #network.ethernet {
   color: @green;
 }
 
-#network.ethernet {
+#bluetooth.connected {
   color: @green;
 }
 
-#network.link {
-  /* color: @sky; */
-  color: @blue;
+#battery.charging {
+  color: @green;
 }
 
-#network.module.speed {
+#battery.warning:not(.charging) {
+  color: @yellow;
+}
+
+#battery.critical:not(.charging) {
+  color: @red;
+}
+
+#network.link, #network.module.speed {
   color: @blue;
 }
 
 #custom-external_ip {
-  /* color: @peach; */
   color: @orange;
 }
 
-#pulseaudio {
-  color: @text;
-}
-
-#pulseaudio.muted {
+#pulseaudio.muted,#wireplumber.muted {
   /* background-color: @red; */
   color: @text;
   box-shadow: inset 0 -1px @red;
   border-radius: 6px 6px 0px 0px;
 }
 
-#wireplumber {
+/* ---------------- TOOLTIP ---------------- */
+
+tooltip {
+  background-color: alpha(@base, 0.95);
   color: @text;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid alpha(@blue, 0.2);
 }
-
-#wireplumber.muted {
-  /* background-color: @red; */
-  color: @text;
-  box-shadow: inset 0 -1px @red;
-  border-radius: 6px 6px 0px 0px;
-}
-
-#tray {
-  box-shadow: inset 0 -1px @text;
-  border-radius: 6px 6px 0px 0px;
-}
-
-#tray > .passive {
-  -gtk-icon-effect: dim;
-}
-
-#tray > .needs-attention {
-  -gtk-icon-effect: highlight;
-  background-color: @red;
-}
-
