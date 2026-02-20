@@ -67,5 +67,9 @@ compinit
 
 # Weather
 if [[ $- == *i* ]]; then
-  curl -s "wttr.in/?m&format=%l:+%c+%t+(%f)" &!
+  {
+    sleep 1
+    curl -s "wttr.in/?m&format=%l:+%c+%t+(%f)"
+    echo
+  } &!
 fi
