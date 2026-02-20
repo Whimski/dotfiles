@@ -64,3 +64,8 @@ zstyle :compinstall filename '/home/tobi/.zshrc'
 autoload -Uz compinit
 compinit
 # End of lines added by compinstall
+
+# Weather
+if [[ $- == *i* ]]; then
+  curl -s "wttr.in/?m&format=%l:+%c+%t+(%f)" &!
+fi
