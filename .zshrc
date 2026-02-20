@@ -66,34 +66,11 @@ compinit
 # End of lines added by compinstall
 
 # WEATHER
-WEATHER_INTERVAL=1800
-WEATHER_STAMP="$HOME/.weather_last_update"
-WEATHER_NOW=""
-
-weather_fetch() {
-  WEATHER_NOW=$(curl -s "https://wttr.in/?m&format=%l:+%c+%t+(%f)")
-    date +%s > "$WEATHER_STAMP"
+WEATHER_INTERVAL=1800; WEATHER_STAMP="$HOME/.weather_last_update"; WEATHER_NOW=""
+weather_fetch(){ WEATHER_NOW=$(curl -s "https://wttr.in/?m&format=%l:+%c+%t+(%f)"); date +%s > "$WEATHER_STAMP"; }
+weather_precmd(){
+  now=$(date +%s); last=0; [[ -f $WEATHER_STAMP ]] && last=$(cat "$WEATHER_STAMP")
+  (( now - last > WEATHER_INTERVAL )) && weather_fetch
+  RPROMPT="$WEATHER_NOW"; WEATHER_NOW=""
 }
-
-# Precmd hook
-weather_precmd() {
-    local now=$(date +%s)
-    local last=0
-    [[ -f "$WEATHER_STAMP" ]] && last=$(cat "$WEATHER_STAMP")
-
-    # Only fetch if interval passed
-    if (( now - last > WEATHER_INTERVAL )); then
-        weather_fetch
-    fi
-
-    # Show weather once
-    if [[ -n "$WEATHER_NOW" ]]; then
-        RPROMPT="$WEATHER_NOW"
-        WEATHER_NOW=""
-    else
-        RPROMPT=""
-    fi
-}
-
-autoload -Uz add-zsh-hook
-add-zsh-hook precmd weather_precmd
+autoload -Uz add-zsh-hook; add-zsh-hook precmd weather_precmd
