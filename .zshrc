@@ -68,9 +68,5 @@ compinit
 # WEATHER
 WEATHER_INTERVAL=1800; WEATHER_STAMP="$HOME/.weather_last_update"; WEATHER_NOW=""
 weather_fetch(){ WEATHER_NOW=$(curl -s "https://wttr.in/?m&format=%l:+%c+%t+(%f)"); date +%s > "$WEATHER_STAMP"; }
-weather_precmd(){
-  now=$(date +%s); last=0; [[ -f $WEATHER_STAMP ]] && last=$(cat "$WEATHER_STAMP")
-  (( now - last > WEATHER_INTERVAL )) && weather_fetch
-  RPROMPT="$WEATHER_NOW"; WEATHER_NOW=""
-}
+weather_precmd(){ now=$(date +%s); last=0; [[ -f $WEATHER_STAMP ]] && last=$(cat "$WEATHER_STAMP"); (( now - last > WEATHER_INTERVAL )) && weather_fetch; RPROMPT="$WEATHER_NOW"; WEATHER_NOW=""; }
 autoload -Uz add-zsh-hook; add-zsh-hook precmd weather_precmd
