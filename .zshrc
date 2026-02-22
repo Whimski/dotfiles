@@ -33,6 +33,8 @@ alias rsync_backup="rsync -aAXHv --exclude='/dev/*' --exclude='/proc/*' --exclud
 alias gitupdateall="git pull && git submodule update --init --recursive --remote"
 alias paru="paru --color=always"
 alias carbon_make='_carbon() {cd "$(dirname "$0")" && carbon compile "$1" && carbon link "${1%.*}.o" --output=a.out}; _carbon'
+alias weather='curl -s "https://wttr.in/?m&format=%l:+%c+%t+(%f)"'
+alias weather_f='curl -s "https://wttr.in/?format=%l:+%c+%t+(%f)"'
 
 source ~/.zsh/catppuccin_mocha-zsh-syntax-highlighting.zsh
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
@@ -65,8 +67,3 @@ autoload -Uz compinit
 compinit
 # End of lines added by compinstall
 
-# WEATHER
-WEATHER_INTERVAL=1800; WEATHER_STAMP="$HOME/.weather_last_update"; WEATHER_NOW=""
-weather_fetch(){ WEATHER_NOW=$(curl -s "https://wttr.in/?m&format=%l:+%c+%t+(%f)"); date +%s > "$WEATHER_STAMP"; }
-weather_precmd(){ now=$(date +%s); last=0; [[ -f $WEATHER_STAMP ]] && last=$(cat "$WEATHER_STAMP"); (( now - last > WEATHER_INTERVAL )) && weather_fetch; RPROMPT="$WEATHER_NOW"; WEATHER_NOW=""; }
-autoload -Uz add-zsh-hook; add-zsh-hook precmd weather_precmd
