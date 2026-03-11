@@ -1,3 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 gsettings set org.gnome.desktop.interface color-scheme prefer-light
+kvantummanager --set catppuccin-latte-green
