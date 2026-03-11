@@ -19,7 +19,7 @@
     "spacing": 10
   },
   "clock": {
-    "format": "{:%A - %H:%M:%S} ",
+    "format": "{:%A - %H:%M} ",
     "format-alt": "{:%Y-%m-%d} ",
     "tooltip": false,
   },
