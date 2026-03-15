@@ -35,6 +35,7 @@ alias paru="paru --color=always"
 alias carbon_make='_carbon() {cd "$(dirname "$0")" && carbon compile "$1" && carbon link "${1%.*}.o" --output=a.out}; _carbon'
 alias weather='curl -s "https://wttr.in/?m&format=%l:+%c+%t+(%f)"'
 alias weather_f='curl -s "https://wttr.in/?format=%l:+%c+%t+(%f)"'
+alias localnet='sudo arp-scan --localnet'
 
 source ~/.zsh/catppuccin_mocha-zsh-syntax-highlighting.zsh
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh

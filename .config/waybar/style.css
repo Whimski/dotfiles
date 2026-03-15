@@ -37,6 +37,7 @@ window#waybar {
 #bluetooth.pairable,
 #power-profiles-daemon,
 #custom-external_ip,
+#mpris,
 #network.wifi,
 #network.ethernet, 
 #network.module.speed {
@@ -167,11 +168,17 @@ window#waybar {
   color: @orange;
 }
 
-#pulseaudio.muted,#wireplumber.muted {
+#mpris.paused {
+  color: @text;
+  box-shadow: inset 0 -1px @yellow;
+  border-radius: 6px 6px 0px 0px;
+}
+
+#pulseaudio.muted, #wireplumber.muted {
   /* background-color: @red; */
   color: @text;
   box-shadow: inset 0 -1px @red;
-  border-radius: 6px 6px 0px 0px;
+  /* border-radius: 6px 6px 0px 0px; */
 }
 
 /* ---------------- TOOLTIP ---------------- */

@@ -4,9 +4,9 @@
   "position": "top",
   // "height": 22,
   // "width": 1366,
-  "modules-left": ["hyprland/workspaces", "hyprland/window"],
+  "modules-left": ["hyprland/workspaces", "mpris", "hyprland/window"],
   "modules-center": [],
-  "modules-right": ["wireplumber", "network#wireguard", "network#openvpn", "network#wireless", "network#ethernet", "custom/external_ip", "network#speed", "bluetooth", "power-profiles-daemon", "tray", "battery", "clock"],
+  "modules-right": ["wireplumber", "network#wireguard", "network#openvpn", "network#wireless", "network#ethernet", "custom/external_ip", "bluetooth", "power-profiles-daemon", "tray", "battery", "clock"],
   "hyprland/workspaces": {
     "format": "{icon}" 
   },
@@ -124,5 +124,19 @@
     "interval": 5,
     "exec": "curl --ipv4 ifconfig.me",
     "on-click": "curl --ipv4 ifconfig.me | wl-copy",
+  },
+  "mpris": {
+    "format": "{title} {player_icon}",
+    "format-paused": "{title} {status_icon}",
+    "ignored-players": ["firefox"],
+    "player-icons": {
+      "default": "",
+      "mpv": "",
+      "spotify": ""
+    },
+    "status-icons": {
+      "paused": ""
+    },
+    "tooltip-format": "{artist} - {album} - {title}",
   },
 }
