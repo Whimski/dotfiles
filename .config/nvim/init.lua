@@ -135,3 +135,7 @@ vim.api.nvim_create_autocmd("FileType", {
     vim.bo.syntax = "carbon"
   end,
 })
+
+-- Easy Align
+vim.keymap.set("n", "ga", "<Plug>(EasyAlign)")
+vim.keymap.set("x", "ga", "<Plug>(EasyAlign)")

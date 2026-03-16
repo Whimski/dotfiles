@@ -1,5 +1,6 @@
 return {
   { "catppuccin/nvim", name = "catppuccin", priority = 1000 },
+  {"junegunn/vim-easy-align"},
   { "HiPhish/rainbow-delimiters.nvim" },
   { "godlygeek/tabular" },
   { "NvChad/nvim-colorizer.lua" },
