@@ -2,8 +2,7 @@
   "reload_style_on_change": true,
   "layer": "top",
   "position": "top",
-  // "height": 22,
-  // "width": 1366,
+  "exclusive": true,
   "modules-left": ["hyprland/workspaces", "mpris", "hyprland/window"],
   "modules-center": [],
   "modules-right": ["wireplumber", "network#wireguard", "network#openvpn", "network#wireless", "network#ethernet", "custom/external_ip", "bluetooth", "power-profiles-daemon", "tray", "battery", "clock"],
@@ -53,7 +52,8 @@
     "format-connected-battery": "{device_battery_percentage}% {icon}",
     "format-icons": ["󰤾", "󰤿", "󰥀", "󰥁", "󰥂", "󰥃", "󰥄", "󰥅", "󰥆"],
     "tooltip-format-connected": "{device_alias} • {device_address}",
-    "format-no-controller": ""
+    "format-no-controller": "",
+    "on-click": "overskride",
   },
   "network#speed": {
     // "interface": "wlp2s0",
@@ -76,6 +76,7 @@
     "format-wifi": "{essid} ({signalStrength}%): {ipaddr}/{cidr} ",
     "format-discnnected": "Disconnected ",
     "tooltip-format": "{gwaddr}",
+    "on-click": "nm-connection-editor",
   },
   "network#wireguard": {
     "interface": "wg*",
