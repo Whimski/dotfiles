@@ -5,7 +5,7 @@
   "exclusive": true,
   "modules-left": ["hyprland/workspaces", "mpris", "hyprland/window"],
   "modules-center": [],
-  "modules-right": ["wireplumber", "network#wireguard", "network#openvpn", "network#wireless", "network#ethernet", "custom/external_ip", "bluetooth", "power-profiles-daemon", "tray", "battery", "clock"],
+  "modules-right": ["pulseaudio", "network#wireguard", "network#openvpn", "network#wireless", "network#ethernet", "custom/external_ip", "bluetooth", "power-profiles-daemon", "tray", "battery", "clock"],
   "hyprland/workspaces": {
     "format": "{icon}" 
   },
@@ -75,6 +75,7 @@
     "family": "ipv4",
     "format-wifi": "{essid} ({signalStrength}%): {ipaddr}/{cidr} ",
     "format-discnnected": "Disconnected ",
+    "tooltip": true,
     "tooltip-format": "{gwaddr}",
     "on-click": "nm-connection-editor",
   },
@@ -92,6 +93,24 @@
     "format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
     "tooltip-format": "{gwaddr}",
   },
+  "pulseaudio": {
+    "scroll-step": 5,
+    "format": "{volume}% {icon}",
+    "format-bluetooth": "{volume}% {icon} ",
+    "format-muted": "",
+    "format-icons": {
+      "headphones": "",
+      "hands-free": "",
+      "headset": "",
+      "phone": "",
+      "portable": "",
+      "car": "",
+      "default": ["", ""],
+      },
+    "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+    "on-click-middle": "pavucontrol",
+    "ignored-sinks": ["Easy Effects Sink", "Meteor condenser microphone Analog Stereo"],
+  },
   "wireplumber": {
     "scroll-step": 5,
     "format": "{volume}% {icon}",
@@ -99,7 +118,7 @@
     "format-muted": "",
     "format-icons": {
       "headphones": "",
-      "handsfree": "",
+      "hands-free": "",
       "headset": "",
       "phone": "",
       "portable": "",
@@ -107,6 +126,7 @@
       "default": ["", ""]
       },
     "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+    "on-click-middle": "pavucontrol",
     "ignored-sinks": ["Easy Effects Sink", "Meteor condenser microphone Analog Stereo"],
   },
   "power-profiles-daemon": {
@@ -125,6 +145,7 @@
     "interval": 5,
     "exec": "curl --ipv4 ifconfig.me",
     "on-click": "curl --ipv4 ifconfig.me | wl-copy",
+    "tooltip": false,
   },
   "mpris": {
     "format": "{title} {player_icon}",

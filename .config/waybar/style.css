@@ -26,6 +26,7 @@ window#waybar {
 #backlight,
 #network,
 #pulseaudio,
+#pulseaudio.bluetooth,
 #wireplumber,
 #tray,
 #bluetooth,
