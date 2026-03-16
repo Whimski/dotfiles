@@ -5,7 +5,7 @@
   "exclusive": true,
   "modules-left": ["hyprland/workspaces", "mpris", "hyprland/window"],
   "modules-center": [],
-  "modules-right": ["pulseaudio", "network#wireguard", "network#openvpn", "network#wireless", "network#ethernet", "custom/external_ip", "bluetooth", "power-profiles-daemon", "tray", "battery", "clock"],
+  "modules-right": ["wireplumber", "network#wireguard", "network#openvpn", "network#wireless", "network#ethernet", "custom/external_ip", "bluetooth", "power-profiles-daemon", "tray", "battery", "clock"],
   "hyprland/workspaces": {
     "format": "{icon}" 
   },
@@ -93,38 +93,11 @@
     "format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
     "tooltip-format": "{gwaddr}",
   },
-  "pulseaudio": {
-    "scroll-step": 5,
-    "format": "{volume}% {icon}",
-    "format-bluetooth": "{volume}% {icon} ",
-    "format-muted": "",
-    "format-icons": {
-      "headphones": "",
-      "hands-free": "",
-      "headset": "",
-      "phone": "",
-      "portable": "",
-      "car": "",
-      "default": ["", ""],
-      },
-    "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
-    "on-click-right": "pavucontrol",
-    "ignored-sinks": ["Easy Effects Sink", "Meteor condenser microphone Analog Stereo"],
-  },
   "wireplumber": {
     "scroll-step": 5,
     "format": "{volume}% {icon}",
-    "format-bluetooth": "{volume}% {icon}",
     "format-muted": "",
-    "format-icons": {
-      "headphones": "",
-      "hands-free": "",
-      "headset": "",
-      "phone": "",
-      "portable": "",
-      "car": "",
-      "default": ["", ""]
-      },
+    "format-icons": ["", ""],
     "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
     "on-click-middle": "pavucontrol",
     "ignored-sinks": ["Easy Effects Sink", "Meteor condenser microphone Analog Stereo"],
