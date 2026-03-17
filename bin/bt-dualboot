@@ -5,10 +5,10 @@ BTDIR="/var/lib/bluetooth"
 SYSTEM="$WIN_MOUNT/Windows/System32/config/SYSTEM"
 
 KEYS=$(sudo chntpw -e "$SYSTEM" << EOF
-cd ControlSet001\Services\BTHPORT\Parameters\Keys
-ls
-q
-y
+  cd ControlSet001\Services\BTHPORT\Parameters\Keys
+  ls
+  q
+  y
 EOF
 )
 
@@ -16,30 +16,32 @@ EOF
 ADAPTER=`echo $KEYS | grep -oP "<\K.*?(?=>)" | tail -n +4`
 
 for DEVICE in $ADAPTER; do
-EXPANDED_DEVICE=`echo $DEVICE | sed 's/../\U&:/g; s/:$//'`
-echo "Adapter: $EXPANDED_DEVICE"
-LTK=$(sudo chntpw -e "$SYSTEM" << EOF
-cd ControlSet001\Services\BTHPORT\Parameters\Keys\\$DEVICE
-ls
-q
-y
+  EXPANDED_DEVICE=`echo $DEVICE | sed 's/../\U&:/g; s/:$//'`
+  echo "Adapter: $EXPANDED_DEVICE"
+  LTK=$(sudo chntpw -e "$SYSTEM" << EOF
+    cd ControlSet001\Services\BTHPORT\Parameters\Keys\\$DEVICE
+    ls
+    q
+    y
 EOF
 )
-SUB_BT=`echo $LTK | grep -oP "<\K.*?(?=>)" | tail -n +4`
-EXPANDED_SUB_BT=`echo $LTK | grep -o -P "<\K.*?(?=>)" | tail -n +4 | sed 's/../\U&:/g; s/:$//'`
-echo "Bluetooth Device: $EXPANDED_SUB_BT"
-EXPANDED_DEVICE=`echo $DEVICE | sed 's/../\U&:/g; s/:$//'`
-LINUX_INFO="$BTDIR/$EXPANDED_DEVICE/$EXPANDED_SUB_BT/info"
-# ls "${LINUX_INFO}" 2> /dev/null
-BT_KEY=$(sudo chntpw -e "$SYSTEM" << EOF
-cd ControlSet001\Services\BTHPORT\Parameters\Keys\\$DEVICE
-hex $SUB_BT
-q
-y
+
+  SUB_BT=`echo $LTK | grep -oP "<\K.*?(?=>)" | tail -n +4`
+  EXPANDED_SUB_BT=`echo $LTK | grep -o -P "<\K.*?(?=>)" | tail -n +4 | sed 's/../\U&:/g; s/:$//'`
+  echo "Bluetooth Device: $EXPANDED_SUB_BT"
+  EXPANDED_DEVICE=`echo $DEVICE | sed 's/../\U&:/g; s/:$//'`
+  # LINUX_INFO="$BTDIR/$EXPANDED_DEVICE/$EXPANDED_SUB_BT/info"
+  # ls "${LINUX_INFO}" 2> /dev/null
+  BT_KEY=$(sudo chntpw -e "$SYSTEM" << EOF
+    cd ControlSet001\Services\BTHPORT\Parameters\Keys\\$DEVICE
+    hex $SUB_BT
+    q
+    y
 EOF
 )
-echo
-echo $BT_KEY | grep -oP "([A-F0-9][A-F0-9] ){17}" | sed 's/^00 //'
-echo $BT_KEY | grep -oP "([A-F0-9][A-F0-9] ){17}" | sed 's/^00 //; s/ //g' 
-echo 
+
+  echo
+  echo $BT_KEY | grep -oP "([A-F0-9][A-F0-9] ){17}" | sed 's/^00 //'
+  echo $BT_KEY | grep -oP "([A-F0-9][A-F0-9] ){17}" | sed 's/^00 //; s/ //g' 
+  echo 
 done
