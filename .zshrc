@@ -36,6 +36,7 @@ alias carbon_make='_carbon() {cd "$(dirname "$0")" && carbon compile "$1" && car
 alias weather='curl -s "https://wttr.in/?m&format=%l:+%c+%t+(%f)"'
 alias weather_f='curl -s "https://wttr.in/?format=%l:+%c+%t+(%f)"'
 alias localnet='sudo arp-scan --localnet'
+alias usb_writeback="watch -n 1 grep -e Dirty: -e Writeback: /proc/meminfo"
 
 source ~/.zsh/catppuccin_mocha-zsh-syntax-highlighting.zsh
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
