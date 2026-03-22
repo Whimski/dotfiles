@@ -41,8 +41,8 @@ EOF
 )
 
   echo
-  echo $BT_KEY | grep -oP "(?:00000) \K([A-F0-9][A-F0-9] ){16}" | sed 's/ $//' 
-  echo $BT_KEY | grep -oP "(?:00000) \K([A-F0-9][A-F0-9] ){16}" | sed 's/ //g' 
+  echo $BT_KEY | grep -oP "[0]{5} \K([A-F0-9][A-F0-9] ){16}" | sed 's/ $//' 
+  echo $BT_KEY | grep -oP "[0]{5} \K([A-F0-9][A-F0-9] ){16}" | sed 's/ //g' 
   # echo $BT_KEY | grep -oP "([A-F0-9][A-F0-9] ){17}" | sed 's/^00 //'
   # echo $BT_KEY | grep -oP "([A-F0-9][A-F0-9] ){17}" | sed 's/^00 //; s/ //g' 
   echo 
