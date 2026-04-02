@@ -2,6 +2,7 @@ caffeine,.config/caffeine/whitelist.txt,/home/tobi/.config/caffeine/whitelist.tx
 darkman,.config/darkman,~/.config/darkman,,
 darkman-folders,.local/share/dark-mode.d,~/.local/share/dark-mode.d,.local/share/light-mode.d,~/.local/share/light-mode.d
 dunst,.config/dunst,~/.config/dunst,,
+mako,.config/mako,~/.config/mako,,
 fonts,.local/share/fonts,~/.local/share/fonts,,
 hyprland,.config/hypr,~/.config/hypr,,
 i3,.config/i3/config,~/.config/i3/config,,
