@@ -1,0 +1,1 @@
+/home/tobi/.local/share/quickshell-lockscreen/lock.sh
