@@ -99,7 +99,7 @@
     "format-muted": "",
     "format-icons": ["", ""],
     "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
-    "on-click-middle": "pavucontrol",
+    "on-click-middle": "pwvucontrol",
     "ignored-sinks": ["Easy Effects Sink", "Meteor condenser microphone Analog Stereo"],
   },
   "power-profiles-daemon": {
