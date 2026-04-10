@@ -214,8 +214,8 @@
         "manualSunset": "18:30",
         "monitorForColors": "",
         "predefinedScheme": "Tokyo Night",
-        "schedulingMode": "location",
-        "syncGsettings": true,
+        "schedulingMode": "off",
+        "syncGsettings": false,
         "useWallpaperColors": false
     },
     "controlCenter": {
