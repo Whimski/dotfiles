@@ -273,16 +273,10 @@
                     "id": "Bluetooth"
                 },
                 {
-                    "id": "DarkMode"
-                },
-                {
                     "id": "AirplaneMode"
                 }
             ],
             "right": [
-                {
-                    "id": "Notifications"
-                },
                 {
                     "id": "PowerProfile"
                 },
