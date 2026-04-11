@@ -79,6 +79,15 @@
         "widgets": {
             "center": [
                 {
+                    "defaultSettings": {
+                        "activeColor": "primary",
+                        "enableToast": true,
+                        "hideInactive": false,
+                        "iconSpacing": 4,
+                        "inactiveColor": "none",
+                        "micFilterRegex": "",
+                        "removeMargins": false
+                    },
                     "id": "plugin:privacy-indicator"
                 }
             ],
@@ -134,6 +143,13 @@
             ],
             "right": [
                 {
+                    "defaultSettings": {
+                        "errorIcon": "alert-circle",
+                        "iconColor": "primary",
+                        "loadingIcon": "loader",
+                        "refreshInterval": 300,
+                        "successIcon": "network"
+                    },
                     "id": "plugin:ip-monitor"
                 },
                 {
@@ -185,9 +201,6 @@
                     "id": "NotificationHistory",
                     "showUnreadBadge": true,
                     "unreadBadgeColor": "primary"
-                },
-                {
-                    "id": "plugin:battery-threshold"
                 },
                 {
                     "deviceNativePath": "__default__",
