@@ -79,12 +79,7 @@
         "widgets": {
             "center": [
                 {
-                    "defaultSettings": {
-                        "hideSystemPorts": false,
-                        "hideWhenEmpty": false,
-                        "refreshInterval": 5
-                    },
-                    "id": "plugin:port-monitor"
+                    "id": "plugin:privacy-indicator"
                 }
             ],
             "left": [
@@ -139,6 +134,17 @@
             ],
             "right": [
                 {
+                    "id": "plugin:ip-monitor"
+                },
+                {
+                    "defaultSettings": {
+                        "hideSystemPorts": false,
+                        "hideWhenEmpty": false,
+                        "refreshInterval": 5
+                    },
+                    "id": "plugin:port-monitor"
+                },
+                {
                     "defaultSettings": {
                         "connectedColor": "primary",
                         "disableToastNotifications": false,
@@ -179,6 +185,9 @@
                     "id": "NotificationHistory",
                     "showUnreadBadge": true,
                     "unreadBadgeColor": "primary"
+                },
+                {
+                    "id": "plugin:battery-threshold"
                 },
                 {
                     "deviceNativePath": "__default__",

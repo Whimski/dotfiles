@@ -1,0 +1,10 @@
+{
+  "settings": {
+    "battery-device": "Battery Device",
+    "battery-device-desc": "Battery to configure threshold for",
+    "no-battery-device": "No configurable batteries are available on this system"
+  },
+  "actions": {
+    "widget-settings": "Widget Settings"
+  }
+}
