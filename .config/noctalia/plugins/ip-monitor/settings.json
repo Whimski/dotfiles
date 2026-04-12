@@ -1,6 +1,6 @@
 {
   "iconColor": "primary",
-  "refreshInterval": 5,
+  "refreshInterval": 30,
   "successIcon": "network",
   "errorIcon": "alert-circle",
   "loadingIcon": "loader"
