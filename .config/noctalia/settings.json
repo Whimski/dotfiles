@@ -135,7 +135,7 @@
                     "id": "ActiveWindow",
                     "maxWidth": 145,
                     "scrollingMode": "hover",
-                    "showIcon": true,
+                    "showIcon": false,
                     "showText": true,
                     "textColor": "none",
                     "useFixedWidth": false
