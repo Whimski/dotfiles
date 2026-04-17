@@ -6,22 +6,22 @@
         "clipboardWrapText": true,
         "customLaunchPrefix": "",
         "customLaunchPrefixEnabled": false,
-        "density": "default",
+        "density": "compact",
         "enableClipPreview": true,
         "enableClipboardChips": true,
         "enableClipboardHistory": false,
         "enableClipboardSmartIcons": true,
-        "enableSessionSearch": true,
-        "enableSettingsSearch": true,
-        "enableWindowsSearch": true,
+        "enableSessionSearch": false,
+        "enableSettingsSearch": false,
+        "enableWindowsSearch": false,
         "iconMode": "tabler",
-        "ignoreMouseInput": false,
+        "ignoreMouseInput": true,
         "overviewLayer": false,
         "pinnedApps": [
         ],
         "position": "center",
         "screenshotAnnotationTool": "",
-        "showCategories": true,
+        "showCategories": false,
         "showIconBackground": false,
         "sortByMostUsed": true,
         "terminalCommand": "alacritty -e",
@@ -316,8 +316,13 @@
         "gridSnap": false,
         "gridSnapScale": false,
         "monitorWidgets": [
+            {
+                "name": "DP-1",
+                "widgets": [
+                ]
+            }
         ],
-        "overviewEnabled": true
+        "overviewEnabled": false
     },
     "dock": {
         "animationSpeed": 1,
@@ -430,18 +435,18 @@
         "wallpaperChange": ""
     },
     "idle": {
-        "customCommands": "[]",
-        "enabled": false,
-        "fadeDuration": 5,
-        "lockCommand": "",
-        "lockTimeout": 660,
+        "customCommands": "[{\"name\":\"Suspend Vesktop\",\"timeout\":10,\"command\":\"manage_processes.sh suspend vesktop\",\"resumeCommand\":\"manage_processes.sh resume vesktop\"}]",
+        "enabled": true,
+        "fadeDuration": 3,
+        "lockCommand": "~/dotfiles/bin/lock.sh",
+        "lockTimeout": 300,
         "resumeLockCommand": "",
         "resumeScreenOffCommand": "",
         "resumeSuspendCommand": "",
         "screenOffCommand": "",
-        "screenOffTimeout": 600,
+        "screenOffTimeout": 0,
         "suspendCommand": "",
-        "suspendTimeout": 1800
+        "suspendTimeout": 720
     },
     "location": {
         "analogClockInCalendar": false,
