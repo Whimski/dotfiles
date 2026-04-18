@@ -38,6 +38,12 @@ alias weather_f='curl -s "https://wttr.in/?format=%l:+%c+%t+(%f)"'
 alias localnet='sudo arp-scan --localnet'
 alias usb_writeback="watch -n 1 grep -e Dirty: -e Writeback: /proc/meminfo"
 
+disown_app() {
+  for cmd in "$@"; do
+    setsid sh -c "$cmd" >/dev/null 2>&1 < /dev/null &!; exit 
+  done
+}
+
 source ~/.zsh/catppuccin_mocha-zsh-syntax-highlighting.zsh
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 source <(fzf --zsh)

@@ -435,18 +435,18 @@
         "wallpaperChange": ""
     },
     "idle": {
-        "customCommands": "[{\"name\":\"Suspend Vesktop\",\"timeout\":10,\"command\":\"manage_processes.sh suspend vesktop\",\"resumeCommand\":\"manage_processes.sh resume vesktop\"}]",
+        "customCommands": "[{\"name\":\"Suspend Vesktop\",\"timeout\":30,\"command\":\"manage_processes.sh suspend vesktop\",\"resumeCommand\":\"manage_processes.sh resume vesktop\"},{\"name\":\"Auto Lock\",\"timeout\":300,\"command\":\"lock.sh\",\"resumeCommand\":\"\"}]",
         "enabled": true,
-        "fadeDuration": 3,
+        "fadeDuration": 1,
         "lockCommand": "~/dotfiles/bin/lock.sh",
-        "lockTimeout": 300,
+        "lockTimeout": 0,
         "resumeLockCommand": "",
         "resumeScreenOffCommand": "",
         "resumeSuspendCommand": "",
         "screenOffCommand": "",
         "screenOffTimeout": 0,
         "suspendCommand": "",
-        "suspendTimeout": 720
+        "suspendTimeout": 600
     },
     "location": {
         "analogClockInCalendar": false,
