@@ -143,6 +143,12 @@
             ],
             "right": [
                 {
+                    "defaultSettings": {
+                        "entities": [
+                        ],
+                        "haToken": "",
+                        "haUrl": ""
+                    },
                     "id": "plugin:hassio"
                 },
                 {
@@ -652,9 +658,9 @@
     },
     "wallpaper": {
         "automationEnabled": false,
-        "directory": "/home/tobi/Pictures/Wallpapers",
+        "directory": "/home/tobi/.wallpaper",
         "enableMultiMonitorDirectories": false,
-        "enabled": false,
+        "enabled": true,
         "favorites": [
         ],
         "fillColor": "#000000",
@@ -662,13 +668,18 @@
         "hideWallpaperFilenames": false,
         "linkLightAndDarkWallpapers": true,
         "monitorDirectories": [
+            {
+                "directory": "/home/tobi/.wallpaper",
+                "name": "DP-1",
+                "wallpaper": ""
+            }
         ],
         "overviewBlur": 0,
         "overviewEnabled": false,
         "overviewTint": 0.6,
         "panelPosition": "follow_bar",
         "randomIntervalSec": 300,
-        "setWallpaperOnAllMonitors": true,
+        "setWallpaperOnAllMonitors": false,
         "showHiddenFiles": false,
         "skipStartupTransition": false,
         "solidColor": "#1a1a2e",
