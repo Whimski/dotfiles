@@ -4,4 +4,5 @@
 export HYPRLAND_INSTANCE_SIGNATURE="$(hyprctl instances | head -n1 | cut -d' ' -f2 | sed 's/://')"
 
 gsettings set org.gnome.desktop.interface color-scheme prefer-light
+gsettings set org.gnome.desktop.interface gtk-theme 'catppuccin-latte-lavender-standard+default'
 hyprctl setcursor "Catppuccin Mocha Lavender" 24

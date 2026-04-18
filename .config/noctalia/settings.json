@@ -144,15 +144,6 @@
             "right": [
                 {
                     "defaultSettings": {
-                        "entities": [
-                        ],
-                        "haToken": "",
-                        "haUrl": ""
-                    },
-                    "id": "plugin:hassio"
-                },
-                {
-                    "defaultSettings": {
                         "errorIcon": "alert-circle",
                         "iconColor": "primary",
                         "loadingIcon": "loader",
@@ -454,7 +445,7 @@
         "resumeSuspendCommand": "",
         "screenOffCommand": "",
         "screenOffTimeout": 0,
-        "suspendCommand": "",
+        "suspendCommand": "systemctl suspend ",
         "suspendTimeout": 600
     },
     "location": {
