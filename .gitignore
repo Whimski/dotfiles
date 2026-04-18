@@ -4,3 +4,4 @@ monitors.conf
 windowrules.conf
 startup.conf
 hyprpaper.conf
+.config/noctalia/plugins/hassio/
