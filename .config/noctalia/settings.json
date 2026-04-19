@@ -29,9 +29,11 @@
     },
     "audio": {
         "mprisBlacklist": [
+            "firefox",
+            "chrome"
         ],
         "preferredPlayer": "",
-        "spectrumFrameRate": 30,
+        "spectrumFrameRate": 240,
         "spectrumMirrored": true,
         "visualizerType": "mirrored",
         "volumeFeedback": false,
@@ -435,7 +437,7 @@
         "wallpaperChange": ""
     },
     "idle": {
-        "customCommands": "[{\"name\":\"Suspend Vesktop\",\"timeout\":30,\"command\":\"manage_processes.sh suspend vesktop\",\"resumeCommand\":\"manage_processes.sh resume vesktop\"},{\"name\":\"Auto Lock\",\"timeout\":300,\"command\":\"lock.sh\",\"resumeCommand\":\"\"}]",
+        "customCommands": "[{\"name\":\"Suspend Vesktop\",\"timeout\":15,\"command\":\"manage_processes.sh suspend vesktop\",\"resumeCommand\":\"manage_processes.sh resume vesktop\"},{\"name\":\"Auto Lock\",\"timeout\":300,\"command\":\"lock.sh\",\"resumeCommand\":\"\"},{\"name\":\"Auto Sleep\",\"timeout\":330,\"command\":\"systemctl suspend\",\"resumeCommand\":\"\"}]",
         "enabled": true,
         "fadeDuration": 1,
         "lockCommand": "~/dotfiles/bin/lock.sh",
@@ -446,7 +448,7 @@
         "screenOffCommand": "",
         "screenOffTimeout": 0,
         "suspendCommand": "systemctl suspend ",
-        "suspendTimeout": 600
+        "suspendTimeout": 0
     },
     "location": {
         "analogClockInCalendar": false,
