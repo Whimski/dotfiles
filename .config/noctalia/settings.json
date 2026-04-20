@@ -437,8 +437,8 @@
         "wallpaperChange": ""
     },
     "idle": {
-        "customCommands": "[{\"name\":\"Suspend Vesktop\",\"timeout\":15,\"command\":\"manage_processes.sh suspend vesktop\",\"resumeCommand\":\"manage_processes.sh resume vesktop\"},{\"name\":\"Auto Lock\",\"timeout\":300,\"command\":\"lock.sh\",\"resumeCommand\":\"\"},{\"name\":\"Auto Sleep\",\"timeout\":330,\"command\":\"systemctl suspend\",\"resumeCommand\":\"\"}]",
-        "enabled": false,
+        "customCommands": "[{\"name\":\"Suspend Vesktop\",\"timeout\":15,\"command\":\"manage_processes.sh suspend vesktop\",\"resumeCommand\":\"manage_processes.sh resume vesktop\"}]",
+        "enabled": true,
         "fadeDuration": 1,
         "lockCommand": "~/dotfiles/bin/lock.sh",
         "lockTimeout": 0,

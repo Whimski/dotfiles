@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import Quickshell.Io
 import qs.Commons
 import qs.Services.UI
@@ -17,8 +18,8 @@ Item {
   // SmartPanel
   readonly property var geometryPlaceholder: panelContainer
 
-  property real contentPreferredWidth: 440 * Style.uiScaleRatio
-  property real contentPreferredHeight: 640 * Style.uiScaleRatio
+  property real contentPreferredWidth: 435 * Style.uiScaleRatio
+  property real contentPreferredHeight: 530 * Style.uiScaleRatio
 
   readonly property bool allowAttach: true
 
@@ -37,7 +38,8 @@ Item {
   // Trigger refresh via service
   function refreshIp() {
     Logger.d("IpMonitor", "Panel triggering service refresh");
-    if (ipMonitorService) ipMonitorService.fetchIp();
+    if (ipMonitorService)
+      ipMonitorService.fetchIp();
   }
 
   Rectangle {
@@ -89,15 +91,19 @@ Item {
 
           NIcon {
             icon: {
-              if (root.fetchState === "loading") return "loader";
-              if (root.fetchState === "error") return "alert-circle";
+              if (root.fetchState === "loading")
+                return "loader";
+              if (root.fetchState === "error")
+                return "alert-circle";
               return "network";
             }
             Layout.alignment: Qt.AlignHCenter
             pointSize: Style.fontSizeXXL * 2 * Style.uiScaleRatio
             color: {
-              if (root.fetchState === "success") return Color.mPrimary;
-              if (root.fetchState === "error") return Color.mError;
+              if (root.fetchState === "success")
+                return Color.mPrimary;
+              if (root.fetchState === "error")
+                return Color.mError;
               return Color.mOnSurfaceVariant;
             }
           }
@@ -105,9 +111,12 @@ Item {
           NText {
             Layout.alignment: Qt.AlignHCenter
             text: {
-              if (root.fetchState === "loading") return "Fetching IP...";
-              if (root.fetchState === "error") return "Failed to fetch IP";
-              if (root.ipData?.ip) return root.ipData.ip;
+              if (root.fetchState === "loading")
+                return "Fetching IP...";
+              if (root.fetchState === "error")
+                return "Failed to fetch IP";
+              if (root.ipData?.ip)
+                return root.ipData.ip;
               return "n/a";
             }
             font.pointSize: Style.fontSizeXXL * Style.uiScaleRatio
@@ -121,8 +130,10 @@ Item {
             Layout.alignment: Qt.AlignHCenter
             text: {
               var parts = [];
-              if (root.ipData?.city) parts.push(root.ipData.city);
-              if (root.ipData?.country) parts.push(root.ipData.country);
+              if (root.ipData?.city)
+                parts.push(root.ipData.city);
+              if (root.ipData?.country)
+                parts.push(root.ipData.country);
               return parts.join(", ");
             }
             font.pointSize: Style.fontSizeM * Style.uiScaleRatio
@@ -139,7 +150,7 @@ Item {
         visible: root.fetchState === "success" && root.ipData
 
         NText {
-          text: "Details"
+          text: pluginApi?.tr("panel.details.title")
           font.pointSize: Style.fontSizeM * Style.uiScaleRatio
           font.weight: Font.Medium
           color: Color.mOnSurface
@@ -160,15 +171,50 @@ Item {
 
             Repeater {
               model: [
-                { label: "IP Address", value: root.ipData?.ip ?? "n/a" },
-                { label: "Hostname", value: root.ipData?.hostname ?? "n/a" },
-                { label: "City", value: root.ipData?.city ?? "n/a" },
-                { label: "Region", value: root.ipData?.region ?? "n/a" },
-                { label: "Country", value: root.ipData?.country ?? "n/a" },
-                { label: "Location", value: root.ipData?.loc ?? "n/a" },
-                { label: "Postal Code", value: root.ipData?.postal ?? "n/a" },
-                { label: "Timezone", value: root.ipData?.timezone ?? "n/a" },
-                { label: "Organization", value: root.ipData?.org ?? "n/a" },
+                {
+                  label: pluginApi?.tr("panel.details.ip"),
+                  value: root.ipData?.ip
+                },
+                {
+                  label: pluginApi?.tr("panel.details.city"),
+                  value: root.ipData?.city
+                },
+                {
+                  label: pluginApi?.tr("panel.details.country"),
+                  value: root.ipData?.country
+                },
+                {
+                  label: pluginApi?.tr("panel.details.region"),
+                  value: root.ipData?.region
+                },
+                {
+                  label: pluginApi?.tr("panel.details.continent"),
+                  value: root.ipData?.continent
+                },
+                {
+                  label: pluginApi?.tr("panel.details.postal-code"),
+                  value: root.ipData?.postal
+                },
+                {
+                  label: pluginApi?.tr("panel.details.location"),
+                  value: root.ipData?.loc
+                },
+                {
+                  label: pluginApi?.tr("panel.details.timezone"),
+                  value: root.ipData?.timezone
+                },
+                {
+                  label: pluginApi?.tr("panel.details.currency"),
+                  value: root.ipData?.currency
+                },
+                {
+                  label: pluginApi?.tr("panel.details.org"),
+                  value: root.ipData?.org
+                },
+                {
+                  label: pluginApi?.tr("panel.details.as-name"),
+                  value: root.ipData?.as
+                },
               ]
 
               RowLayout {
@@ -179,7 +225,7 @@ Item {
                   text: modelData.label + ":"
                   font.pointSize: Style.fontSizeS * Style.uiScaleRatio
                   color: Color.mOnSurfaceVariant
-                  Layout.preferredWidth: 120
+                  Layout.preferredWidth: 100
                 }
 
                 NText {
@@ -187,53 +233,36 @@ Item {
                   font.pointSize: Style.fontSizeS * Style.uiScaleRatio
                   font.family: Settings.data.ui.fontFixed
                   color: Color.mOnSurface
-                  Layout.fillWidth: true
+                  Layout.fillWidth: index !== 0
                   elide: Text.ElideRight
                 }
+
+                NIcon {
+                  id: copyIcon
+                  visible: index === 0 && root.fetchState === "success"
+                  icon: "copy"
+                  pointSize: Style.fontSizeS * Style.uiScaleRatio
+                  color: copyHover.containsMouse ? Color.mOnSurfaceVariant : Color.mPrimary
+                  Layout.alignment: Qt.AlignVCenter
+
+                  MouseArea {
+                    id: copyHover
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                      var ip = root.ipData?.ip;
+                      if (ip && ip !== "n/a") {
+                        Quickshell.execDetached(["sh", "-c", `printf '%s' '${ip}' | wl-copy`]);
+                        ToastService.showNotice("IP copied to clipboard: " + ip);
+                        Logger.d("IpMonitor", "Copied IP to clipboard:", ip);
+                      } else {
+                        ToastService.showNotice("No IP to copy");
+                      }
+                    }
+                  }
+                }
               }
-            }
-          }
-        }
-
-        // IPC Examples
-        NText {
-          text: "IPC Commands"
-          font.pointSize: Style.fontSizeM * Style.uiScaleRatio
-          font.weight: Font.Medium
-          color: Color.mOnSurface
-          Layout.topMargin: Style.marginM
-        }
-
-        Rectangle {
-          Layout.fillWidth: true
-          Layout.preferredHeight: examplesColumn.implicitHeight + Style.marginM * 2
-          color: Color.mSurfaceVariant
-          radius: Style.radiusM
-
-          ColumnLayout {
-            id: examplesColumn
-            anchors {
-              fill: parent
-              margins: Style.marginM
-            }
-            spacing: Style.marginS
-
-            NText {
-              text: "$ qs -c noctalia-shell ipc call plugin:ip-monitor refreshIp"
-              font.pointSize: Style.fontSizeS * Style.uiScaleRatio
-              font.family: Settings.data.ui.fontFixed
-              color: Color.mPrimary
-              Layout.fillWidth: true
-              wrapMode: Text.WrapAnywhere
-            }
-
-            NText {
-              text: "$ qs -c noctalia-shell ipc call plugin:ip-monitor toggle"
-              font.pointSize: Style.fontSizeS * Style.uiScaleRatio
-              font.family: Settings.data.ui.fontFixed
-              color: Color.mPrimary
-              Layout.fillWidth: true
-              wrapMode: Text.WrapAnywhere
             }
           }
         }
@@ -241,4 +270,3 @@ Item {
     }
   }
 }
-
