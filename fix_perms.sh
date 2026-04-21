@@ -8,3 +8,5 @@ find "$TARGET_DIR" -type f \( -name "*.sh" -o -name "*.py" -o -name "*.pl" -o -n
 
 chmod 600 .ssh/*
 chmod 644 .ssh/*.pub
+chmod 700 ~/.gnupg
+chmod 600 ~/.gnupg/*

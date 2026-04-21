@@ -1,3 +1,4 @@
+.face,.face,~/.face,,
 caffeine,.config/caffeine/whitelist.txt,/home/tobi/.config/caffeine/whitelist.txt,,
 darkman,.config/darkman,~/.config/darkman,,
 darkman-folders,.local/share/dark-mode.d,~/.local/share/dark-mode.d,.local/share/light-mode.d,~/.local/share/light-mode.d
@@ -7,6 +8,8 @@ hyprland,.config/hypr,~/.config/hypr,,
 i3,.config/i3/config,~/.config/i3/config,,
 keyd*,.config/keyd/default.conf,/etc/keyd/default.conf,,
 kitty,.config/kitty/kitty.conf,~/.config/kitty/kitty.conf,,
+neovim,.config/nvim,~/.config/nvim,,
+noctalia,.config/noctalia,~/.config/noctalia,,
 pylint,.pylintrc,~/.pylintrc,,
 rofi,.config/rofi,~/.config/rofi,,
 ssh,.ssh,~/.ssh,,
@@ -16,5 +19,3 @@ waybar,.config/waybar,~/.config/waybar,,
 xorg,.Xresources,~/.Xresources,.Xresources,~/.Xdefaults
 zellij,.config/zellij,~/.config/zellij,,
 zsh,.zshrc,~/.zshrc,.zsh,~/.zsh
-neovim,.config/nvim,~/.config/nvim,,
-noctalia,.config/noctalia,~/.config/noctalia,,
