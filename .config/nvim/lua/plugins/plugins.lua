@@ -85,6 +85,5 @@ return {
         'RainbowMultiDelim'
     }
   },
-  { "carbon-language/vim-carbon-lang" },
 }
 
