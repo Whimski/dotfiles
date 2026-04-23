@@ -29,17 +29,14 @@ alias wg="sudo wg"
 alias less="less -R"
 alias rm="rm --interactive=never"
 alias sync_status="watch -d grep -e Dirty: -e Writeback: /proc/meminfo"
-alias rsync_backup="rsync -aAXHvP --delete --exclude='/dev/*' --exclude='/proc/*' --exclude='/sys/*' --exclude='/tmp/*' --exclude='/run/*' --exclude='/mnt/*' --exclude='/media/*' --exclude='/lost+found/'"
-alias rsync_backup_root="sudo rsync -aAXHvP --delete --exclude='/dev/*' --exclude='/proc/*' --exclude='/sys/*' --exclude='/tmp/*' --exclude='/run/*' --exclude='/mnt/*' --exclude='/media/*' --exclude='/lost+found/'"
-alias rsync_backup_no_home="rsync -aAXHvP --delete --exclude='/home/*' --exclude='/dev/*' --exclude='/proc/*' --exclude='/sys/*' --exclude='/tmp/*' --exclude='/run/*' --exclude='/mnt/*' --exclude='/media/*' --exclude='/lost+found/'"
-alias rsync_backup_no_home_root="sudo rsync -aAXHvP --delete --exclude='/home/*' --exclude='/dev/*' --exclude='/proc/*' --exclude='/sys/*' --exclude='/tmp/*' --exclude='/run/*' --exclude='/mnt/*' --exclude='/media/*' --exclude='/lost+found/'"
 alias gitupdateall="git pull && git submodule update --init --recursive --remote"
 alias paru="paru --color=always"
-alias carbon_make='_carbon() {cd "$(dirname "$0")" && carbon compile "$1" && carbon link "${1%.*}.o" --output=a.out}; _carbon'
 alias weather='curl -s "https://wttr.in/?m&format=%l:+%c+%t+(%f)"'
 alias weather_f='curl -s "https://wttr.in/?format=%l:+%c+%t+(%f)"'
 alias localnet='sudo arp-scan --localnet'
 alias usb_writeback="watch -n 1 grep -e Dirty: -e Writeback: /proc/meminfo"
+
+source ~/.zsh/rsync.zsh
 
 disown_app() {
   for cmd in "$@"; do
