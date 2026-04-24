@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TARGET_DIR="/home/tobi/dotfiles"
+TARGET_DIR="$HOME/dotfiles"
 
 find "$TARGET_DIR" -type d -exec chmod 755 {} \;
 find "$TARGET_DIR" -type f -exec chmod 644 {} \;
