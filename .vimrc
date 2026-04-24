@@ -10,6 +10,7 @@ set showmatch
 set hlsearch
 set backupcopy=yes
 set nu rnu
+set nofoldenable
 syntax enable
 
 " Install vim-plug if not found
