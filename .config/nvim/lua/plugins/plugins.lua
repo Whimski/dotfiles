@@ -85,5 +85,6 @@ return {
         'RainbowMultiDelim'
     }
   },
+  { 'Civitasv/cmake-tools.nvim', opts = {} },
 }
 

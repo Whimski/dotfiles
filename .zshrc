@@ -17,24 +17,24 @@ export PF_ASCII="Catppuccin"
 export PF_COL3=1
 export PASTEL_COLOR_MODE=24bit
 
-
-alias ls='ls --color=auto'
+alias aria2c='aria2c -s16 -x16'
+alias gitupdateall="git pull && git submodule update --init --recursive --remote"
 alias grep='grep --color'
 alias ip='ip -color=auto'
-alias public_ip='curl --ipv4 ifconfig.me'
-alias public_ip6='curl --ipv6 ifconfig.me'
-alias aria2c='aria2c -s16 -x16'
-alias tb="nc termbin.com 9999"
-alias wg="sudo wg"
 alias less="less -R"
-alias rm="rm --interactive=never"
-alias sync_status="watch -d grep -e Dirty: -e Writeback: /proc/meminfo"
-alias gitupdateall="git pull && git submodule update --init --recursive --remote"
+alias localnet='sudo arp-scan --localnet'
+alias ls='ls --color=auto'
 alias paru="paru --color=always"
+alias public_ip6='curl --ipv6 ifconfig.me'
+alias public_ip='curl --ipv4 ifconfig.me'
+alias rm="rm --interactive=never"
+alias suspend='systemctl suspend'
+alias sync_status="watch -d grep -e Dirty: -e Writeback: /proc/meminfo"
+alias tb="nc termbin.com 9999"
+alias usb_writeback="watch -n 1 grep -e Dirty: -e Writeback: /proc/meminfo"
 alias weather='curl -s "https://wttr.in/?m&format=%l:+%c+%t+(%f)"'
 alias weather_f='curl -s "https://wttr.in/?format=%l:+%c+%t+(%f)"'
-alias localnet='sudo arp-scan --localnet'
-alias usb_writeback="watch -n 1 grep -e Dirty: -e Writeback: /proc/meminfo"
+alias wg="sudo wg"
 
 source ~/.zsh/rsync.zsh
 
