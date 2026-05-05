@@ -1,3 +1,17 @@
+-- Theme Checker
+local function get_theme()
+  local handle = io.popen("gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null")
+  if not handle then return "dark" end
+
+  local result = handle:read("*a")
+  handle:close()
+
+  if result and result:find("dark") then
+    return "dark"
+  end
+  return "light"
+end
+
 -- ===========
 -- BASIC SETTINGS
 -- ===========
@@ -131,3 +145,18 @@ vim.keymap.set('n', '<S-k>', '<C-b>', { noremap = true, silent = true })
 -- Easy Align
 vim.keymap.set("n", "ga", "<Plug>(EasyAlign)")
 vim.keymap.set("x", "ga", "<Plug>(EasyAlign)")
+
+
+vim.o.background = get_theme()
+
+require('peek').setup({
+  auto_load = true,
+  close_on_bdelete = true,
+  syntax = true,
+  theme = get_theme(),
+  update_on_change = true,
+  app = 'browser',
+  filetype = { 'markdown' },
+  throttle_at = 200000,
+  throttle_time = 'auto',
+})
