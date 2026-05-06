@@ -160,3 +160,14 @@ require('peek').setup({
   throttle_at = 200000,
   throttle_time = 'auto',
 })
+
+
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = { "c", "cpp" },
+  callback = function()
+    vim.opt_local.cindent = true
+    vim.opt_local.cinoptions = "g0,l1,i0,t0,+2,(0,w1,W4"
+  end,
+})
+
+vim.keymap.set('n', '<leader>d', vim.diagnostic.open_float)

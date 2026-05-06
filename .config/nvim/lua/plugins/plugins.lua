@@ -11,8 +11,12 @@ return {
   {
     "nvim-treesitter/nvim-treesitter",
     build = ":TSUpdate",
-      config = function()
-    end
+    config = function()
+      require("nvim-treesitter.configs").setup({
+        ensure_installed = { "cpp", "c" },
+        indent = { enable = true, disable = { "cpp", "c" } },
+      })
+    end,
   },
   {
     "olrtg/nvim-emmet",
@@ -85,7 +89,15 @@ return {
         'RainbowMultiDelim'
     }
   },
-  { 'Civitasv/cmake-tools.nvim', opts = {} },
+  {
+    "Civitasv/cmake-tools.nvim",
+    opts = {
+        cmake_generate_options = { "-DCMAKE_EXPORT_COMPILE_COMMANDS=1" },
+        cmake_compile_commands_options = {
+            action = "soft_link",
+        },
+    },
+  },
   {
     "toppair/peek.nvim",
     event = { "VeryLazy" },
