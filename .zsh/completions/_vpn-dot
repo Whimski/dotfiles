@@ -1,0 +1,11 @@
+#compdef vpn-dot
+
+_vpn-dot() {
+  local -a proxies
+  proxies=(${${$(ls ~/dotfiles/proxies/*.ovpn)}:t:r})
+
+  _arguments \
+    '1:proxy:($proxies)'
+}
+
+_vpn-dot

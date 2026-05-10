@@ -37,6 +37,7 @@ alias weather_f='curl -s "https://wttr.in/?format=%l:+%c+%t+(%f)"'
 alias wg="sudo wg"
 
 source ~/.zsh/rsync.zsh
+fpath=(~/.zsh/completions $fpath)
 
 disown_app() {
   for cmd in "$@"; do
@@ -73,5 +74,8 @@ zstyle :compinstall filename '/home/tobi/.zshrc'
 
 autoload -Uz compinit
 compinit
+compdef _wg-dot wg-dot
+compdef _vpn-dot vpn-dot
 # End of lines added by compinstall
+
 

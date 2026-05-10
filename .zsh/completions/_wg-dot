@@ -1,0 +1,12 @@
+#compdef wg-dot
+
+_wg-dot() {
+  local -a proxies
+  proxies=(${${$(ls ~/dotfiles/proxies/*.conf)}:t:r})
+
+  _arguments \
+    '1:action:(up down)' \
+    '2:proxy:($proxies)'
+}
+
+_wg-dot
