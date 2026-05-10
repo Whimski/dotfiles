@@ -1,0 +1,110 @@
+[[config]]
+name = ".face"
+source = ".face"
+dest = "~/.face"
+
+[[config]]
+name = "caffeine"
+source = ".config/caffeine/whitelist.txt"
+dest = "/home/tobi/.config/caffeine/whitelist.txt"
+
+[[config]]
+name = "darkman"
+source = ".config/darkman"
+dest = "~/.config/darkman"
+
+[[config]]
+name = "darkman-folders"
+source = ".local/share/dark-mode.d"
+dest = "~/.local/share/dark-mode.d"
+source2 = ".local/share/light-mode.d"
+dest2 = "~/.local/share/light-mode.d"
+
+[[config]]
+name = "dunst"
+source = ".config/dunst"
+dest = "~/.config/dunst"
+
+[[config]]
+name = "fonts"
+source = ".local/share/fonts"
+dest = "~/.local/share/fonts"
+
+[[config]]
+name = "hyprland"
+source = ".config/hypr"
+dest = "~/.config/hypr"
+
+[[config]]
+name = "i3"
+source = ".config/i3/config"
+dest = "~/.config/i3/config"
+
+[[config]]
+name = "keyd*"
+source = ".config/keyd/default.conf"
+dest = "/etc/keyd/default.conf"
+
+[[config]]
+name = "kitty"
+source = ".config/kitty/kitty.conf"
+dest = "~/.config/kitty/kitty.conf"
+
+[[config]]
+name = "neovim"
+source = ".config/nvim"
+dest = "~/.config/nvim"
+
+[[config]]
+name = "noctalia"
+source = ".config/noctalia"
+dest = "~/.config/noctalia"
+
+[[config]]
+name = "pylint"
+source = ".pylintrc"
+dest = "~/.pylintrc"
+
+[[config]]
+name = "rofi"
+source = ".config/rofi"
+dest = "~/.config/rofi"
+
+[[config]]
+name = "ssh"
+source = ".ssh"
+dest = "~/.ssh"
+
+[[config]]
+name = "tmux"
+source = ".tmux.conf"
+dest = "~/.tmux.conf"
+
+[[config]]
+name = "vim"
+source = ".vimrc"
+dest = "~/.vimrc"
+
+[[config]]
+name = "waybar"
+source = ".config/waybar"
+dest = "~/.config/waybar"
+
+[[config]]
+name = "xorg"
+source = ".Xresources"
+dest = "~/.Xresources"
+source2 = ".Xresources"
+dest2 = "~/.Xdefaults"
+
+[[config]]
+name = "zellij"
+source = ".config/zellij"
+dest = "~/.config/zellij"
+
+[[config]]
+name = "zsh"
+source = ".zshrc"
+dest = "~/.zshrc"
+source2 = ".zsh"
+dest2 = "~/.zsh"
