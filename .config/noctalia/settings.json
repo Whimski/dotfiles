@@ -165,15 +165,6 @@
                     "id": "plugin:port-monitor"
                 },
                 {
-                    "defaultSettings": {
-                        "connectedColor": "primary",
-                        "disableToastNotifications": false,
-                        "disconnectedColor": "none",
-                        "displayMode": "onhover"
-                    },
-                    "id": "plugin:network-manager-vpn"
-                },
-                {
                     "blacklist": [
                     ],
                     "chevronColor": "none",
