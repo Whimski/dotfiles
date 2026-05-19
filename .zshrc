@@ -79,3 +79,5 @@ compdef _vpn-dot vpn-dot
 # End of lines added by compinstall
 
 
+
+. "$HOME/.local/share/../bin/env"
