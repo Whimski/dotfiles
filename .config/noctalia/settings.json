@@ -148,16 +148,6 @@
             "right": [
                 {
                     "defaultSettings": {
-                        "errorIcon": "alert-circle",
-                        "iconColor": "primary",
-                        "loadingIcon": "loader",
-                        "refreshInterval": 300,
-                        "successIcon": "network"
-                    },
-                    "id": "plugin:ip-monitor"
-                },
-                {
-                    "defaultSettings": {
                         "hideSystemPorts": false,
                         "hideWhenEmpty": false,
                         "refreshInterval": 5
