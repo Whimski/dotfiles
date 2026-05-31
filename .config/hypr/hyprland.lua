@@ -210,6 +210,26 @@ hl.window_rule({
 })
 
 -- ─────────────────────────────────────────────
+-- Notification
+-- ─────────────────────────────────────────────
+
+hl.on("keybinds.submap", function(submap)
+    if submap == "" then
+        hl.notification.create({
+            text = "Normal mode",
+            duration = 2000,
+            icon = "info",
+        })
+    else
+        hl.notification.create({
+            text = "Submap: " .. submap,
+            duration = 3000,
+            icon = "hint",
+        })
+    end
+end)
+
+-- ─────────────────────────────────────────────
 -- Keybindings
 -- ─────────────────────────────────────────────
 
@@ -218,18 +238,19 @@ hl.bind("Print", hl.dsp.exec_cmd("grimblast copy area"))
 hl.bind("SHIFT + Print", hl.dsp.exec_cmd("grimblast copy active"))
 
 -- Resize submap
--- hl.bind(mainMod.. "+ SHIFT + R", "submap", "resize")
--- hyprland.submap("resize", function()
---     hl.binde("",      "right", "resizeactive",  "10 0")
---     hl.binde("",      "left",  "resizeactive", "-10 0")
---     hl.binde("",      "up",    "resizeactive",  "0 -10")
---     hl.binde("",      "down",  "resizeactive",  "0 10")
---     hl.binde("SHIFT", "right", "resizeactive",  "50 0")
---     hl.binde("SHIFT", "left",  "resizeactive", "-50 0")
---     hl.binde("SHIFT", "up",    "resizeactive",  "0 -50")
---     hl.binde("SHIFT", "down",  "resizeactive",  "0 50")
---     hl.bind("",       "escape", "submap", "reset")
--- end)
+hl.bind(mainMod .. " + R", hl.dsp.submap("resize"))
+  hl.define_submap("resize", function()
+    hl.bind("l", hl.dsp.window.resize({ x = 10, y = 0, relative = true}), { repeating = true })
+    hl.bind("h", hl.dsp.window.resize({ x = -10, y = 0, relative = true}), { repeating = true })
+    hl.bind("k", hl.dsp.window.resize({ x = 0, y = 10, relative = true}), { repeating = true })
+    hl.bind("j", hl.dsp.window.resize({ x = 0, y = -10, relative = true}), { repeating = true })
+    hl.bind("SHIFT + l", hl.dsp.window.resize({ x = 50, y = 0, relative = true}), { repeating = true })
+    hl.bind("SHIFT + h", hl.dsp.window.resize({ x = -50, y = 0, relative = true}), { repeating = true })
+    hl.bind("SHIFT + k", hl.dsp.window.resize({ x = 0, y = 50, relative = true}), { repeating = true })
+    hl.bind("SHIFT + j", hl.dsp.window.resize({ x = 0, y = -50, relative = true}), { repeating = true })
+
+    hl.bind("escape", hl.dsp.submap("reset"))
+end)
 
 -- Media / volume / brightness
 hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd(ipc .. " volume increase"))

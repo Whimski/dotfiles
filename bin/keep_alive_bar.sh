@@ -29,5 +29,5 @@ fi
 
 while true; do
   start_processes "$@"
-  sleep 15
+  sleep 5
 done
