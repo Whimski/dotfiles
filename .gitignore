@@ -3,5 +3,8 @@
 monitors.conf
 windowrules.conf
 startup.conf
+monitors.lua
+windowrules.lua
+startup.lua
 hyprpaper.conf
 .config/noctalia/plugins/hassio/
