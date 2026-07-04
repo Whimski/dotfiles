@@ -64,21 +64,21 @@ require("keymaps")
 require('lualine').setup{
   options = { theme = 'ayu_mirage' }
 }
-require('nvim-treesitter.configs').setup {
-  ensure_installed = {
-    "c", "cpp", "lua", "python", "javascript", "html", "css"
-  },
-  sync_install = false,
-  auto_install = true,
 
-  highlight = {
-    enable = true,
-    -- disable = { "csv" },
-    additional_vim_regex_highlighting = false,
-  },
+vim.api.nvim_create_autocmd('FileType', {
+    callback = function()
+        -- Enable Tree-sitter highlighting
+        pcall(vim.treesitter.start)
+        -- Enable Tree-sitter-based indentation
+        vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+    end,
+})
 
-  indent = { enable = true },
-}
+local ensureInstalled = { 'lua', 'python', 'typescript', 'cpp', 'c' }
+local ok_ts, ts = pcall(require, 'nvim-treesitter')
+if ok_ts then
+  ts.install(ensureInstalled)
+end
 
 require("colorizer").setup({
   filetypes = { "css", "scss", "html", "javascript", "lua", "python" },
@@ -165,6 +165,7 @@ require('peek').setup({
 vim.api.nvim_create_autocmd("FileType", {
   pattern = { "c", "cpp" },
   callback = function()
+    vim.bo.indentexpr = ""
     vim.opt_local.cindent = true
     vim.opt_local.cinoptions = "g0,l1,i0,t0,+2,(0,w1,W4"
   end,

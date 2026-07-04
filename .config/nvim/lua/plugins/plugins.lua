@@ -10,13 +10,8 @@ return {
   },
   {
     "nvim-treesitter/nvim-treesitter",
+    branch = "main",
     build = ":TSUpdate",
-    config = function()
-      require("nvim-treesitter.configs").setup({
-        ensure_installed = { "cpp", "c" },
-        indent = { enable = true, disable = { "cpp", "c" } },
-      })
-    end,
   },
   {
     "olrtg/nvim-emmet",
@@ -114,4 +109,3 @@ return {
     opts = {},
   },
 }
-
