@@ -74,7 +74,7 @@ vim.api.nvim_create_autocmd('FileType', {
     end,
 })
 
-local ensureInstalled = { 'lua', 'python', 'typescript', 'cpp', 'c' }
+local ensureInstalled = { 'lua', 'python', 'typescript', 'cpp', 'c', 'bash' }
 local ok_ts, ts = pcall(require, 'nvim-treesitter')
 if ok_ts then
   ts.install(ensureInstalled)
