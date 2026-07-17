@@ -35,6 +35,7 @@ alias usb_writeback="watch -n 1 grep -e Dirty: -e Writeback: /proc/meminfo"
 alias weather='curl -s "https://wttr.in/?m&format=%l:+%c+%t+(%f)"'
 alias weather_f='curl -s "https://wttr.in/?format=%l:+%c+%t+(%f)"'
 alias wg="sudo wg"
+alias serial_connect="sudo screen /dev/ttyUSB0 9600"
 
 source ~/.zsh/rsync.zsh
 fpath=(~/.zsh/completions $fpath)
