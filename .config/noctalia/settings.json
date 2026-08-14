@@ -420,7 +420,7 @@
         "wallpaperChange": ""
     },
     "idle": {
-        "customCommands": "[{\"name\":\"Suspend Vesktop\",\"timeout\":60,\"command\":\"~/dotfiles/bin/manage_processes.sh suspend vesktop\",\"resumeCommand\":\"~/dotfiles/bin/manage_processes.sh resume vesktop\"}]",
+        "customCommands": "[]",
         "enabled": true,
         "fadeDuration": 1,
         "lockCommand": "~/dotfiles/bin/lock.sh",
@@ -457,7 +457,7 @@
         "bluetoothRssiPollingEnabled": false,
         "disableDiscoverability": false,
         "networkPanelView": "wifi",
-        "wifiDetailsViewMode": "grid"
+        "wifiDetailsViewMode": "list"
     },
     "nightLight": {
         "autoSchedule": true,
