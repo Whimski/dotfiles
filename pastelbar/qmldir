@@ -1,0 +1,4 @@
+singleton Theme 1.0 Theme.qml
+singleton Settings 1.0 Settings.qml
+singleton Ui 1.0 Ui.qml
+Wallpaper 1.0 Wallpaper.qml
