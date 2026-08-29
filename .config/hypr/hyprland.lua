@@ -18,9 +18,9 @@ require("windowrules")
 local mainMod     = "SUPER"
 local terminal    = "kitty"
 local fileManager = "dolphin"
-local menu        = "~/dotfiles/pastelbar/bin/pastelbar launcher toggle"
+local menu        = "~/dotfiles/pastel-bar/bin/pastel-bar launcher toggle"
 -- local menu        = "rofi -show drun"
-local ipc         = "~/dotfiles/pastelbar/bin/pastelbar"
+local ipc         = "~/dotfiles/pastel-bar/bin/pastel-bar"
 -- local ipc         = "qs -c noctalia-shell ipc call"
 
 -- require("startup")
@@ -49,8 +49,8 @@ hl.on("hyprland.start", function ()
   hl.exec_cmd('sleep 1 && hyprctl setcursor "Catppuccin Mocha Lavender" 24')
   hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
   hl.exec_cmd("easyeffects --gapplication-service")
-  hl.exec_cmd("qs -p ~/dotfiles/pastelbar")
-  hl.exec_cmd('bash ~/dotfiles/bin/keep_alive_bar.sh qs -p ~/dotfiles/pastelbar')
+  hl.exec_cmd("qs -p ~/dotfiles/pastel-bar")
+  hl.exec_cmd('bash ~/dotfiles/bin/keep_alive_bar.sh qs -p ~/dotfiles/pastel-bar')
   -- hl.exec_cmd("qs -c noctalia-shell")
   -- hl.exec_cmd('bash ~/dotfiles/bin/keep_alive_bar.sh qs -c noctalia-shell')
   hl.exec_cmd("ie-r")
@@ -295,6 +295,10 @@ hl.bind("ALT_L",                 hl.dsp.exec_cmd(ipc .. " bar collapse"), { rele
 hl.bind(mainMod .. " + C",       hl.dsp.exec_cmd(ipc .. " menu toggle cc"))                   -- control center
 hl.bind(mainMod .. " + O",       hl.dsp.exec_cmd(ipc .. " menu toggle settings"))             -- settings
 hl.bind(mainMod .. " + E",       hl.dsp.exec_cmd(ipc .. " menu toggle weather"))              -- weather
+-- Clear all notifications: Left Alt + Left Shift. Key is the Shift_L keysym under the
+-- ALT modmask; non_consuming so Left Alt still reaches apps (and the hold-to-expand /
+-- collapse logic on ALT_L keeps working).
+hl.bind("ALT + SHIFT_L",         hl.dsp.exec_cmd(ipc .. " notif clear"), { non_consuming = true })  -- clear all notifications
 
 -- Media / volume / brightness
 -- hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd(ipc .. " volume increase"))

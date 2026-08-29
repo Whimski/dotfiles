@@ -87,6 +87,10 @@ ShellRoot {
         function toggle() { NightLight.toggle() }
     }
     IpcHandler {
+        target: "notif"
+        function clear() { Notifs.clearAll() }
+    }
+    IpcHandler {
         target: "session"
         function lock() { Power.lock() }
         function suspend() { Power.suspend() }

@@ -1,0 +1,35 @@
+#!/bin/sh
+# pastel-bar CLI — forwards to the running pastel-bar Quickshell instance over IPC.
+#
+# Usage: pastel-bar <target> <function> [args...]
+#
+# Examples (bind these in your Hyprland config):
+#   pastel-bar volume increase
+#   pastel-bar volume decrease
+#   pastel-bar volume mute
+#   pastel-bar volume set 50
+#   pastel-bar brightness increase
+#   pastel-bar brightness decrease
+#   pastel-bar media playpause | next | previous
+#   pastel-bar launcher toggle
+#   pastel-bar cc toggle              # control center
+#   pastel-bar power toggle           # power menu
+#   pastel-bar settings toggle
+#   pastel-bar bar expand             # hold-to-expand the pill (bound to holding SUPER)
+#   pastel-bar bar collapse           #   releasing SUPER collapses it (bindr / { release })
+#   pastel-bar bar toggle             # sticky expand instead
+#   pastel-bar menu toggle settings   # generic panel dispatch (cc|settings|launcher|power|weather)
+#   pastel-bar menu toggle weather    # weather flyout (Open-Meteo)
+#   pastel-bar nightlight toggle
+#   pastel-bar notif clear           # clear all notifications (bound to Left Alt + Left Shift)
+#   pastel-bar session lock | suspend | logout | reboot | poweroff | bios
+#
+# Run `pastel-bar` with no args to list available targets/functions.
+
+PASTELBAR_DIR="${PASTELBAR_DIR:-/home/tobi/dotfiles/pastel-bar}"
+
+if [ "$#" -eq 0 ]; then
+    exec qs -p "$PASTELBAR_DIR" ipc show
+fi
+
+exec qs -p "$PASTELBAR_DIR" ipc call "$@"
