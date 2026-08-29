@@ -18,9 +18,9 @@ require("windowrules")
 local mainMod     = "SUPER"
 local terminal    = "kitty"
 local fileManager = "dolphin"
-local menu        = "~/dotfiles/pastels/pastelbar/bin/pastelbar launcher toggle"
+local menu        = "~/dotfiles/pastelbar/bin/pastelbar launcher toggle"
 -- local menu        = "rofi -show drun"
-local ipc         = "~/dotfiles/pastels/pastelbar/bin/pastelbar"
+local ipc         = "~/dotfiles/pastelbar/bin/pastelbar"
 -- local ipc         = "qs -c noctalia-shell ipc call"
 
 -- require("startup")
@@ -49,8 +49,8 @@ hl.on("hyprland.start", function ()
   hl.exec_cmd('sleep 1 && hyprctl setcursor "Catppuccin Mocha Lavender" 24')
   hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
   hl.exec_cmd("easyeffects --gapplication-service")
-  hl.exec_cmd("qs -p ~/dotfiles/pastels/pastelbar")
-  hl.exec_cmd('bash ~/dotfiles/bin/keep_alive_bar.sh qs -p ~/dotfiles/pastels/pastelbar')
+  hl.exec_cmd("qs -p ~/dotfiles/pastelbar")
+  hl.exec_cmd('bash ~/dotfiles/bin/keep_alive_bar.sh qs -p ~/dotfiles/pastelbar')
   -- hl.exec_cmd("qs -c noctalia-shell")
   -- hl.exec_cmd('bash ~/dotfiles/bin/keep_alive_bar.sh qs -c noctalia-shell')
   hl.exec_cmd("ie-r")
@@ -288,7 +288,10 @@ hl.bind("XF86AudioNext",         hl.dsp.exec_cmd(ipc .. " media next"))
 -- normal bind swallows the key. Needed on BOTH press and release, or the app sees
 -- Alt pressed but never released (stuck).
 hl.bind("ALT_L",                 hl.dsp.exec_cmd(ipc .. " bar expand"), { non_consuming = true })                    -- hold Left Alt to expand…
-hl.bind("ALT + ALT_L",           hl.dsp.exec_cmd(ipc .. " bar collapse"), { release = true, non_consuming = true }) -- …release to collapse
+-- Collapse on Alt release. Bind it both with and without the ALT modmask: after an
+-- Alt+<key> combo the modmask state at release can differ, and a single variant misses it.
+hl.bind("ALT + ALT_L",           hl.dsp.exec_cmd(ipc .. " bar collapse"), { release = true, non_consuming = true })
+hl.bind("ALT_L",                 hl.dsp.exec_cmd(ipc .. " bar collapse"), { release = true, non_consuming = true })
 hl.bind(mainMod .. " + C",       hl.dsp.exec_cmd(ipc .. " menu toggle cc"))                   -- control center
 hl.bind(mainMod .. " + O",       hl.dsp.exec_cmd(ipc .. " menu toggle settings"))             -- settings
 hl.bind(mainMod .. " + E",       hl.dsp.exec_cmd(ipc .. " menu toggle weather"))              -- weather
