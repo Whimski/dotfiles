@@ -18,8 +18,10 @@ require("windowrules")
 local mainMod     = "SUPER"
 local terminal    = "kitty"
 local fileManager = "dolphin"
-local menu        = "rofi -show drun"
-local ipc         = "qs -c noctalia-shell ipc call"
+local menu        = "~/dotfiles/pastels/pastelbar/bin/pastelbar launcher toggle"
+-- local menu        = "rofi -show drun"
+local ipc         = "~/dotfiles/pastels/pastelbar/bin/pastelbar"
+-- local ipc         = "qs -c noctalia-shell ipc call"
 
 -- require("startup")
 -- require("windowrules")
@@ -47,8 +49,10 @@ hl.on("hyprland.start", function ()
   hl.exec_cmd('sleep 1 && hyprctl setcursor "Catppuccin Mocha Lavender" 24')
   hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
   hl.exec_cmd("easyeffects --gapplication-service")
-  hl.exec_cmd("qs -c noctalia-shell")
-  hl.exec_cmd('bash ~/dotfiles/bin/keep_alive_bar.sh qs -c noctalia-shell')
+  hl.exec_cmd("qs -p ~/dotfiles/pastels/pastelbar")
+  hl.exec_cmd('bash ~/dotfiles/bin/keep_alive_bar.sh qs -p ~/dotfiles/pastels/pastelbar')
+  -- hl.exec_cmd("qs -c noctalia-shell")
+  -- hl.exec_cmd('bash ~/dotfiles/bin/keep_alive_bar.sh qs -c noctalia-shell')
   hl.exec_cmd("ie-r")
   hl.exec_cmd("/usr/lib/xdg-desktop-portal")
   hl.exec_cmd("/usr/lib/xdg-desktop-portal-hyprland")
@@ -161,6 +165,21 @@ hl.config({
 })
 
 -- ─────────────────────────────────────────────
+-- Workspaces
+-- ─────────────────────────────────────────────
+
+-- When a workspace holds a single tiled window, drop gaps / border / rounding so
+-- it fills the whole monitor edge-to-edge (effectively fullscreen). Opening a
+-- second window restores the normal gapped layout automatically.
+hl.workspace_rule({
+    workspace   = "w[tv1]",   -- exactly 1 tiled, visible window
+    gaps_out    = 0,
+    gaps_in     = 0,
+    no_border   = true,
+    no_rounding = true,
+})
+
+-- ─────────────────────────────────────────────
 -- Misc
 -- ─────────────────────────────────────────────
 
@@ -255,12 +274,33 @@ end)
 -- Media / volume / brightness
 hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd(ipc .. " volume increase"))
 hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd(ipc .. " volume decrease"))
-hl.bind("XF86AudioMute",         hl.dsp.exec_cmd(ipc .. " volume muteOutput"))
+hl.bind("XF86AudioMute",         hl.dsp.exec_cmd(ipc .. " volume mute"))
 hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd(ipc .. " brightness increase"))
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(ipc .. " brightness decrease"))
-hl.bind("XF86AudioPlay",         hl.dsp.exec_cmd(ipc .. " media playPause"))
--- hl.bind("XF86AudioPlayPause",    hl.dsp.exec_cmd(ipc .. " media playPause"))
+hl.bind("XF86AudioPlay",         hl.dsp.exec_cmd(ipc .. " media playpause"))
 hl.bind("XF86AudioNext",         hl.dsp.exec_cmd(ipc .. " media next"))
+
+-- pastelbar menus
+-- Holding LEFT ALT expands the pill; releasing it collapses. Bind the physical
+-- keysym (Alt_L), not the bare ALT modmask (a "ALT,," bind registers but never
+-- fires). The release needs the ALT modmask since Alt is still held at that point.
+-- nonConsuming: still pass Left Alt through to the focused app (games etc.) — a
+-- normal bind swallows the key. Needed on BOTH press and release, or the app sees
+-- Alt pressed but never released (stuck).
+hl.bind("ALT_L",                 hl.dsp.exec_cmd(ipc .. " bar expand"), { non_consuming = true })                    -- hold Left Alt to expand…
+hl.bind("ALT + ALT_L",           hl.dsp.exec_cmd(ipc .. " bar collapse"), { release = true, non_consuming = true }) -- …release to collapse
+hl.bind(mainMod .. " + C",       hl.dsp.exec_cmd(ipc .. " menu toggle cc"))                   -- control center
+hl.bind(mainMod .. " + O",       hl.dsp.exec_cmd(ipc .. " menu toggle settings"))             -- settings
+hl.bind(mainMod .. " + E",       hl.dsp.exec_cmd(ipc .. " menu toggle weather"))              -- weather
+
+-- Media / volume / brightness
+-- hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd(ipc .. " volume increase"))
+-- hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd(ipc .. " volume decrease"))
+-- hl.bind("XF86AudioMute",         hl.dsp.exec_cmd(ipc .. " volume muteOutput"))
+-- hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd(ipc .. " brightness increase"))
+-- hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(ipc .. " brightness decrease"))
+-- hl.bind("XF86AudioPlay",         hl.dsp.exec_cmd(ipc .. " media playPause"))
+-- hl.bind("XF86AudioNext",         hl.dsp.exec_cmd(ipc .. " media next"))
 
 -- Window management
 hl.bind(mainMod .. "+ RETURN", hl.dsp.exec_cmd(terminal))

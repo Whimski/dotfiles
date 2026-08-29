@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Pastel Calendar
+GenericName=Calendar
+Comment=A pastel + glass calendar with Google Calendar sync
+Exec=/home/tobi/dotfiles/pastels/pastelcal/build/pastelcal
+TryExec=/home/tobi/dotfiles/pastels/pastelcal/build/pastelcal
+Icon=office-calendar
+Terminal=false
+Categories=Office;Calendar;
+Keywords=calendar;google;events;agenda;schedule;
+StartupNotify=true

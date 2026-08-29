@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Pastel File Manager
+GenericName=File Manager
+Comment=A modern pastel file manager with SSH and Samba support
+Exec=/home/tobi/dotfiles/pastels/pastelfm/build/pastelfm %f
+TryExec=/home/tobi/dotfiles/pastels/pastelfm/build/pastelfm
+Icon=system-file-manager
+Terminal=false
+Categories=Utility;Core;FileManager;System;
+MimeType=inode/directory;
+Keywords=files;manager;explorer;ssh;sftp;samba;smb;
+StartupNotify=true

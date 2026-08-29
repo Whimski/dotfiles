@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Pastel Image
+GenericName=Image Viewer
+Comment=A pastel + glass image viewer with blur and pen annotation
+Exec=/home/tobi/dotfiles/pastels/pastelimage/build/pastelimage %f
+TryExec=/home/tobi/dotfiles/pastels/pastelimage/build/pastelimage
+Icon=image-x-generic
+Terminal=false
+Categories=Graphics;Viewer;RasterGraphics;
+MimeType=image/png;image/jpeg;image/webp;image/gif;image/bmp;image/tiff;image/avif;image/svg+xml;
+Keywords=image;photo;viewer;editor;blur;annotate;markup;
+StartupNotify=true

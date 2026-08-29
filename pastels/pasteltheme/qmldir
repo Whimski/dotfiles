@@ -1,0 +1,6 @@
+module pasteltheme
+singleton Theme 1.0 Theme.qml
+GlassPanel 1.0 GlassPanel.qml
+Pill 1.0 Pill.qml
+GlassSlider 1.0 GlassSlider.qml
+IconGlyph 1.0 IconGlyph.qml
