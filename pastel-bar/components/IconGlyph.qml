@@ -268,6 +268,11 @@ Item {
                 dot(5, 7, 1.1); dot(5, 12, 1.1); dot(5, 17, 1.1)
                 begin(); m(9, 7); l(20, 7); m(9, 12); l(20, 12); m(9, 17); l(20, 17); stroke()
                 break
+            case "terminal":
+                begin(); ctx.rect(3 * u, 5 * u, 18 * u, 14 * u); stroke()
+                begin(); m(6.5, 9.5); l(9.5, 12); l(6.5, 14.5); stroke()   // > prompt
+                begin(); m(12, 15); l(16.5, 15); stroke()                   // input line
+                break
             case "eye":
                 begin()
                 ctx.moveTo(3 * u, 12 * u)

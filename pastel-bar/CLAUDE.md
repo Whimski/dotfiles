@@ -46,7 +46,13 @@ UI‑facing surface so components stay backend‑agnostic.
   has **Backup** (Export/Import all settings via `Settings.exportSettings`/`importSettings`, written
   as one object so it round‑trips atomically).
 - `overlays/Launcher.qml` — app launcher; when `Settings.launcherSearchFirst` is on it shows nothing
-  until a query is typed.
+  until a query is typed. **Tab** enters a *run-command* mode: the typed text runs as a detached
+  background shell command (`Quickshell.execDetached(["sh","-c", cmd + " </dev/null >/dev/null 2>&1"])`),
+  so no output leaks. In command mode **Tab** does zsh-like completion — command names for the first
+  token (`compgen -c` via a `Process`), filesystem paths for later tokens (a `FolderListModel` kept
+  pointed at the token's directory, read synchronously); it fills the longest common prefix and, when
+  ambiguous, opens a chip menu that repeated **Tab** cycles (or click a chip). **Shift+Tab** returns
+  to app search. `_setInput`/`_applying` guard against the programmatic edit clearing the menu.
 - `services/ActiveWindow.qml` — per‑monitor active window (class + title) from `Quickshell.Hyprland`.
   Gotchas learned the hard way: `Hyprland.refresh*()` is **async** (models populate next turn and emit
   `valuesChanged`) so recompute reactively on those signals, not synchronously after calling refresh;
