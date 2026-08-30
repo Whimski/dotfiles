@@ -52,10 +52,11 @@ PanelWindow {
             if (matches(pages[j])) { page = pages[j].id; return }
     }
 
-    // A file/colour dialog opens as a normal toplevel stacked BELOW this Top-layer
-    // surface. While one is open, make the whole surface click-through so the
-    // dialog is usable; otherwise keep the full region for outside-click dismiss.
-    property bool dialogOpen: wallDialog.visible || colorDialog.visible
+    // The native colour dialog opens as a normal toplevel stacked BELOW this Top-layer
+    // surface. While it's open, make the whole surface click-through so the dialog is
+    // usable; otherwise keep the full region for outside-click dismiss. (The wallpaper
+    // picker is an in-surface overlay, so it needs the full region — not click-through.)
+    property bool dialogOpen: colorDialog.visible
     mask: dialogOpen ? blankRegion : fullRegion
     Region { id: blankRegion }
     Region { id: fullRegion; width: win.width; height: win.height }
@@ -63,13 +64,9 @@ PanelWindow {
     // Open the raw settings JSON in the user's default editor.
     Process { id: openCfg; command: ["xdg-open", Quickshell.statePath("settings.json")] }
 
-    FileDialog {
-        id: wallDialog
-        property string targetScreen: ""
-        title: "Choose wallpaper" + (targetScreen ? " — " + targetScreen : "")
-        nameFilters: ["Images (*.png *.jpg *.jpeg *.webp *.bmp)"]
-        onAccepted: Settings.setWallpaperFor(targetScreen, selectedFile.toString())
-    }
+    // Themed in-shell wallpaper browser (replaces the native/portal FileDialog so it
+    // matches the theme and has a "show hidden" toggle).
+    WallpaperPicker { id: wallPicker }
     ColorDialog {
         id: colorDialog
         property string target: ""
@@ -784,7 +781,7 @@ PanelWindow {
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
                                 // let the clear glyph win the top-right corner
-                                onClicked: { wallDialog.targetScreen = wpCard.modelData.name; wallDialog.open() }
+                                onClicked: wallPicker.openFor(wpCard.modelData.name, wpCard.wp)
                                 z: -1
                             }
                         }

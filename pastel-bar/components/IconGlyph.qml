@@ -247,6 +247,32 @@ Item {
                 m(4, 8); l(20, 8); m(4, 12); l(20, 12); m(4, 16); l(20, 16); m(6, 20); l(18, 20)
                 stroke()
                 break
+            case "folder":
+                begin(); m(3, 7); l(9, 7); l(11, 9.5); l(21, 9.5); l(21, 19); l(3, 19)
+                ctx.closePath(); stroke()
+                break
+            case "home":
+                begin(); m(3, 12); l(12, 4); l(21, 12); stroke()
+                begin(); m(5.5, 10.5); l(5.5, 19.5); l(18.5, 19.5); l(18.5, 10.5); stroke()
+                begin(); ctx.rect(10.5 * u, 14 * u, 3 * u, 5.5 * u); stroke()
+                break
+            case "eye":
+                begin()
+                ctx.moveTo(3 * u, 12 * u)
+                ctx.bezierCurveTo(7 * u, 6.5 * u, 17 * u, 6.5 * u, 21 * u, 12 * u)
+                ctx.bezierCurveTo(17 * u, 17.5 * u, 7 * u, 17.5 * u, 3 * u, 12 * u)
+                ctx.closePath(); stroke()
+                arc(12, 12, 2.4, 0, 2 * Math.PI)
+                break
+            case "eyeOff":
+                begin()
+                ctx.moveTo(3 * u, 12 * u)
+                ctx.bezierCurveTo(7 * u, 6.5 * u, 17 * u, 6.5 * u, 21 * u, 12 * u)
+                ctx.bezierCurveTo(17 * u, 17.5 * u, 7 * u, 17.5 * u, 3 * u, 12 * u)
+                ctx.closePath(); stroke()
+                arc(12, 12, 2.4, 0, 2 * Math.PI)
+                begin(); m(4, 5); l(20, 19); stroke()
+                break
             }
         }
     }

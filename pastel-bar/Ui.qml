@@ -54,7 +54,7 @@ QtObject {
     // open. A normal release still collapses instantly via the release bind; this only
     // catches the missed case, self-healing after a few seconds.
     property Timer _holdSafety: Timer {
-        interval: 6000
+        interval: 3000
         onTriggered: ui.barExpanded = false
     }
     onBarExpandedChanged: barExpanded ? _holdSafety.restart() : _holdSafety.stop()
