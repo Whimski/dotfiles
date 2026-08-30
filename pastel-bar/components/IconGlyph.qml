@@ -256,6 +256,18 @@ Item {
                 begin(); m(5.5, 10.5); l(5.5, 19.5); l(18.5, 19.5); l(18.5, 10.5); stroke()
                 begin(); ctx.rect(10.5 * u, 14 * u, 3 * u, 5.5 * u); stroke()
                 break
+            case "grid":
+                begin()
+                ctx.rect(4 * u, 4 * u, 7 * u, 7 * u)
+                ctx.rect(13 * u, 4 * u, 7 * u, 7 * u)
+                ctx.rect(4 * u, 13 * u, 7 * u, 7 * u)
+                ctx.rect(13 * u, 13 * u, 7 * u, 7 * u)
+                stroke()
+                break
+            case "list":
+                dot(5, 7, 1.1); dot(5, 12, 1.1); dot(5, 17, 1.1)
+                begin(); m(9, 7); l(20, 7); m(9, 12); l(20, 12); m(9, 17); l(20, 17); stroke()
+                break
             case "eye":
                 begin()
                 ctx.moveTo(3 * u, 12 * u)
