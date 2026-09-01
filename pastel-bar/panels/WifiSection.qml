@@ -10,6 +10,8 @@ Column {
     id: sec
     spacing: 6
     property var pending: null          // network awaiting a password
+    property Item kbReturnTarget: null  // item to refocus after leaving the password field
+    property Item pwInput: null         // the currently-visible password TextInput, if any
 
     Row {
         width: parent.width
@@ -21,7 +23,8 @@ Column {
             width: parent.width - 24
         }
         IconGlyph {
-            name: "refresh"; size: 16; color: Theme.subtext
+            name: "refresh"; size: 16
+            color: Theme.subtext
             MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: Net.rescan() }
         }
     }
@@ -95,6 +98,7 @@ Column {
             Rectangle {
                 width: parent.width
                 visible: sec.pending === modelData
+                onVisibleChanged: if (visible) sec.pwInput = pw
                 radius: Theme.radiusSm
                 height: 38
                 color: Theme.alpha(Theme.current.surface, 0.6)
@@ -121,7 +125,11 @@ Column {
                             font.pixelSize: Theme.fontSize - 1
                             visible: pw.text === "" && !pw.activeFocus
                         }
-                        onAccepted: { Net.connect(modelData, text); sec.pending = null }
+                        onAccepted: {
+                            Net.connect(modelData, text); sec.pending = null
+                            if (sec.kbReturnTarget) sec.kbReturnTarget.forceActiveFocus()
+                        }
+                        Keys.onEscapePressed: if (sec.kbReturnTarget) sec.kbReturnTarget.forceActiveFocus()
                     }
                     Rectangle {
                         anchors.verticalCenter: parent.verticalCenter

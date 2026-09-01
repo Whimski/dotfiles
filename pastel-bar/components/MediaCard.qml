@@ -70,7 +70,7 @@ Item {
                 color: card.fgSub
                 font.pixelSize: Theme.fontSize - 4
                 elide: Text.ElideRight
-                width: parent.width - 20
+                width: parent.width - 96
             }
         }
 
@@ -114,22 +114,28 @@ Item {
         }
     }
 
-    // transport (top-right)
+    // transport (top-right) — sub-items exposed so callers (hint mode) can
+    // position a badge on each button individually, not just on the card.
+    property alias prevItem: prevIcon
+    property alias playPauseItem: playPauseBtn
+    property alias nextItem: nextIcon
+
     Row {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.margins: 12
         spacing: 8
 
-        IconGlyph { name: "prev"; size: 16; color: card.fg
+        IconGlyph { id: prevIcon; name: "prev"; size: 16; color: card.fg
             MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: Media.prev() } }
         Rectangle {
+            id: playPauseBtn
             width: 30; height: 30; radius: 15
             color: Theme.alpha("#ffffff", 0.92)
             IconGlyph { anchors.centerIn: parent; name: Media.playing ? "pause" : "play"; size: 16; color: "#111111" }
             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Media.playPause() }
         }
-        IconGlyph { name: "next"; size: 16; color: card.fg
+        IconGlyph { id: nextIcon; name: "next"; size: 16; color: card.fg
             MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: Media.next() } }
     }
 }

@@ -30,8 +30,14 @@ PanelWindow {
     // ---- navigation ----
     property string page: "network"
     property string query: ""
+    property string radialQuery: ""     // search text for the Network/Bluetooth radial
+    property string netRadialMode: "wifi"   // "wifi" | "eth" — local toggle on the Network page
+    property string audioQuery: ""      // search text for the Audio device list
+    // Clear the search field when switching pages (each page has its own scope).
+    onPageChanged: searchInput.text = ""
+
     readonly property var pages: [
-        { id: "network",   label: "Network",           icon: "wifi",      kw: "wifi internet connection ssid" },
+        { id: "network",   label: "Network",           icon: "wifi",      kw: "wifi ethernet internet connection ssid cable" },
         { id: "bluetooth", label: "Bluetooth",         icon: "bluetooth", kw: "bt device pair headphones" },
         { id: "audio",     label: "Audio",             icon: "volume",    kw: "sound output volume sink speaker" },
         { id: "display",   label: "Display",           icon: "monitor",   kw: "brightness font size bar pill padding text yield apps cover on top layer window class" },
@@ -50,6 +56,152 @@ PanelWindow {
             if (pages[i].id === page && matches(pages[i])) return
         for (var j = 0; j < pages.length; j++)
             if (matches(pages[j])) { page = pages[j].id; return }
+    }
+
+    // ======================= hint mode (Vimium-style) =======================
+    // "F" drops a lettered badge on the sidebar nav plus every hintable control
+    // on the current page; typing its letters activates it. See HintOverlay.
+    function _kbList() {
+        var l = [{ key: "cfgBtn", item: cfgBtn, activate: () => openCfg.running = true }]
+        for (var i = 0; i < win.pages.length; i++) {
+            var navItem = sidebarRepeater.itemAt(i)
+            if (!navItem || !navItem.visible) continue
+            (function (p, it) { l.push({ key: "nav:" + p.id, item: it, activate: () => win.page = p.id }) })(win.pages[i], navItem)
+        }
+        var content = win._kbContentList()
+        for (var j = 0; j < content.length; j++) l.push(content[j])
+        return l
+    }
+    function _kbContentList() {
+        switch (win.page) {
+        case "network": return win._kbRadialList(netRadial, "net")
+        case "bluetooth": return win._kbRadialList(btRadial, "bt")
+        case "audio": return win._kbAudioList()
+        case "display": return win._kbDisplayList()
+        case "style": return win._kbStyleList()
+        case "widgets": return win._kbWidgetsList()
+        case "about": return win._kbAboutList()
+        default: return []
+        }
+    }
+    // Shared by the Network and Bluetooth pages — both are a RadialConnect
+    // instance, just pointed at different services. The orbit keeps spinning
+    // during hint mode (see the onSpinChanged Connections below, which keep
+    // badges tracking their chip/moon instead of freezing the widget).
+    function _kbRadialList(radial, prefix) {
+        var l = []
+        for (var c = 0; c < radial.chipsRepeater.count; c++) {
+            var cIt = radial.chipsRepeater.itemAt(c)
+            if (!cIt || !cIt.action) continue
+            (function (idx, item) { l.push({ key: prefix + ":chip:" + idx, item: item, activate: () => radial.act(item.modelData.kind) }) })(c, cIt)
+        }
+        for (var m = 0; m < radial.resultsRepeater.count; m++) {
+            var mIt = radial.resultsRepeater.itemAt(m)
+            if (!mIt) continue
+            (function (idx, item) { l.push({ key: prefix + ":moon:" + idx, item: item, activate: () => radial.connectResult(item.modelData) }) })(m, mIt)
+        }
+        if (radial.resultsActive) l.push({ key: prefix + ":dismiss", item: radial.centerDiscItem, activate: () => radial.dismissResults() })
+        for (var t = 0; t < radial.modeRepeater.count; t++) {
+            var tIt = radial.modeRepeater.itemAt(t)
+            if (!tIt) continue
+            (function (idx, item) { l.push({ key: prefix + ":mode:" + idx, item: item, activate: () => radial.requestMode(item.modelData.id) }) })(t, tIt)
+        }
+        l.push({ key: prefix + ":power", item: radial.powerButtonItem, activate: () => radial.togglePower() })
+        return l
+    }
+    function _kbAudioList() {
+        var l = []
+        l.push({ key: "audio:mute", item: audioSettings.muteItem, activate: () => Audio.toggleMute() })
+        for (var t = 0; t < audioSettings.tabsRepeater.count; t++) {
+            var tIt = audioSettings.tabsRepeater.itemAt(t)
+            if (!tIt) continue
+            (function (idx, item) { l.push({ key: "audio:tab:" + idx, item: item, activate: () => audioSettings.tab = item.modelData.id }) })(t, tIt)
+        }
+        for (var d = 0; d < audioSettings.devicesRepeater.count; d++) {
+            var dIt = audioSettings.devicesRepeater.itemAt(d)
+            if (!dIt || !dIt.selectable || dIt.isDefault) continue
+            (function (idx, item) {
+                l.push({ key: "audio:dev:" + idx, item: item, activate: () => (audioSettings.tab === "out" ? Audio.setSink(item.modelData) : Audio.setSource(item.modelData)) })
+            })(d, dIt)
+        }
+        return l
+    }
+    function _kbDisplayList() {
+        var l = []
+        var apps = Settings.pillYieldApps || []
+        for (var i = 0; i < apps.length; i++) {
+            var it = yieldChipsRepeater.itemAt(i)
+            if (!it) continue
+            (function (idx, item) { l.push({ key: "disp:yieldChip:" + idx, item: item, activate: () => Settings.removePillYieldApp(apps[idx]) }) })(i, it)
+        }
+        l.push({ key: "disp:yieldFocus", item: yInput, activate: () => yInput.forceActiveFocus() })
+        l.push({ key: "disp:yieldAdd", item: yAddBtn, activate: () => { Settings.addPillYieldApp(yInput.text); yInput.text = "" } })
+        var here = ActiveWindow.activeOn(win.screen ? win.screen.name : "")
+        if (here && here.cls) l.push({ key: "disp:yieldHere", item: yieldHereChip, activate: () => Settings.addPillYieldApp(here.cls) })
+        return l
+    }
+    function _kbStyleList() {
+        var l = []
+        l.push({ key: "style:dark", item: darkRow, activate: () => Settings.mode = (Settings.mode === "dark" ? "light" : "dark") })
+        l.push({ key: "style:auto", item: autoRow, activate: () => Settings.mode = (Settings.mode === "auto" ? (Theme.dark ? "dark" : "light") : "auto") })
+        l.push({ key: "style:paletteCustom", item: customSw, activate: () => Settings.theme = "Custom" })
+        for (var p = 0; p < paletteRepeater.count; p++) {
+            var pIt = paletteRepeater.itemAt(p)
+            if (!pIt) continue
+            (function (idx, item) { l.push({ key: "style:palette:" + idx, item: item, activate: () => Settings.theme = Theme.order[idx] }) })(p, pIt)
+        }
+        if (Settings.theme === "Custom") {
+            for (var c = 0; c < customColorRepeater.count; c++) {
+                var cIt = customColorRepeater.itemAt(c)
+                if (!cIt) continue
+                (function (item) {
+                    l.push({ key: "style:color:" + item.modelData[0], item: item.swatchItem, activate: () => {
+                        colorDialog.target = item.modelData[0]
+                        colorDialog.selectedColor = item.swatch
+                        colorDialog.open()
+                    } })
+                })(cIt)
+            }
+        }
+        for (var s = 0; s < wallpaperRepeater.count; s++) {
+            var wIt = wallpaperRepeater.itemAt(s)
+            if (!wIt) continue
+            (function (idx, item) { l.push({ key: "style:wallpaper:" + idx, item: item, activate: () => wallPicker.openFor(item.modelData.name, item.wp) }) })(s, wIt)
+        }
+        return l
+    }
+    function _kbWidgetsList() {
+        var l = []
+        l.push({ key: "widgets:icons", item: launcherIconsRow, activate: () => Settings.launcherIcons = !Settings.launcherIcons })
+        l.push({ key: "widgets:searchFirst", item: searchFirstRow, activate: () => Settings.launcherSearchFirst = !Settings.launcherSearchFirst })
+        l.push({ key: "widgets:toastContent", item: toastContentRow, activate: () => Settings.notifToastContent = !Settings.notifToastContent })
+        var bl = Settings.mediaBlacklist || []
+        for (var i = 0; i < bl.length; i++) {
+            var it = blacklistChipsRepeater.itemAt(i)
+            if (!it) continue
+            (function (idx, item) { l.push({ key: "widgets:blChip:" + idx, item: item, activate: () => Settings.removeMediaBlacklist(bl[idx]) }) })(i, it)
+        }
+        l.push({ key: "widgets:blFocus", item: blInput, activate: () => blInput.forceActiveFocus() })
+        l.push({ key: "widgets:blAdd", item: addBtn, activate: () => { Settings.addMediaBlacklist(blInput.text); blInput.text = "" } })
+        var players = Media.players || []
+        for (var p = 0; p < players.length; p++) {
+            var qIt = blQuickRepeater.itemAt(p)
+            if (!qIt || !qIt.visible) continue
+            (function (idx, item) { l.push({ key: "widgets:blQuick:" + idx, item: item, activate: () => Settings.addMediaBlacklist(item.pid) }) })(p, qIt)
+        }
+        return l
+    }
+    function _kbAboutList() {
+        return [
+            { key: "about:pathFocus", item: pathInput, activate: () => pathInput.forceActiveFocus() },
+            { key: "about:export", item: exportBtn, activate: () => Settings.exportSettings(pathInput.text) },
+            { key: "about:import", item: importBtn, activate: () => Settings.importSettings(pathInput.text) }
+        ]
+    }
+    function _hintStart() {
+        var p = content.mapToItem(root, 0, 0)
+        hintOverlay.viewport = { y: p.y, height: content.height }
+        hintOverlay.start(win._kbList())
     }
 
     // The native colour dialog opens as a normal toplevel stacked BELOW this Top-layer
@@ -81,6 +233,25 @@ PanelWindow {
     MouseArea {
         anchors.fill: parent
         onClicked: Ui.tuneOpen = false
+    }
+
+    Item {
+        id: kbRoot
+        anchors.fill: parent
+        focus: win.open
+        Keys.onPressed: (event) => {
+            if (hintOverlay.active) { hintOverlay.handleKey(event); event.accepted = true; return }
+            switch (event.key) {
+            case Qt.Key_Slash: searchInput.forceActiveFocus(); break
+            case Qt.Key_F: win._hintStart(); break
+            case Qt.Key_Escape:
+                if (searchInput.text !== "") searchInput.text = ""
+                else Ui.tuneOpen = false
+                break
+            default: return
+            }
+            event.accepted = true
+        }
     }
 
     GlassPanel {
@@ -292,15 +463,26 @@ PanelWindow {
                         color: Theme.text
                         font.pixelSize: Theme.fontSize - 1
                         clip: true
-                        focus: win.open
                         selectByMouse: true
                         selectionColor: Theme.alpha(Theme.accent, 0.4)
-                        onTextChanged: win.query = text
-                        Keys.onEscapePressed: { if (text !== "") { text = "" } else Ui.tuneOpen = false }
+                        onTextChanged: {
+                            if (win.page === "network" || win.page === "bluetooth") { win.radialQuery = text; win.query = "" }
+                            else if (win.page === "audio") { win.audioQuery = text; win.query = "" }
+                            else win.query = text
+                        }
+                        Keys.onEscapePressed: { if (text !== "") text = ""; kbRoot.forceActiveFocus() }
+                        Keys.onReturnPressed: {
+                            if (win.page === "network") netRadial.connectSingleMatch()
+                            else if (win.page === "bluetooth") btRadial.connectSingleMatch()
+                            kbRoot.forceActiveFocus()
+                        }
                         Text {
                             anchors.fill: parent
                             verticalAlignment: Text.AlignVCenter
-                            text: "Search all settings…"
+                            text: win.page === "network" ? "Search for networks…"
+                                : win.page === "bluetooth" ? "Search for devices…"
+                                : win.page === "audio" ? "Search devices…"
+                                : "Search all settings…"
                             color: Theme.subtext
                             font: searchInput.font
                             visible: searchInput.text === ""
@@ -357,6 +539,7 @@ PanelWindow {
                 Item { width: 1; height: 4 }
 
                 Repeater {
+                    id: sidebarRepeater
                     model: win.pages
                     delegate: NavItem {
                         required property var modelData
@@ -386,8 +569,25 @@ PanelWindow {
             Page {
                 visible: win.page === "network"
                 title: "Network"
-                subtitle: "Wi-Fi networks and connection."
-                WifiSection { width: parent.width }
+                subtitle: "Wi-Fi and Ethernet connections."
+                RadialConnect {
+                    id: netRadial
+                    width: parent.width
+                    mode: win.netRadialMode
+                    toggleOptions: [
+                        { id: "wifi", label: "Wi-Fi", icon: "wifi" },
+                        { id: "eth",  label: "Ethernet", icon: "ethernet" }
+                    ]
+                    filter: win.radialQuery
+                    onRequestMode: (id) => win.netRadialMode = id
+                    onClearSearch: searchInput.text = ""
+                }
+                // Keeps hint badges glued to their orbiting chip/moon while the
+                // ring keeps spinning, instead of freezing the whole widget.
+                Connections {
+                    target: netRadial
+                    function onSpinChanged() { if (hintOverlay.active && win.page === "network") hintOverlay.reposition() }
+                }
             }
 
             // ---- Bluetooth ----
@@ -395,28 +595,32 @@ PanelWindow {
                 visible: win.page === "bluetooth"
                 title: "Bluetooth"
                 subtitle: "Pair and manage nearby devices."
-                BluetoothSection { width: parent.width }
+                RadialConnect {
+                    id: btRadial
+                    width: parent.width
+                    mode: "bt"
+                    filter: win.radialQuery
+                    onRequestMode: (id) => win.page = (id === "bt" ? "bluetooth" : "network")
+                    onClearSearch: searchInput.text = ""
+                }
+                Connections {
+                    target: btRadial
+                    function onSpinChanged() { if (hintOverlay.active && win.page === "bluetooth") hintOverlay.reposition() }
+                }
             }
 
             // ---- Audio ----
             Page {
+                id: audioPage
                 visible: win.page === "audio"
                 title: "Audio"
-                subtitle: "Output device and volume."
-                GroupCard {
-                    Slider {
-                        width: parent.width
-                        label: "Volume"; suffix: "%"
-                        from: 0; to: 200
-                        value: Math.round(Audio.volume * 100)
-                        onMoved: (v) => Audio.setVolume(v / 100)
-                    }
-                }
-                GroupCard { AudioSection { width: parent.width } }
+                subtitle: "Devices, inputs and per-app volume."
+                AudioSettings { id: audioSettings; width: parent.width; filter: win.audioQuery }
             }
 
             // ---- Display ----
             Page {
+                id: displayPage
                 visible: win.page === "display"
                 title: "Display"
                 subtitle: "Brightness, text size and the bar's proportions."
@@ -424,6 +628,7 @@ PanelWindow {
                 GroupLabel { text: "SCREEN" }
                 GroupCard {
                     Slider {
+                        id: dispBriSlider
                         width: parent.width
                         label: "Brightness"; suffix: "%"
                         from: 0; to: 100
@@ -435,6 +640,7 @@ PanelWindow {
                 GroupLabel { text: "TEXT" }
                 GroupCard {
                     Slider {
+                        id: fontSlider
                         width: parent.width
                         label: "Font size"; suffix: " px"
                         from: 9; to: 22
@@ -446,6 +652,7 @@ PanelWindow {
                 GroupLabel { text: "MAIN PILL" }
                 GroupCard {
                     Slider {
+                        id: idleVPadSlider
                         width: parent.width
                         label: "Height padding"; suffix: " px"
                         from: 2; to: 24
@@ -453,6 +660,7 @@ PanelWindow {
                         onMoved: (v) => Settings.idleVPad = Math.round(v)
                     }
                     Slider {
+                        id: idlePadSlider
                         width: parent.width
                         label: "Width padding"; suffix: " px"
                         from: 4; to: 48
@@ -476,6 +684,7 @@ PanelWindow {
                         width: parent.width
                         spacing: 6
                         Repeater {
+                            id: yieldChipsRepeater
                             model: Settings.pillYieldApps || []
                             delegate: Rectangle {
                                 required property var modelData
@@ -526,7 +735,8 @@ PanelWindow {
                                 font.pixelSize: Theme.fontSize - 2
                                 clip: true
                                 selectByMouse: true
-                                onAccepted: { Settings.addPillYieldApp(text); text = "" }
+                                onAccepted: { Settings.addPillYieldApp(text); text = ""; kbRoot.forceActiveFocus() }
+                                Keys.onEscapePressed: kbRoot.forceActiveFocus()
                                 Text {
                                     anchors.fill: parent
                                     verticalAlignment: Text.AlignVCenter
@@ -555,6 +765,7 @@ PanelWindow {
                         visible: here !== null && here.cls
                         Text { text: "Focused here — tap to add:"; color: Theme.subtext; font.pixelSize: Theme.fontSize - 4 }
                         Rectangle {
+                            id: yieldHereChip
                             readonly property string cls: parent.here ? (parent.here.cls || "") : ""
                             visible: cls !== ""
                             height: 24
@@ -573,6 +784,7 @@ PanelWindow {
                 GroupLabel { text: "EXPANDED PILL" }
                 GroupCard {
                     Slider {
+                        id: expVPadSlider
                         width: parent.width
                         label: "Height padding"; suffix: " px"
                         from: 2; to: 24
@@ -580,6 +792,7 @@ PanelWindow {
                         onMoved: (v) => Settings.expVPad = Math.round(v)
                     }
                     Slider {
+                        id: expPadSlider
                         width: parent.width
                         label: "Width padding"; suffix: " px"
                         from: 4; to: 48
@@ -598,6 +811,7 @@ PanelWindow {
 
                 // appearance toggles
                 ToggleRow {
+                    id: darkRow
                     icon: "moon"
                     label: "Dark theme"
                     sub: Settings.mode === "auto" ? "Following schedule" : "Manual"
@@ -605,6 +819,7 @@ PanelWindow {
                     onToggled: Settings.mode = (Settings.mode === "dark" ? "light" : "dark")
                 }
                 ToggleRow {
+                    id: autoRow
                     icon: "brightness"
                     label: "Auto light / dark"
                     sub: "Dark from sunset, light by day"
@@ -653,6 +868,7 @@ PanelWindow {
                             MouseArea { id: cma; anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Settings.theme = "Custom" }
                         }
                         Repeater {
+                            id: paletteRepeater
                             model: Theme.order
                             delegate: Rectangle {
                                 required property var modelData
@@ -666,11 +882,13 @@ PanelWindow {
                     }
                     // custom primary/secondary pickers (only for the Custom palette)
                     Repeater {
+                        id: customColorRepeater
                         model: Settings.theme === "Custom" ? [["primary", "Primary"], ["secondary", "Secondary"]] : []
                         delegate: Row {
                             required property var modelData
                             width: parent.width
                             readonly property color swatch: modelData[0] === "secondary" ? Settings.customSecondary : Settings.customPrimary
+                            property alias swatchItem: colorSwatch
                             Text {
                                 text: modelData[1]
                                 color: Theme.text
@@ -679,6 +897,7 @@ PanelWindow {
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                             Rectangle {
+                                id: colorSwatch
                                 width: 38; height: 26; radius: 8
                                 anchors.verticalCenter: parent.verticalCenter
                                 color: parent.swatch
@@ -704,6 +923,7 @@ PanelWindow {
                     width: parent.width
                     spacing: 12
                     Repeater {
+                        id: wallpaperRepeater
                         model: Quickshell.screens
                         delegate: Item {
                             id: wpCard
@@ -791,6 +1011,7 @@ PanelWindow {
                 GroupLabel { text: "GLASS" }
                 GroupCard {
                     Slider {
+                        id: opacitySlider
                         width: parent.width
                         label: "Panel opacity"; suffix: "%"
                         from: 30; to: 100
@@ -802,10 +1023,12 @@ PanelWindow {
 
             // ---- Widgets ----
             Page {
+                id: widgetsPage
                 visible: win.page === "widgets"
                 title: "Widgets"
                 subtitle: "Launcher and notification behaviour."
                 ToggleRow {
+                    id: launcherIconsRow
                     icon: "search"
                     label: "App icons in launcher"
                     sub: "Show each app's icon in results"
@@ -813,6 +1036,7 @@ PanelWindow {
                     onToggled: Settings.launcherIcons = !Settings.launcherIcons
                 }
                 ToggleRow {
+                    id: searchFirstRow
                     icon: "search"
                     label: "Search before showing apps"
                     sub: "Hide the app list until you type"
@@ -820,6 +1044,7 @@ PanelWindow {
                     onToggled: Settings.launcherSearchFirst = !Settings.launcherSearchFirst
                 }
                 ToggleRow {
+                    id: toastContentRow
                     icon: "bell"
                     label: "Notification content in popup"
                     sub: "Show body text in the idle toast"
@@ -843,6 +1068,7 @@ PanelWindow {
                         width: parent.width
                         spacing: 6
                         Repeater {
+                            id: blacklistChipsRepeater
                             model: Settings.mediaBlacklist || []
                             delegate: Rectangle {
                                 required property var modelData
@@ -893,7 +1119,8 @@ PanelWindow {
                                 font.pixelSize: Theme.fontSize - 2
                                 clip: true
                                 selectByMouse: true
-                                onAccepted: { Settings.addMediaBlacklist(text); text = "" }
+                                onAccepted: { Settings.addMediaBlacklist(text); text = ""; kbRoot.forceActiveFocus() }
+                                Keys.onEscapePressed: kbRoot.forceActiveFocus()
                                 Text {
                                     anchors.fill: parent
                                     verticalAlignment: Text.AlignVCenter
@@ -924,6 +1151,7 @@ PanelWindow {
                             width: parent.width
                             spacing: 6
                             Repeater {
+                                id: blQuickRepeater
                                 model: Media.players
                                 delegate: Rectangle {
                                     required property var modelData
@@ -947,6 +1175,7 @@ PanelWindow {
 
             // ---- About ----
             Page {
+                id: aboutPage
                 visible: win.page === "about"
                 title: "About"
                 subtitle: ""
@@ -1012,6 +1241,8 @@ PanelWindow {
                             clip: true
                             selectByMouse: true
                             text: Settings.defaultExportPath
+                            Keys.onEscapePressed: kbRoot.forceActiveFocus()
+                            Keys.onReturnPressed: kbRoot.forceActiveFocus()
                         }
                     }
 
@@ -1020,6 +1251,7 @@ PanelWindow {
                         width: parent.width
                         spacing: 8
                         Rectangle {
+                            id: exportBtn
                             width: (parent.width - 8) / 2
                             height: 34; radius: Theme.radiusSm
                             color: expMa.containsMouse ? Theme.alpha(Theme.accent, 0.9) : Theme.alpha(Theme.accent, 0.78)
@@ -1028,6 +1260,7 @@ PanelWindow {
                                 onClicked: Settings.exportSettings(pathInput.text) }
                         }
                         Rectangle {
+                            id: importBtn
                             width: (parent.width - 8) / 2
                             height: 34; radius: Theme.radiusSm
                             color: impMa.containsMouse ? Theme.alpha(Theme.current.hover, 0.85) : Theme.alpha(Theme.current.hover, 0.6)
@@ -1050,6 +1283,14 @@ PanelWindow {
                     }
                 }
             }
+        }
+
+        // Vimium-style hint mode overlay — mapped into `root`'s coordinate space
+        // (not any one Flickable's) since it covers both the static sidebar and
+        // whichever page's scrolling content is currently visible.
+        HintOverlay {
+            id: hintOverlay
+            mapTo: root
         }
     }
 }

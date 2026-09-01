@@ -290,6 +290,48 @@ Item {
                 arc(12, 12, 2.4, 0, 2 * Math.PI)
                 begin(); m(4, 5); l(20, 19); stroke()
                 break
+            case "headphones":
+                arc(12, 13, 8, Math.PI, 2 * Math.PI)          // headband (upper arc)
+                begin(); ctx.rect(4.5 * u, 12.5 * u, 3.5 * u, 7 * u); stroke()   // left cup
+                begin(); ctx.rect(16 * u, 12.5 * u, 3.5 * u, 7 * u); stroke()    // right cup
+                break
+            case "trash":
+                begin(); m(5, 7); l(19, 7); stroke()                             // lid
+                begin(); m(9.5, 7); l(9.5, 4.5); l(14.5, 4.5); l(14.5, 7); stroke() // handle
+                begin(); m(6.5, 7); l(7.5, 20); l(16.5, 20); l(17.5, 7); stroke()   // can body
+                begin(); m(10, 10); l(10.3, 17); m(14, 10); l(13.7, 17); stroke()   // ribs
+                break
+            case "shield":
+                begin(); m(12, 3.5); l(19, 6.5); l(19, 12); l(15.5, 18.5)
+                l(12, 20.5); l(8.5, 18.5); l(5, 12); l(5, 6.5); ctx.closePath(); stroke()
+                begin(); m(9, 12); l(11.5, 14.5); l(15.5, 9.5); stroke()         // check
+                break
+            case "globe":
+                arc(12, 12, 8.5, 0, 2 * Math.PI)
+                begin(); m(3.5, 12); l(20.5, 12); stroke()                       // equator
+                begin()
+                ctx.moveTo(12 * u, 3.5 * u)
+                ctx.bezierCurveTo(7 * u, 7 * u, 7 * u, 17 * u, 12 * u, 20.5 * u)
+                ctx.bezierCurveTo(17 * u, 17 * u, 17 * u, 7 * u, 12 * u, 3.5 * u)
+                ctx.closePath(); stroke()
+                begin(); m(5, 8.5); l(19, 8.5); m(5, 15.5); l(19, 15.5); stroke() // latitudes
+                break
+            case "broadcast":
+                dot(12, 12, 1.4)
+                arc(12, 12, 4.5, Math.PI * 1.78, Math.PI * 0.22)
+                arc(12, 12, 4.5, Math.PI * 0.78, Math.PI * 1.22)
+                arc(12, 12, 7.5, Math.PI * 1.82, Math.PI * 0.18)
+                arc(12, 12, 7.5, Math.PI * 0.82, Math.PI * 1.18)
+                break
+            case "ethernet":
+                begin()
+                m(2, 12); l(7, 12)                              // cable
+                m(7, 6); l(17, 6); l(17, 18); l(7, 18); l(7, 6) // jack body
+                m(17, 9); l(21, 9)                              // contact pins
+                m(17, 12); l(21, 12)
+                m(17, 15); l(21, 15)
+                stroke()
+                break
             }
         }
     }

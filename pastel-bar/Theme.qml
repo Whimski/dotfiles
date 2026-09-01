@@ -40,7 +40,7 @@ QtObject {
         light: { bg:"#f5f5f7", surface:"#ffffff", panel:"#ececf0", sidebar:"#eeeef2",
                  text:"#242428", subtext:"#77777f", border:"#e0e0e6", hover:"#e6e6ec",
                  selection:"#dcdce4", danger:"#e0607a", onAccent:"#ffffff" },
-        dark:  { bg:"#17171b", surface:"#1f1f24", panel:"#26262c", sidebar:"#1c1c21",
+        dark:  { bg:"#d91f2029", surface:"#1f1f24", panel:"#26262c", sidebar:"#1c1c21",
                  text:"#ececf0", subtext:"#9a9aa4", border:"#33333b", hover:"#2c2c33",
                  selection:"#3a3a44", danger:"#ee6f8a", onAccent:"#17171b" }
     })
@@ -59,9 +59,9 @@ QtObject {
                      accent:"#9b7ede", accent2:"#c9b6f2", text:"#2e2740", subtext:"#7a6f92",
                      border:"#e3d8f5", hover:"#e9dffb", selection:"#d9c8f6", danger:"#e57ba0",
                      onAccent:"#ffffff" },
-            dark:  { bg:"#100b18", surface:"#17111f", panel:"#1c1527", sidebar:"#140f1c",
+            dark:  { bg:"#d91f2029", surface:"#1f1f24", panel:"#26262c", sidebar:"#1c1c21",
                      accent:"#b79bf0", accent2:"#6d5a99", text:"#ece7f7", subtext:"#a89dc4",
-                     border:"#352d4d", hover:"#312a47", selection:"#463a68", danger:"#f090b3",
+                     border:"#352d4d", hover:"#2c2c33", selection:"#3a3a44", danger:"#f090b3",
                      onAccent:"#20182f" }
         },
         "Mint": {
@@ -70,9 +70,9 @@ QtObject {
                      accent:"#5cc79b", accent2:"#a7e3ca", text:"#213a30", subtext:"#5f8677",
                      border:"#d2eee1", hover:"#dcf4ea", selection:"#c2ecd9", danger:"#e88aa0",
                      onAccent:"#ffffff" },
-            dark:  { bg:"#0b110d", surface:"#111a15", panel:"#16211b", sidebar:"#0e1611",
+            dark:  { bg:"#d91f2029", surface:"#1f1f24", panel:"#26262c", sidebar:"#1c1c21",
                      accent:"#71d6ac", accent2:"#3f6b58", text:"#e2f4ec", subtext:"#93bcab",
-                     border:"#2a3d34", hover:"#243830", selection:"#335447", danger:"#f094aa",
+                     border:"#2a3d34", hover:"#2c2c33", selection:"#3a3a44", danger:"#f094aa",
                      onAccent:"#14261e" }
         },
         "Peach": {
@@ -81,9 +81,9 @@ QtObject {
                      accent:"#f38a63", accent2:"#f8c0a8", text:"#412c24", subtext:"#93705f",
                      border:"#f6ddd0", hover:"#fce3d7", selection:"#f9cdb9", danger:"#e0709a",
                      onAccent:"#ffffff" },
-            dark:  { bg:"#140e0a", surface:"#1c1510", panel:"#241913", sidebar:"#170f0a",
+            dark:  { bg:"#d91f2029", surface:"#1f1f24", panel:"#26262c", sidebar:"#1c1c21",
                      accent:"#f59d78", accent2:"#8a5a44", text:"#f6e7df", subtext:"#c8a290",
-                     border:"#42332a", hover:"#3a2c24", selection:"#5a4030", danger:"#ee88aa",
+                     border:"#42332a", hover:"#2c2c33", selection:"#3a3a44", danger:"#ee88aa",
                      onAccent:"#2a1c14" }
         },
         "Sky": {
@@ -92,9 +92,9 @@ QtObject {
                      accent:"#5aa6e6", accent2:"#a7cff2", text:"#1f3244", subtext:"#5e7c93",
                      border:"#d3e6f6", hover:"#dcecfa", selection:"#c1ddf5", danger:"#e57ba0",
                      onAccent:"#ffffff" },
-            dark:  { bg:"#0a0e15", surface:"#111823", panel:"#16202c", sidebar:"#0d131d",
+            dark:  { bg:"#d91f2029", surface:"#1f1f24", panel:"#26262c", sidebar:"#1c1c21",
                      accent:"#6fb4ee", accent2:"#3d6488", text:"#e0eef9", subtext:"#93b3ce",
-                     border:"#293747", hover:"#23303d", selection:"#31506e", danger:"#f090b3",
+                     border:"#293747", hover:"#2c2c33", selection:"#3a3a44", danger:"#f090b3",
                      onAccent:"#15242f" }
         },
         "Rosé": {
@@ -103,9 +103,9 @@ QtObject {
                      accent:"#ec7a9c", accent2:"#f6b6c8", text:"#402631", subtext:"#946a78",
                      border:"#f6d5df", hover:"#fbdde6", selection:"#f8c6d4", danger:"#e0607a",
                      onAccent:"#ffffff" },
-            dark:  { bg:"#140b0f", surface:"#1c1217", panel:"#23161c", sidebar:"#170d12",
+            dark:  { bg:"#d91f2029", surface:"#1f1f24", panel:"#26262c", sidebar:"#1c1c21",
                      accent:"#f090ab", accent2:"#8a4d60", text:"#f6e2e8", subtext:"#cc9aa8",
-                     border:"#422e35", hover:"#3a282f", selection:"#5a3543", danger:"#ee6f8a",
+                     border:"#422e35", hover:"#2c2c33", selection:"#3a3a44", danger:"#ee6f8a",
                      onAccent:"#2a161d" }
         },
         "Sakura": {
@@ -114,9 +114,9 @@ QtObject {
                      accent:"#d987cd", accent2:"#eebbe6", text:"#3b2a3a", subtext:"#8c7189",
                      border:"#f1d6ee", hover:"#f7dff3", selection:"#f0c8ea", danger:"#e5769b",
                      onAccent:"#ffffff" },
-            dark:  { bg:"#120c16", surface:"#191220", panel:"#201627", sidebar:"#150e1a",
+            dark:  { bg:"#d91f2029", surface:"#1f1f24", panel:"#26262c", sidebar:"#1c1c21",
                      accent:"#e29dd8", accent2:"#7d5578", text:"#f4e5f2", subtext:"#c49bbf",
-                     border:"#3e3047", hover:"#362a3e", selection:"#513f5c", danger:"#f088ab",
+                     border:"#3e3047", hover:"#2c2c33", selection:"#3a3a44", danger:"#f088ab",
                      onAccent:"#281a2b" }
         }
     }

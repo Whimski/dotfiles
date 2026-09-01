@@ -38,10 +38,88 @@ PanelWindow {
         }
     }
 
+    // Ordered list of every hintable action (see HintOverlay below), rebuilt on
+    // demand (cheap, and always reflects current visibility of the optional
+    // sections).
+    function _kbList() {
+        var l = []
+        l.push({ key: "gear", item: gearIcon, activate: () => { Ui.tuneOpen = !Ui.tuneOpen } })
+        l.push({ key: "close", item: closeIcon, activate: () => { Ui.ccOpen = false } })
+        l.push({ key: "wifiTile", item: wifiTile, activate: () => Net.setEnabled(!Net.enabled) })
+        l.push({ key: "btTile", item: btTile, activate: () => BT.setPowered(!BT.powered) })
+        l.push({ key: "audioTile", item: audioTile, activate: () => Audio.toggleMute() })
+        l.push({ key: "dndTile", item: dndTile, activate: () => { Notifs.dnd = !Notifs.dnd } })
+        if (inner.audioPickerOpen) {
+            for (var si = 0; si < Audio.sinks.length; si++) {
+                (function (i) { l.push({ key: "sink:" + i, item: picker, activate: () => Audio.setSink(Audio.sinks[i]) }) })(si)
+            }
+        }
+        l.push({ key: "media:prev", item: media.prevItem, activate: () => Media.prev() })
+        l.push({ key: "media:playpause", item: media.playPauseItem, activate: () => Media.playPause() })
+        l.push({ key: "media:next", item: media.nextItem, activate: () => Media.next() })
+        if (inner.wifiOpen) {
+            l.push({ key: "wifi:rescan", item: wifiSec, activate: () => Net.rescan() })
+            if (Net.enabled) {
+                for (var ni = 0; ni < Net.networks.length; ni++) {
+                    (function (i) {
+                        l.push({ key: "net:" + i, item: wifiSec, activate: () => {
+                            var n = Net.networks[i]
+                            var secured = n.security !== undefined && n.security !== 0
+                            if (n.connected) Net.disconnect(n)
+                            else if (secured) wifiSec.pending = (wifiSec.pending === n ? null : n)
+                            else Net.connect(n, "")
+                        } })
+                    })(ni)
+                }
+                if (wifiSec.pending)
+                    l.push({ key: "net:pw", item: wifiSec, activate: () => wifiSec.pwInput.forceActiveFocus() })
+            }
+        }
+        if (inner.btOpen) {
+            l.push({ key: "bt:scan", item: btSec, activate: () => BT.startScan() })
+            if (BT.powered) {
+                for (var bi = 0; bi < BT.devices.length; bi++) {
+                    (function (i) {
+                        l.push({ key: "bt:" + i, item: btSec, activate: () => {
+                            var d = BT.devices[i]
+                            if (d.connected) BT.disconnect(d)
+                            else if (d.paired) BT.connect(d)
+                            else BT.pair(d)
+                        } })
+                    })(bi)
+                }
+            }
+        }
+        if (Notifs.count > 0) {
+            l.push({ key: "notif:clear", item: notifList, activate: () => Notifs.clearAll() })
+            for (var nfi = 0; nfi < Notifs.list.length; nfi++) {
+                (function (i) {
+                    l.push({ key: "notif:" + i, item: notifList, activate: () => Notifs.activate(Notifs.list[i]) })
+                })(nfi)
+            }
+        }
+        return l
+    }
+
     // Click anywhere outside the panel to dismiss the control center.
     MouseArea {
         anchors.fill: parent
         onClicked: Ui.ccOpen = false
+    }
+
+    Item {
+        id: kbScope
+        anchors.fill: parent
+        focus: cc.open
+        Keys.onPressed: (event) => {
+            if (hintOverlay.active) { hintOverlay.handleKey(event); event.accepted = true; return }
+            switch (event.key) {
+            case Qt.Key_F: hintOverlay.start(cc._kbList()); break
+            case Qt.Key_Escape: Ui.ccOpen = false; break
+            default: return
+            }
+            event.accepted = true
+        }
     }
 
     GlassPanel {
@@ -74,12 +152,21 @@ PanelWindow {
             anchors.margins: 14
             clip: true
             contentWidth: width
-            contentHeight: inner.implicitHeight
+            // +12 so the inner Column's own top/bottom inset (see below) is
+            // included in the scrollable range.
+            contentHeight: inner.implicitHeight + 12
             boundsBehavior: Flickable.StopAtBounds
 
             Column {
                 id: inner
-                width: flick.width
+                // Inset a few px from the Flickable's own clip edge — hint badges
+                // (HintOverlay) sit 3px up/left of their target, so an item flush
+                // against local (0,0) has its badge clipped no matter how big the
+                // Flickable's *outer* margin is (clip happens at the Flickable's
+                // own local origin, not the panel's edge).
+                x: 6
+                y: 6
+                width: flick.width - 12
                 spacing: 14
 
                 // Right-clicking a tile reveals its inline list (output devices /
@@ -99,12 +186,16 @@ PanelWindow {
                         width: parent.width - 56
                     }
                     IconGlyph {
-                        name: "gear"; size: 18; color: Theme.subtext
+                        id: gearIcon
+                        name: "gear"; size: 18
+                        color: Theme.subtext
                         MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: Ui.tuneOpen = !Ui.tuneOpen }
                     }
                     Item { width: 10; height: 1 }
                     IconGlyph {
-                        name: "close"; size: 18; color: Theme.subtext
+                        id: closeIcon
+                        name: "close"; size: 18
+                        color: Theme.subtext
                         MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: Ui.ccOpen = false }
                     }
                 }
@@ -118,6 +209,7 @@ PanelWindow {
                     readonly property real cellW: (width - columnSpacing) / 2
 
                     ToggleTile {
+                        id: wifiTile
                         width: parent.cellW
                         icon: Net.enabled ? "wifi" : "wifiOff"
                         label: "Wi-Fi"
@@ -127,6 +219,7 @@ PanelWindow {
                         onRightClicked: inner.wifiOpen = !inner.wifiOpen
                     }
                     ToggleTile {
+                        id: btTile
                         width: parent.cellW
                         icon: BT.powered ? "bluetooth" : "bluetoothOff"
                         label: "Bluetooth"
@@ -136,6 +229,7 @@ PanelWindow {
                         onRightClicked: inner.btOpen = !inner.btOpen
                     }
                     ToggleTile {
+                        id: audioTile
                         width: parent.cellW
                         icon: Audio.muted ? "volumeMute" : "volume"
                         label: "Audio"
@@ -145,6 +239,7 @@ PanelWindow {
                         onRightClicked: inner.audioPickerOpen = !inner.audioPickerOpen
                     }
                     ToggleTile {
+                        id: dndTile
                         width: parent.cellW
                         icon: "bell"
                         label: "DND"
@@ -168,6 +263,7 @@ PanelWindow {
 
                 // ---- sliders ----
                 Slider {
+                    id: volSlider
                     width: parent.width
                     label: "Volume"; suffix: "%"
                     from: 0; to: 200
@@ -175,6 +271,7 @@ PanelWindow {
                     onMoved: (v) => Audio.setVolume(v / 100)
                 }
                 Slider {
+                    id: briSlider
                     width: parent.width
                     label: "Brightness"; suffix: "%"
                     from: 0; to: 100
@@ -183,7 +280,7 @@ PanelWindow {
                 }
 
                 // ---- media ----
-                MediaCard { width: parent.width }
+                MediaCard { id: media; width: parent.width }
 
                 // ---- Wi-Fi networks (right-click the Wi-Fi tile) ----
                 Rectangle {
@@ -198,7 +295,7 @@ PanelWindow {
                     visible: height > 0
                     Behavior on height { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
                     Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
-                    WifiSection { id: wifiSec; width: parent.width }
+                    WifiSection { id: wifiSec; width: parent.width; kbReturnTarget: kbScope }
                 }
 
                 // ---- Bluetooth devices (right-click the Bluetooth tile) ----
@@ -218,7 +315,17 @@ PanelWindow {
                 }
 
                 Rectangle { visible: Notifs.count > 0; width: parent.width; height: 1; color: Theme.strokeGlass }
-                NotificationList { visible: Notifs.count > 0; width: parent.width }
+                NotificationList { id: notifList; visible: Notifs.count > 0; width: parent.width }
+            }
+
+            // Vimium-style hint mode: "f" drops a lettered badge on every clickable
+            // entry from _kbList(); typing its letters activates it. Lives inside the
+            // Flickable so badge positions share `inner`'s coordinate space and scroll/
+            // clip with it automatically.
+            HintOverlay {
+                id: hintOverlay
+                mapTo: flick.contentItem
+                viewport: ({ y: flick.contentY, height: flick.height })
             }
         }
     }

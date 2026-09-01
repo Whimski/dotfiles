@@ -100,3 +100,9 @@ UI‑facing surface so components stay backend‑agnostic.
   scalar writes.
 - Editing the **`Settings` singleton** may not fully hot‑reload live — restart the shell (kill the
   `qs -p …/pastelbar` pid; `keep_alive_bar.sh` respawns it) to pick up `Settings.qml` schema changes.
+- **`Theme.current.onAccent` is a poor choice for a thin focus/selection ring on a solid‑accent‑filled
+  element** — it's tuned for large text/glyph contrast, but on some palettes (e.g. Mint) it's a
+  near‑black *tinted the same hue* as the accent fill, so a 1–2px ring in that colour is nearly
+  invisible even though it reads fine as text. Use **`Theme.text`** instead for that case (matches
+  the existing palette‑swatch‑selection ring convention in `TunePanel`'s Style page) — confirmed via
+  screenshot A/B testing while adding keyboard-nav focus rings to `ToggleTile`/`NavItem`/audio tabs.
