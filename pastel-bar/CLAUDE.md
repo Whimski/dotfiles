@@ -44,7 +44,18 @@ UI‑facing surface so components stay backend‑agnostic.
   Wallpaper&Style/Widgets/About) over a searchable content pane. Display has *"Don't cover these
   apps"* (`pillYieldApps`); Widgets has *"Search before showing apps"* (`launcherSearchFirst`); About
   has **Backup** (Export/Import all settings via `Settings.exportSettings`/`importSettings`, written
-  as one object so it round‑trips atomically).
+  as one object so it round‑trips atomically). Network/Bluetooth pages both embed
+  `panels/RadialConnect.qml` — a glowing center disc for the connected device with info/action chips
+  orbiting it on wavy accent "tendril" connectors, plus a bottom segmented Wi‑Fi/Bluetooth toggle;
+  driven live off the `Net`/`BT` services.
+- `components/HintOverlay.qml` — Vimium‑style keyboard "hint mode" shared by `ControlCenter` and
+  `TunePanel`: **F** calls `start(list)` with a `{key, item, activate}` list from the panel's
+  `_kbList()`, and it drops a lettered badge (prefix‑free labels, generated with Vimium's own
+  BFS‑over‑`chars`‑then‑keep‑leaves algorithm) on every hintable entry; typing a label's letters
+  fires `activate()` immediately — no Enter needed. Escape/Backspace edit the typed prefix. Entries
+  need both an `item` (for position) and an `activate` — sliders with only incr/decr aren't hinted,
+  same as Vimium skips scrollbars. `reposition()` re‑maps badge positions without resetting the typed
+  prefix, for targets that move (e.g. `RadialConnect`'s orbiting chips).
 - `overlays/Launcher.qml` — app launcher; when `Settings.launcherSearchFirst` is on it shows nothing
   until a query is typed. **Tab** enters a *run-command* mode: the typed text runs as a detached
   background shell command (`Quickshell.execDetached(["sh","-c", cmd + " </dev/null >/dev/null 2>&1"])`),
