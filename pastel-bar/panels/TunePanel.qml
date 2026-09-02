@@ -58,6 +58,35 @@ PanelWindow {
             if (matches(pages[j])) { page = pages[j].id; return }
     }
 
+    // PageUp/PageDown scroll the current section's Page (a Flickable) — find
+    // it by visibility rather than keying off `win.page`, since not every
+    // Page instance carries an id.
+    function _activeFlickable() {
+        for (var i = 0; i < content.children.length; i++) {
+            var c = content.children[i]
+            if (c && c.visible && c.contentY !== undefined) return c
+        }
+        return null
+    }
+    function _scrollPage(dir) {
+        var fl = win._activeFlickable()
+        if (!fl) return
+        var maxY = Math.max(0, fl.contentHeight - fl.height)
+        var step = Math.min(220, fl.height * 0.3)
+        pageScrollAnim.target = fl
+        pageScrollAnim.to = Math.max(0, Math.min(maxY, fl.contentY + dir * step))
+        pageScrollAnim.restart()
+    }
+    // Retargeting + restarting (rather than setting contentY directly) means
+    // holding PageDown re-eases from wherever the in-flight animation
+    // currently is, instead of snapping.
+    NumberAnimation {
+        id: pageScrollAnim
+        property: "contentY"
+        duration: Theme.animMed
+        easing.type: Easing.OutCubic
+    }
+
     // ======================= hint mode (Vimium-style) =======================
     // "F" drops a lettered badge on the sidebar nav plus every hintable control
     // on the current page; typing its letters activates it. See HintOverlay.
@@ -244,6 +273,8 @@ PanelWindow {
             switch (event.key) {
             case Qt.Key_Slash: searchInput.forceActiveFocus(); break
             case Qt.Key_F: win._hintStart(); break
+            case Qt.Key_PageDown: win._scrollPage(1); break
+            case Qt.Key_PageUp: win._scrollPage(-1); break
             case Qt.Key_Escape:
                 if (searchInput.text !== "") searchInput.text = ""
                 else Ui.tuneOpen = false

@@ -76,6 +76,11 @@ source = ".ssh"
 dest = "~/.ssh"
 
 [[config]]
+name = "sshd_config.d*"
+source = "./sshd_config.d"
+dest = "/etc/ssh/sshd_config.d"
+
+[[config]]
 name = "tmux"
 source = ".tmux.conf"
 dest = "~/.tmux.conf"

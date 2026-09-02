@@ -1,5 +1,6 @@
 pragma Singleton
 import QtQuick
+import Quickshell.Io
 import Quickshell.Services.Pipewire
 
 // Thin adapter over Quickshell.Services.Pipewire. Exposes the default output
@@ -28,12 +29,25 @@ QtObject {
     readonly property string sourceName: source
         ? (source.description || source.nickname || source.name || "") : ""
 
+    // isSink/isStream only recognize the exact media.class strings Quickshell
+    // hardcodes ("Audio/Sink", "Audio/Source", ...), so a virtual device like
+    // EasyEffects' "Audio/Source/Virtual" node classifies as neither and used
+    // to fall into the input list alongside every other unclassified node
+    // (driver/monitor placeholders, MIDI bridges, meter/spectrum filters,
+    // video sources). Classify off the raw media.class instead so only real
+    // audio devices show up.
+    function _mediaClass(node) {
+        return node && node.properties ? (node.properties["media.class"] || "") : ""
+    }
+
     // Output devices (real sinks, not per-app streams).
     readonly property var sinks: {
         var out = []
         var ns = Pipewire.nodes ? Pipewire.nodes.values : []
-        for (var i = 0; i < ns.length; i++)
-            if (ns[i] && ns[i].isSink && !ns[i].isStream) out.push(ns[i])
+        for (var i = 0; i < ns.length; i++) {
+            var mc = _mediaClass(ns[i])
+            if (mc.indexOf("Audio/Sink") === 0 || mc === "Audio/Duplex") out.push(ns[i])
+        }
         return out
     }
 
@@ -41,8 +55,10 @@ QtObject {
     readonly property var sources: {
         var out = []
         var ns = Pipewire.nodes ? Pipewire.nodes.values : []
-        for (var i = 0; i < ns.length; i++)
-            if (ns[i] && !ns[i].isSink && !ns[i].isStream) out.push(ns[i])
+        for (var i = 0; i < ns.length; i++) {
+            var mc = _mediaClass(ns[i])
+            if (mc.indexOf("Audio/Source") === 0 || mc === "Audio/Duplex") out.push(ns[i])
+        }
         return out
     }
 
@@ -55,38 +71,84 @@ QtObject {
         return out
     }
 
-    // Track every node we display so per-node volume/mute stays live.
-    readonly property var _tracked: {
-        var out = []
-        if (audio.sink) out.push(audio.sink)
-        if (audio.source) out.push(audio.source)
-        var lists = [audio.sinks, audio.sources, audio.streams]
-        for (var l = 0; l < lists.length; l++)
-            for (var i = 0; i < lists[l].length; i++)
-                if (lists[l][i] && out.indexOf(lists[l][i]) < 0) out.push(lists[l][i])
-        return out
+    // Track every node PipeWire knows about (not just the ones we end up
+    // displaying): a node's full `.properties` map (which sinks/sources above
+    // need, to classify by raw media.class) only populates once Quickshell
+    // binds that node's listener, and it only binds tracked nodes -- so the
+    // tracked set can't be derived from the classification without a
+    // chicken-and-egg deadlock (nothing gets bound, so .properties never
+    // populates, so nothing ever classifies). Tracking everything up front
+    // also keeps per-node volume/mute live for every displayed node.
+    property PwObjectTracker _tracker: PwObjectTracker {
+        objects: Pipewire.nodes ? Pipewire.nodes.values : []
     }
-    property PwObjectTracker _tracker: PwObjectTracker { objects: audio._tracked }
+
+    // Pipewire.preferredDefaultAudioSink/Source reject any node whose `type`
+    // doesn't carry the exact AudioSink/AudioSource flag (Quickshell native
+    // code, PwDefaultTracker::changeConfiguredSink/Source) -- so virtual
+    // devices like EasyEffects' "Audio/Source/Virtual" node, which never gets
+    // that flag (see the media.class note above), can never be set as default
+    // through that API even though PipeWire/WirePlumber happily accepts it
+    // (`wpctl set-default` works fine). Shell out to wpctl instead so default
+    // switching works for every device in the lists above, not just the ones
+    // Quickshell's classifier recognizes.
+    property Process _setDefault: Process {}
+    function _wpctlSetDefault(node) {
+        if (!node) return
+        _setDefault.command = ["wpctl", "set-default", String(node.id)]
+        _setDefault.running = true
+    }
+
+    // Same story as _wpctlSetDefault: a node only gets a working `.audio`
+    // (volume/mute) object if Quickshell's native classifier flagged it as
+    // Audio-typed (see the media.class note above) -- for anything it missed,
+    // like EasyEffects' virtual nodes, `.audio` stays null forever, so
+    // dragging its slider would silently do nothing. Fall back to wpctl for
+    // those so the control still works; Quickshell just can't read back their
+    // live volume/mute state (no `.audio` to bind to), so the slider/mute icon
+    // won't reflect out-of-band changes for these specific nodes.
+    property Process _setVolume: Process {}
+    function _wpctlSetVolume(node, v) {
+        if (!node) return
+        _setVolume.command = ["wpctl", "set-volume", String(node.id), String(Math.max(0, Math.min(2, v)))]
+        _setVolume.running = true
+    }
+    property Process _setMute: Process {}
+    function _wpctlToggleMute(node) {
+        if (!node) return
+        _setMute.command = ["wpctl", "set-mute", String(node.id), "toggle"]
+        _setMute.running = true
+    }
 
     // ---- default sink control ----
     function setVolume(v) {
         if (sinkAudio) sinkAudio.volume = Math.max(0, Math.min(2, v))
+        else _wpctlSetVolume(sink, v)
     }
-    function toggleMute() { if (sinkAudio) sinkAudio.muted = !sinkAudio.muted }
-    function setSink(node) { if (node) Pipewire.preferredDefaultAudioSink = node }
+    function toggleMute() {
+        if (sinkAudio) sinkAudio.muted = !sinkAudio.muted
+        else _wpctlToggleMute(sink)
+    }
+    function setSink(node) { _wpctlSetDefault(node) }
 
     // ---- default source control ----
     function setSourceVolume(v) {
         if (sourceAudio) sourceAudio.volume = Math.max(0, Math.min(2, v))
+        else _wpctlSetVolume(source, v)
     }
-    function toggleSourceMute() { if (sourceAudio) sourceAudio.muted = !sourceAudio.muted }
-    function setSource(node) { if (node) Pipewire.preferredDefaultAudioSource = node }
+    function toggleSourceMute() {
+        if (sourceAudio) sourceAudio.muted = !sourceAudio.muted
+        else _wpctlToggleMute(source)
+    }
+    function setSource(node) { _wpctlSetDefault(node) }
 
     // ---- generic per-node control (device cards / streams) ----
     function setNodeVolume(node, v) {
         if (node && node.audio) node.audio.volume = Math.max(0, Math.min(2, v))
+        else _wpctlSetVolume(node, v)
     }
     function toggleNodeMute(node) {
         if (node && node.audio) node.audio.muted = !node.audio.muted
+        else _wpctlToggleMute(node)
     }
 }

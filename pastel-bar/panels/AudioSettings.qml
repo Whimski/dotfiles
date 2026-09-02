@@ -89,9 +89,22 @@ Column {
     }
 
     // ------------------------------------------------------------ header
+    // Tab-aware: the Outputs tab controls the default sink, the Inputs tab
+    // the default source. This is the only slider for whichever device is
+    // active default -- its own card in the list below hides its slider
+    // (see `!card.isDefault`) on the assumption this header covers it, so it
+    // has to actually track the active tab's device rather than always the
+    // sink.
+    readonly property bool headerIsSource: tab === "in"
+    readonly property var headerNode: headerIsSource ? Audio.source : Audio.sink
+    readonly property string headerName: headerIsSource ? Audio.sourceName : Audio.deviceName
+    readonly property real headerVolume: headerIsSource ? Audio.sourceVolume : Audio.volume
+    readonly property bool headerMuted: headerIsSource ? Audio.sourceMuted : Audio.muted
+
     Row {
         width: parent.width
         spacing: 16
+        visible: root.tab !== "streams"
 
         // device-type tile
         Rectangle {
@@ -100,7 +113,7 @@ Column {
             border.width: 1; border.color: Theme.strokeGlass
             IconGlyph {
                 anchors.centerIn: parent
-                name: root._audioIcon(Audio.sink)
+                name: root._audioIcon(root.headerNode)
                 size: 48
                 color: Theme.accent
             }
@@ -113,7 +126,7 @@ Column {
             spacing: 6
             Text {
                 width: parent.width
-                text: Audio.deviceName !== "" ? Audio.deviceName : "No output"
+                text: root.headerName !== "" ? root.headerName : (root.headerIsSource ? "No input" : "No output")
                 color: Theme.text
                 font.pixelSize: Theme.fontSize + 3
                 font.weight: Font.Bold
@@ -121,7 +134,7 @@ Column {
             }
             Text {
                 width: parent.width
-                text: Audio.sink ? Audio.sink.name : ""
+                text: root.headerNode ? root.headerNode.name : ""
                 visible: text !== ""
                 color: Theme.subtext
                 font.family: "monospace"
@@ -134,19 +147,19 @@ Column {
                 IconGlyph {
                     id: muteIcon
                     anchors.verticalCenter: parent.verticalCenter
-                    name: Audio.muted ? "volumeMute" : "volume"; size: 18
+                    name: root.headerMuted ? "volumeMute" : "volume"; size: 18
                     color: Theme.text
                     MouseArea {
                         anchors.fill: parent; anchors.margins: -6
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: Audio.toggleMute()
+                        onClicked: root.headerIsSource ? Audio.toggleSourceMute() : Audio.toggleMute()
                     }
                 }
                 MiniSlider {
                     width: parent.width - 28
                     anchors.verticalCenter: parent.verticalCenter
-                    value: Audio.volume
-                    onMoved: (v) => Audio.setVolume(v)
+                    value: root.headerVolume
+                    onMoved: (v) => root.headerIsSource ? Audio.setSourceVolume(v) : Audio.setVolume(v)
                 }
             }
         }
