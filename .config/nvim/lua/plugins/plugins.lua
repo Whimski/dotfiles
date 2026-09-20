@@ -10,8 +10,26 @@ return {
   },
   {
     "nvim-treesitter/nvim-treesitter",
-    branch = "main",
+    branch = "master",
     build = ":TSUpdate",
+    config = function()
+      require("nvim-treesitter.configs").setup({
+        ensure_installed = {
+          "lua",
+          "python",
+          "typescript",
+          "cpp",
+          "c",
+          "bash",
+        },
+        highlight = {
+          enable = true,
+        },
+        indent = {
+          enable = true,
+        },
+      })
+    end,
   },
   {
     "olrtg/nvim-emmet",
