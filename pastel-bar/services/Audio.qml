@@ -151,4 +151,29 @@ QtObject {
         if (node && node.audio) node.audio.muted = !node.audio.muted
         else _wpctlToggleMute(node)
     }
+
+    // ---- per-stream output routing ----
+    // wpctl has no "move" verb; the actual mechanism (what WirePlumber itself
+    // uses to remember a manual per-app route) is `target.node`/`target.object`
+    // keys on the "default" metadata object, keyed by the stream's node id --
+    // confirmed live on this machine via `pw-metadata -n default`. Setting both
+    // keys relinks a running stream immediately; deleting both reverts it to
+    // following the default sink. Set/clear both keys since different
+    // WirePlumber versions honor one or the other.
+    property Process _setStreamTargetNode: Process {}
+    property Process _setStreamTargetObject: Process {}
+    function setStreamOutput(streamNode, sinkNode) {
+        if (!streamNode || !sinkNode) return
+        _setStreamTargetNode.command = ["pw-metadata", "-n", "default", String(streamNode.id), "target.node", String(sinkNode.id)]
+        _setStreamTargetNode.running = true
+        _setStreamTargetObject.command = ["pw-metadata", "-n", "default", String(streamNode.id), "target.object", String(sinkNode.id)]
+        _setStreamTargetObject.running = true
+    }
+    function clearStreamOutput(streamNode) {
+        if (!streamNode) return
+        _setStreamTargetNode.command = ["pw-metadata", "-n", "default", "-d", String(streamNode.id), "target.node"]
+        _setStreamTargetNode.running = true
+        _setStreamTargetObject.command = ["pw-metadata", "-n", "default", "-d", String(streamNode.id), "target.object"]
+        _setStreamTargetObject.running = true
+    }
 }

@@ -24,10 +24,12 @@ Singleton {
     property alias launcherIcons: adapter.launcherIcons  // show app icons in the launcher list
     property alias launcherSearchFirst: adapter.launcherSearchFirst  // hide app list until a query is typed
     property alias notifToastContent: adapter.notifToastContent  // show body text in the idle toast
-    // Apps the idle pill must not sit on top of: when one of these is the active
-    // window on the pill's monitor, the idle pill drops below it. The expanded
-    // (hover / keybind) and OSD states still show on top. Case-insensitive
-    // substrings matched against the window's class or title.
+    // Apps the pill must not sit on top of: when one of these is the active window
+    // on a monitor, that monitor's bar shows no pill at all — including a
+    // hold-to-expand, which is otherwise allowed to override even fullscreen. The
+    // transient OSD (volume / brightness) still shows, since it only appears in
+    // direct response to a keypress. Case-insensitive substrings matched against
+    // the window's class or title.
     property alias pillYieldApps: adapter.pillYieldApps
     // MPRIS players to ignore for now-playing / transport (case-insensitive
     // substrings matched against a player's identity / dbus name / desktop entry).

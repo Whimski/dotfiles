@@ -17,7 +17,7 @@ require("windowrules")
 
 local mainMod     = "SUPER"
 local terminal    = "kitty"
-local fileManager = "dolphin"
+local fileManager = "pastel-fm"
 local menu        = "~/dotfiles/pastel-bar/bin/pastel-bar launcher toggle"
 -- local menu        = "rofi -show drun"
 local ipc         = "~/dotfiles/pastel-bar/bin/pastel-bar"

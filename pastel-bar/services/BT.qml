@@ -15,6 +15,11 @@ QtObject {
     readonly property bool available: adapter !== null
     property bool powered: adapter ? adapter.enabled : false
 
+    // Every controller present, for the per-adapter "planet" view in the settings
+    // radial. The members above stay default-adapter-scoped: the bar pill, control
+    // center tile and device list are all single-adapter by design.
+    readonly property var adapters: Bluetooth.adapters ? Bluetooth.adapters.values : []
+
     readonly property var devices: Bluetooth.devices ? Bluetooth.devices.values : []
     readonly property var connectedDevices: {
         var out = []
@@ -33,28 +38,35 @@ QtObject {
         return -1
     }
 
-    // ---- codec / profile (pw-dump derived) ----
-    property string codec: ""        // raw codec, e.g. "aac" / "sbc"
-    property string profile: ""      // raw profile, e.g. "a2dp-sink"
-    // Friendly one-line label for the radial chip (e.g. "Hi-Fi (A2DP)").
-    readonly property string codecLabel: {
-        var p = profile.toLowerCase()
-        if (p.indexOf("a2dp") >= 0)
-            return codec !== "" ? "Hi-Fi · " + codec.toUpperCase() : "Hi-Fi (A2DP)"
-        if (p.indexOf("headset") >= 0 || p.indexOf("hsp") >= 0 || p.indexOf("hfp") >= 0)
-            return "Headset"
-        if (profile !== "") return profile
-        return codec !== "" ? codec.toUpperCase() : ""
+    // ---- audio profile / codec (pactl derived) ----
+    // The native Pipewire module is node-centric and has no card-profile
+    // surface, so both the profile list and the switch go through `pactl`.
+    // Everything is keyed on the connected device's own card — the old pw-dump
+    // grep took the first codec in the whole dump regardless of which device it
+    // belonged to, which is wrong the moment two BT audio devices are up.
+    readonly property string cardName: {
+        var d = connectedDevices.length ? connectedDevices[0] : null
+        return (d && d.address) ? "bluez_card." + ("" + d.address).replace(/:/g, "_") : ""
     }
+    // [{ id, label, codec, kind: "a2dp"|"hfp", active, priority }] — A2DP first,
+    // best codec first within each kind. Switching profile is what changes codec.
+    property var codecProfiles: []
+    readonly property var activeProfile: {
+        for (var i = 0; i < codecProfiles.length; i++)
+            if (codecProfiles[i].active) return codecProfiles[i]
+        return null
+    }
+    // Friendly one-line label for the radial chip (e.g. "Hi-Fi \u00b7 AAC").
+    readonly property string codecLabel: activeProfile ? activeProfile.label : ""
 
-    property Process _codec: Process {
+    property Process _cards: Process {
         stdout: StdioCollector {
-            id: codecColl
-            onStreamFinished: bt._parseCodec(codecColl.text)
+            id: cardsColl
+            onStreamFinished: bt._parseCards(cardsColl.text)
         }
     }
 
-    onConnectedCountChanged: refreshCodec()
+    onConnectedCountChanged: { endAttempt(); refreshCodec() }
     Component.onCompleted: refreshCodec()
     property Timer _poll: Timer {
         interval: 15000; running: bt.connectedCount > 0; repeat: true
@@ -62,31 +74,107 @@ QtObject {
     }
 
     function refreshCodec() {
-        if (connectedCount === 0) { codec = ""; profile = ""; return }
-        _codec.command = ["sh", "-c",
-            "d=$(pw-dump 2>/dev/null); " +
-            "c=$(echo \"$d\" | grep -m1 'api.bluez5.codec' | " +
-            "sed -E 's/.*: *\"?([^\",]+)\"?.*/\\1/'); " +
-            "p=$(echo \"$d\" | grep -m1 'api.bluez5.profile' | " +
-            "sed -E 's/.*: *\"?([^\",]+)\"?.*/\\1/'); " +
-            "echo \"CODEC=$c\"; echo \"PROFILE=$p\""]
-        _codec.running = true
+        if (cardName === "") { codecProfiles = []; return }
+        _cards.command = ["pactl", "--format=json", "list", "cards"]
+        _cards.running = true
     }
 
-    function _parseCodec(t) {
-        var lines = (t || "").trim().split("\n")
-        for (var i = 0; i < lines.length; i++) {
-            var ln = lines[i]
-            if (ln.indexOf("CODEC=") === 0) codec = ln.substring(6).trim()
-            else if (ln.indexOf("PROFILE=") === 0) profile = ln.substring(8).trim()
-        }
+    // "High Fidelity Playback (A2DP Sink, codec SBC-XQ)" -> "SBC-XQ"
+    function _codecOf(desc, id) {
+        var m = /codec\s+([^)]+)\)/i.exec("" + (desc || ""))
+        var c = m ? m[1].trim() : id
+        return c.toUpperCase() === "MSBC" ? "mSBC" : c
     }
+
+    function _parseCards(t) {
+        var out = []
+        try {
+            var cards = JSON.parse(t || "[]")
+            for (var i = 0; i < cards.length; i++) {
+                var c = cards[i]
+                if (!c || c.name !== cardName) continue
+                var profs = c.profiles || {}
+                for (var id in profs) {
+                    var pr = profs[id]
+                    if (!pr || id === "off" || pr.available === false) continue
+                    var a2dp = id.indexOf("a2dp") === 0
+                    var hfp = id.indexOf("headset") === 0
+                    if (!a2dp && !hfp) continue
+                    var cd = _codecOf(pr.description, id)
+                    out.push({
+                        "id": id,
+                        "codec": cd,
+                        "kind": a2dp ? "a2dp" : "hfp",
+                        "label": (a2dp ? "Hi-Fi \u00b7 " : "Headset \u00b7 ") + cd,
+                        "active": id === c.active_profile,
+                        "priority": pr.priority || 0
+                    })
+                }
+            }
+        } catch (e) { out = [] }
+        out.sort(function (a, b) {
+            if (a.kind !== b.kind) return a.kind === "a2dp" ? -1 : 1
+            return b.priority - a.priority
+        })
+        codecProfiles = out
+    }
+
+    property Process _setProfile: Process { onExited: bt.refreshCodec() }
+    function setCodecProfile(id) {
+        if (cardName === "" || !id) return
+        _setProfile.command = ["pactl", "set-card-profile", cardName, id]
+        _setProfile.running = true
+    }
+
+    // ---- connect/pair attempt in flight ----
+    // See startScanOn(): scanning is held off until the attempt settles, so the
+    // radio can give the link setup its full attention.
+    property bool connecting: false
+    property Timer _attemptGuard: Timer {
+        interval: 15000; repeat: false
+        onTriggered: bt.connecting = false
+    }
+    function _beginAttempt(dev) {
+        stopScanOn((dev && dev.adapter) || adapter)
+        connecting = true
+        _attemptGuard.restart()
+    }
+    function endAttempt() { connecting = false; _attemptGuard.stop() }
 
     function setPowered(b) { if (adapter) adapter.enabled = b }
     function startScan() { if (adapter) adapter.discovering = true }
     function stopScan() { if (adapter) adapter.discovering = false }
-    function connect(dev) { if (dev && dev.connect) dev.connect() }
+
+    // ---- per-adapter equivalents (multi-controller radial) ----
+    function setAdapterPowered(a, b) { if (a) a.enabled = b }
+    // Discovery is suppressed while a connect/pair attempt is in flight: an
+    // inquiry steals radio airtime from link setup, and on a weak or older
+    // controller that makes the link drop the moment it comes up (seen on the
+    // BCM20702A1 dongle — connect, then immediate disconnect).
+    // The `!a.discovering` guard matters: the radial re-arms the scan every 5s
+    // while its results view is open, and re-issuing StartDiscovery on an
+    // already-discovering controller is what appears to wedge this dongle into
+    // "Discovering: yes" while finding nothing.
+    function startScanOn(a) { if (a && a.enabled && !connecting && !a.discovering) a.discovering = true }
+    function stopScanOn(a) { if (a) a.discovering = false }
+    // Scanning is a per-controller operation, so the radial's single results view
+    // has to drive every adapter at once.
+    function scanAll(on) {
+        var as = adapters
+        for (var i = 0; i < as.length; i++)
+            if (on) startScanOn(as[i]); else stopScanOn(as[i])
+    }
+    function connect(dev) { if (dev && dev.connect) { _beginAttempt(dev); dev.connect() } }
     function disconnect(dev) { if (dev && dev.disconnect) dev.disconnect() }
-    function pair(dev) { if (dev && dev.pair) dev.pair() }
+    function pair(dev) {
+        if (!dev || !dev.pair) return
+        _beginAttempt(dev)
+        // A bond can't be formed unless the adapter is bondable, and BlueZ
+        // persists Pairable per adapter — a `false` left over from an earlier
+        // session makes every pair attempt fail with no visible error.
+        var a = dev.adapter || adapter
+        if (a && !a.pairable) a.pairable = true
+        dev.pair()
+    }
     function unpair(dev) { if (dev && dev.forget) dev.forget() }
 }

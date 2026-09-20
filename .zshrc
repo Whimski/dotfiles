@@ -16,6 +16,9 @@ export EDITOR=vim
 export PF_ASCII="Catppuccin"
 export PF_COL3=1
 export PASTEL_COLOR_MODE=24bit
+export ANDROID_HOME=/opt/android-sdk
+export PATH=$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools
+export PATH="~/.local/bin:$PATH"
 
 alias aria2c='aria2c -s16 -x16'
 alias gitupdateall="git pull && git submodule update --init --recursive --remote"
@@ -37,6 +40,8 @@ alias weather_f='curl -s "https://wttr.in/?format=%l:+%c+%t+(%f)"'
 alias wg="sudo wg"
 alias serial_connect="sudo screen /dev/ttyUSB0 9600"
 alias bios='systemctl reboot --firmware-setup'
+alias antigravity='antigravity --dangerously-skip-permissions'
+alias tunnel='cloudflared tunnel --url http://127.0.0.1:8080'
 
 source ~/.zsh/rsync.zsh
 fpath=(~/.zsh/completions $fpath)
@@ -80,3 +85,7 @@ compdef _wg-dot wg-dot
 compdef _vpn-dot vpn-dot
 # End of lines added by compinstall
 
+
+
+# Added by Antigravity CLI installer
+export PATH="/home/tobi/.local/bin:$PATH"

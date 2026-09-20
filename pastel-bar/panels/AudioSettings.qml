@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell.Services.Pipewire
 import ".."
 import "../components"
 import "../services"
@@ -85,6 +86,50 @@ Column {
             var t = Math.max(0, Math.min(1, mx / track.width))
             ms.value = t
             ms.moved(t)
+        }
+    }
+
+    // A single selectable row ("Follow default output" / one sink) used by the
+    // per-stream output picker below. Same radio-row + checkmark visual as
+    // AudioSection.qml's output list, parameterized for reuse.
+    component OutputChoice: Rectangle {
+        id: choice
+        required property string label
+        required property bool active
+        signal chosen()
+        width: parent.width
+        height: 30
+        radius: Theme.radiusSm
+        color: active ? Theme.alpha(Theme.accent, 0.18)
+                      : Theme.alpha(Theme.current.hover, choiceMa.containsMouse ? 0.6 : 0.4)
+        border.width: 1
+        border.color: active ? Theme.alpha(Theme.accent, 0.6) : Theme.strokeGlass
+        Behavior on color { ColorAnimation { duration: Theme.animFast } }
+        Row {
+            anchors.fill: parent
+            anchors.leftMargin: 10
+            anchors.rightMargin: 10
+            spacing: 8
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: choice.label
+                color: Theme.text
+                font.pixelSize: Theme.fontSize - 2
+                elide: Text.ElideRight
+                width: parent.width - 22
+            }
+            IconGlyph {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: choice.active
+                name: "check"; size: 14; color: Theme.accent
+            }
+        }
+        MouseArea {
+            id: choiceMa
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: choice.chosen()
         }
     }
 
@@ -251,6 +296,21 @@ Column {
                 readonly property string title:
                     modelData.description || modelData.nickname || modelData.name || "Device"
 
+                // ---- per-stream output routing (Streams tab only) ----
+                property bool pickerOpen: false
+                property alias outputToggleItem: outputToggleRow
+                property alias followChoice: followChoiceItem
+                property alias outputChoicesRepeater: outputChoicesRep
+                PwNodeLinkTracker {
+                    id: linkTracker
+                    node: root.tab === "streams" ? card.modelData : null
+                }
+                readonly property var currentTarget: linkTracker.linkGroups.length > 0
+                    ? linkTracker.linkGroups[0].target : null
+                readonly property string currentTargetName: card.currentTarget
+                    ? (card.currentTarget.description || card.currentTarget.nickname || card.currentTarget.name || "Output")
+                    : "Default"
+
                 width: parent.width
                 radius: Theme.radiusSm + 2
                 implicitHeight: col.implicitHeight + 24
@@ -335,6 +395,72 @@ Column {
                             anchors.verticalCenter: parent.verticalCenter
                             value: card.modelData.audio ? card.modelData.audio.volume : 0
                             onMoved: (v) => Audio.setNodeVolume(card.modelData, v)
+                        }
+                    }
+
+                    // per-stream output picker: which device this one app's
+                    // audio plays through, independent of the system default
+                    Column {
+                        width: parent.width
+                        spacing: 6
+                        visible: root.tab === "streams"
+
+                        Item {
+                            id: outputToggleRow
+                            width: parent.width
+                            height: 22
+                            Row {
+                                anchors.fill: parent
+                                spacing: 6
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: "Output: " + card.currentTargetName
+                                    color: Theme.subtext
+                                    font.pixelSize: Theme.fontSize - 3
+                                    elide: Text.ElideRight
+                                    width: parent.width - 18
+                                }
+                                IconGlyph {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    name: "chevron"; size: 12; color: Theme.subtext
+                                    rotation: card.pickerOpen ? 180 : 0
+                                    Behavior on rotation { NumberAnimation { duration: Theme.animFast } }
+                                }
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: card.pickerOpen = !card.pickerOpen
+                            }
+                        }
+
+                        Column {
+                            width: parent.width
+                            spacing: 4
+                            visible: card.pickerOpen
+
+                            OutputChoice {
+                                id: followChoiceItem
+                                label: "Follow default output"
+                                active: !card.currentTarget
+                                onChosen: {
+                                    Audio.clearStreamOutput(card.modelData)
+                                    card.pickerOpen = false
+                                }
+                            }
+                            Repeater {
+                                id: outputChoicesRep
+                                model: Audio.sinks
+                                delegate: OutputChoice {
+                                    required property var modelData
+                                    label: modelData.description || modelData.nickname || modelData.name || "Output"
+                                    active: !!(card.currentTarget && card.currentTarget.id === modelData.id)
+                                    onChosen: {
+                                        Audio.setStreamOutput(card.modelData, modelData)
+                                        card.pickerOpen = false
+                                    }
+                                }
+                            }
                         }
                     }
                 }

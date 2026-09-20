@@ -23,12 +23,16 @@ PanelWindow {
     WlrLayershell.layer: mode === "idle" ? WlrLayershell.Top : WlrLayershell.Overlay
 
     // The idle "main pill" is removed: nothing shows at rest. The pill appears only
-    // when expanded (hold Left Alt → `bar expand`) or as a transient OSD. So the pill
-    // is hidden whenever the bar is idle. (`yieldToApp` kept for the OSD/expanded
-    // states + the Settings entry, but idle is always hidden now.)
+    // when expanded (hold Left Alt → `bar expand`) or as a transient OSD.
+    //
+    // `yieldToApp` is the "Don't cover these apps" setting: when a listed app is the
+    // active window on THIS bar's screen, the *expanded* pill is suppressed here too,
+    // so a hold-to-expand (or a stray hover) can never drop a panel over it. The OSD
+    // still shows — it's transient and only appears in direct response to a volume /
+    // brightness keypress, so it isn't "covering" anything unasked.
     readonly property bool yieldToApp: !!screen && !!ActiveWindow.byMonitor
         && ActiveWindow.matches(screen.name, Settings.pillYieldApps)
-    readonly property bool pillHidden: mode === "idle"
+    readonly property bool pillHidden: mode === "idle" || (mode === "expanded" && yieldToApp)
 
     // ---- state ----
     property bool hovered: false
@@ -394,7 +398,7 @@ PanelWindow {
         radius: Theme.radius
         glow: 0.4
 
-        readonly property bool shown: bar.mode === "expanded" && Notifs.count > 0
+        readonly property bool shown: bar.mode === "expanded" && Notifs.count > 0 && !bar.yieldToApp
         opacity: shown ? 1 : 0
         visible: opacity > 0
         transform: Translate {

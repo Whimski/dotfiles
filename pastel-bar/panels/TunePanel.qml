@@ -114,29 +114,12 @@ PanelWindow {
         }
     }
     // Shared by the Network and Bluetooth pages — both are a RadialConnect
-    // instance, just pointed at different services. The orbit keeps spinning
-    // during hint mode (see the onSpinChanged Connections below, which keep
-    // badges tracking their chip/moon instead of freezing the widget).
+    // instance, just pointed at different services. The widget owns the walk over
+    // its planets' chips/moons/discs; the orbit keeps spinning during hint mode
+    // (see the onSpinChanged Connections below, which keep badges tracking their
+    // chip/moon instead of freezing the widget).
     function _kbRadialList(radial, prefix) {
-        var l = []
-        for (var c = 0; c < radial.chipsRepeater.count; c++) {
-            var cIt = radial.chipsRepeater.itemAt(c)
-            if (!cIt || !cIt.action) continue
-            (function (idx, item) { l.push({ key: prefix + ":chip:" + idx, item: item, activate: () => radial.act(item.modelData.kind) }) })(c, cIt)
-        }
-        for (var m = 0; m < radial.resultsRepeater.count; m++) {
-            var mIt = radial.resultsRepeater.itemAt(m)
-            if (!mIt) continue
-            (function (idx, item) { l.push({ key: prefix + ":moon:" + idx, item: item, activate: () => radial.connectResult(item.modelData) }) })(m, mIt)
-        }
-        if (radial.resultsActive) l.push({ key: prefix + ":dismiss", item: radial.centerDiscItem, activate: () => radial.dismissResults() })
-        for (var t = 0; t < radial.modeRepeater.count; t++) {
-            var tIt = radial.modeRepeater.itemAt(t)
-            if (!tIt) continue
-            (function (idx, item) { l.push({ key: prefix + ":mode:" + idx, item: item, activate: () => radial.requestMode(item.modelData.id) }) })(t, tIt)
-        }
-        l.push({ key: prefix + ":power", item: radial.powerButtonItem, activate: () => radial.togglePower() })
-        return l
+        return radial.hintEntries(prefix)
     }
     function _kbAudioList() {
         var l = []
@@ -148,7 +131,24 @@ PanelWindow {
         }
         for (var d = 0; d < audioSettings.devicesRepeater.count; d++) {
             var dIt = audioSettings.devicesRepeater.itemAt(d)
-            if (!dIt || !dIt.selectable || dIt.isDefault) continue
+            if (!dIt) continue
+            if (audioSettings.tab === "streams") {
+                (function (idx, item) {
+                    l.push({ key: "audio:stream:" + idx, item: item.outputToggleItem, activate: () => item.pickerOpen = !item.pickerOpen })
+                    if (item.pickerOpen) {
+                        l.push({ key: "audio:stream:" + idx + ":default", item: item.followChoice, activate: () => item.followChoice.chosen() })
+                        for (var s = 0; s < item.outputChoicesRepeater.count; s++) {
+                            var sIt = item.outputChoicesRepeater.itemAt(s)
+                            if (!sIt) continue
+                            (function (sidx, sitem) {
+                                l.push({ key: "audio:stream:" + idx + ":out:" + sidx, item: sitem, activate: () => sitem.chosen() })
+                            })(s, sIt)
+                        }
+                    }
+                })(d, dIt)
+                continue
+            }
+            if (!dIt.selectable || dIt.isDefault) continue
             (function (idx, item) {
                 l.push({ key: "audio:dev:" + idx, item: item, activate: () => (audioSettings.tab === "out" ? Audio.setSink(item.modelData) : Audio.setSource(item.modelData)) })
             })(d, dIt)
@@ -631,7 +631,6 @@ PanelWindow {
                     width: parent.width
                     mode: "bt"
                     filter: win.radialQuery
-                    onRequestMode: (id) => win.page = (id === "bt" ? "bluetooth" : "network")
                     onClearSearch: searchInput.text = ""
                 }
                 Connections {
@@ -704,7 +703,7 @@ PanelWindow {
                 GroupCard {
                     Text {
                         width: parent.width
-                        text: "When one of these apps is focused, the idle pill drops below it instead of on top. Expanding the pill still shows over it. Matches window class / title, case-insensitive."
+                        text: "When one of these apps is focused, this monitor's bar stays out of the way \u2014 even holding Alt won't bring the pill up over it. Volume / brightness popups still show. Matches window class / title, case-insensitive."
                         color: Theme.subtext
                         font.pixelSize: Theme.fontSize - 3
                         wrapMode: Text.Wrap
