@@ -14,11 +14,17 @@ QtObject {
     readonly property bool available: Networking.devices !== null
     property bool enabled: Networking.wifiEnabled
 
-    // The Wi-Fi device is the NetworkDevice exposing a `networks` model.
+    // The Wi-Fi device is the NetworkDevice exposing a `networks` model, named
+    // like a real radio (wlan0/wlo1/wlp7s0/wlx...) rather than a p2p-dev-wl*
+    // pseudo-device — NetworkManager exposes those as WifiDevices too (with an
+    // always-empty `networks`), and if one sorts before the real interface it
+    // silently wins and the actual radio never shows up.
     readonly property var wifiDevice: {
         var ds = Networking.devices ? Networking.devices.values : []
         for (var i = 0; i < ds.length; i++)
-            if (ds[i] && ds[i].networks !== undefined) return ds[i]
+            if (ds[i] && ds[i].networks !== undefined && /^wl/i.test(ds[i].name || "")) return ds[i]
+        for (var j = 0; j < ds.length; j++)
+            if (ds[j] && ds[j].networks !== undefined) return ds[j]
         return null
     }
     readonly property string ifaceName: wifiDevice ? (wifiDevice.name || "") : ""
