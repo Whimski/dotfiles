@@ -41,10 +41,14 @@ alias wg="sudo wg"
 alias serial_connect="sudo screen /dev/ttyUSB0 9600"
 alias bios='systemctl reboot --firmware-setup'
 alias antigravity='antigravity --dangerously-skip-permissions'
-alias tunnel='cloudflared tunnel --url http://127.0.0.1:8080'
+alias ssh_tunnel='ssh -o ProxyCommand="cloudflared access ssh --hostname %h"' 
 
 source ~/.zsh/rsync.zsh
 fpath=(~/.zsh/completions $fpath)
+
+tunnel() {
+    cloudflared tunnel --url "http://127.0.0.1:$1"
+}
 
 disown_app() {
   for cmd in "$@"; do
