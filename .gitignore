@@ -9,3 +9,4 @@ startup.lua
 hyprpaper.conf
 .config/noctalia/plugins/hassio/
 pastels/*/build/
+.uuid
