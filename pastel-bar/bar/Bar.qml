@@ -8,7 +8,7 @@ import "../services"
 
 // The floating bar pill: a centered, top-anchored glass panel with three
 // states — idle (wave + clock), expanded on hover (now-playing + clock/date +
-// wifi/bt pills), and OSD (the same pill morphed to show volume/brightness).
+// battery pill), and OSD (the same pill morphed to show volume/brightness).
 PanelWindow {
     id: bar
     property var modelData
@@ -199,7 +199,7 @@ PanelWindow {
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
 
-          // top row: now-playing + clock + wifi/bt pills
+          // top row: now-playing + clock + battery pill
           Row {
             id: expandedTop
             anchors.horizontalCenter: parent.horizontalCenter
@@ -291,55 +291,38 @@ PanelWindow {
                 }
             }
 
-            // ---- wifi + bt/battery pills ----
+            // ---- battery pill ----
             Row {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 8
+                visible: Battery.present
 
-                // wifi
-                Rectangle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 36; height: 26; radius: 9
-                    color: Net.enabled ? Theme.alpha(Theme.accent, 0.92)
-                                       : Theme.alpha(Theme.current.hover, 0.5)
-                    IconGlyph {
-                        anchors.centerIn: parent
-                        name: Net.enabled ? "wifi" : "wifiOff"
-                        color: Net.enabled ? Theme.current.onAccent : Theme.subtext
-                        size: 16
-                    }
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                        onClicked: Ui.openCC("wifi") }
-                }
-
-                // bluetooth / battery
                 Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
                     height: 26; radius: 9
-                    width: btRow.implicitWidth + 16
-                    color: BT.powered ? Theme.alpha(Theme.accent, 0.92)
-                                      : Theme.alpha(Theme.current.hover, 0.5)
+                    width: battRow.implicitWidth + 16
+                    color: Battery.charging ? Theme.alpha(Theme.accent, 0.92)
+                                             : Theme.alpha(Theme.current.hover, 0.5)
                     Row {
-                        id: btRow
+                        id: battRow
                         anchors.centerIn: parent
                         spacing: 5
                         IconGlyph {
                             anchors.verticalCenter: parent.verticalCenter
-                            name: BT.powered ? "bluetooth" : "bluetoothOff"
-                            color: BT.powered ? Theme.current.onAccent : Theme.subtext
+                            name: "battery"
+                            color: Battery.charging ? Theme.current.onAccent : Theme.subtext
                             size: 14
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            visible: BT.battery >= 0
-                            text: BT.battery.toString()
-                            color: Theme.current.onAccent
+                            text: Battery.percent + "%"
+                            color: Battery.charging ? Theme.current.onAccent : Theme.text
                             font.pixelSize: Theme.fontSize - 3
                             font.weight: Font.Bold
                         }
                     }
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                        onClicked: Ui.openCC("bt") }
+                        onClicked: Ui.openCC("") }
                 }
             }
           }

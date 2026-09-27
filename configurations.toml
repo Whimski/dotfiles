@@ -86,6 +86,11 @@ source = ".tmux.conf"
 dest = "~/.tmux.conf"
 
 [[config]]
+name = "tuios"
+source = ".config/tuios"
+dest = "~/.config/tuios"
+
+[[config]]
 name = "vim"
 source = ".vimrc"
 dest = "~/.vimrc"

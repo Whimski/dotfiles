@@ -27,7 +27,7 @@ qs -p /home/tobi/dotfiles/pastel-bar
 
 ## Backends (native noctalia modules, wrapped in `services/`)
 
-`Net`, `BT`, `Audio` (Pipewire), `Media` (Mpris), `Notifs`, `Polkit` are native
+`Net`, `BT`, `Audio` (Pipewire), `Media` (Mpris), `Notifs`, `Polkit`, `Battery` (UPower) are native
 `Quickshell.*`/`Services.*`. `Brightness` (`brightnessctl`/`ddcutil`), `NightLight` (`wlsunset`),
 `Power` (`systemctl`/`loginctl`) shell out via `Process`. `BT` is mostly native but shells out to
 `pactl` for audio card profiles, which the Pipewire module does not expose. Each service is a singleton exposing a small
@@ -103,6 +103,10 @@ UI‑facing surface so components stay backend‑agnostic.
     reads changes. `byMonitor` is reassigned wholesale for exactly that reason, and `Bar`'s
     `!!ActiveWindow.byMonitor &&` prefix exists **only** to establish that dependency — don't
     "simplify" it away.
+- `services/Battery.qml` — thin wrapper over `Quickshell.Services.UPower`'s `displayDevice`
+  (`present`/`percent`/`charging`). The expanded pill's top row shows a single battery pill (icon +
+  `%`, accent‑tinted while charging) instead of the old separate wifi/bt pills; `present` gates it off
+  entirely on desktops with no laptop battery. Clicking it opens the control center.
 - The **idle "main pill" is removed** — at rest the bar shows nothing (pill hidden + input mask
   dropped, so it's click-through). The pill appears only when **expanded** (hold **Left Alt** →
   `bar expand`, bound in `hyprland.lua`) or as a transient **OSD** (volume/brightness). Hover-to-expand
