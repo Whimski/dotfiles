@@ -60,7 +60,26 @@ source ~/.zsh/catppuccin_mocha-zsh-syntax-highlighting.zsh
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 source <(fzf --zsh)
 
+# --- vim keybinds, insert-mode-only (added; revert by uncommenting the next
+# line and deleting everything down to the matching END marker below) ---
+# bindkey -v
 bindkey -v
+# Escape normally switches viins -> vicmd (vi "normal mode"). Removing that
+# binding means Esc does nothing special, so you never leave insert mode.
+bindkey -M viins -r '^['
+# Vim-flavored motions/edits mapped onto Alt (Meta) so hjkl stay free for
+# typing text; all of these run without leaving insert mode.
+bindkey -M viins '^[h' backward-char          # Alt-h
+bindkey -M viins '^[l' forward-char           # Alt-l
+bindkey -M viins '^[k' up-line-or-history     # Alt-k
+bindkey -M viins '^[j' down-line-or-history   # Alt-j
+bindkey -M viins '^[w' forward-word           # Alt-w
+bindkey -M viins '^[b' backward-word          # Alt-b
+bindkey -M viins '^[d' kill-word              # Alt-d
+bindkey -M viins '^[0' beginning-of-line      # Alt-0
+bindkey -M viins '^[$' end-of-line            # Alt-$
+bindkey -M viins '^[x' vi-delete              # Alt-x (vi-style delete op)
+# --- END vim keybinds, insert-mode-only ---
 bindkey ^R history-incremental-search-backward
 bindkey ^S history-incremental-search-forward
 bindkey "^I" menu-complete

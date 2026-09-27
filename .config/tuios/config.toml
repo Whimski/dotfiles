@@ -250,3 +250,6 @@ terminal_prev_window = ['alt+p']
 log_level = 'off'
 default_codec = 'gob'
 socket_path = ''
+
+[startup]
+daemon = true
