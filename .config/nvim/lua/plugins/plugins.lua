@@ -21,6 +21,7 @@ return {
           "cpp",
           "c",
           "bash",
+          "toml",
         },
         highlight = {
           enable = true,
