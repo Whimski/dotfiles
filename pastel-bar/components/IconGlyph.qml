@@ -9,6 +9,9 @@ Item {
     property string name: ""
     property color color: Theme.text
     property real size: 18
+    // battery-only extras: fill level + bolt overlay when charging
+    property real battPercent: 100
+    property bool battCharging: false
 
     implicitWidth: size
     implicitHeight: size
@@ -17,6 +20,8 @@ Item {
 
     onColorChanged: cv.requestPaint()
     onNameChanged: cv.requestPaint()
+    onBattPercentChanged: cv.requestPaint()
+    onBattChargingChanged: cv.requestPaint()
 
     Canvas {
         id: cv
@@ -103,8 +108,22 @@ Item {
                 dot(12, 15, 1.1)
                 break
             case "battery":
+                // outer shell + terminal nub
                 begin(); ctx.rect(4 * u, 8 * u, 15 * u, 8 * u); stroke()
                 begin(); ctx.rect(19 * u, 10.5 * u, 1.6 * u, 3 * u); ctx.fill()
+                // fill level, inset from the shell stroke
+                var pct = Math.max(0, Math.min(100, ic.battPercent))
+                var fx = 5.6, fy = 9.6, fw = 11.8, fh = 5.8
+                var lw = Math.max(fw * (pct / 100), pct > 0 ? 1.2 : 0)
+                if (lw > 0) {
+                    ctx.fillStyle = ic.battCharging ? ic.color : (pct <= 20 ? Theme.danger : ic.color)
+                    ctx.fillRect(fx * u, fy * u, lw * u, fh * u)
+                    ctx.fillStyle = ic.color
+                }
+                break
+            case "bolt":
+                begin(); m(13, 3); l(6, 14); l(11, 14); l(10, 21); l(18, 9); l(13, 9)
+                ctx.closePath(); ctx.fill()
                 break
             case "close":
                 begin(); m(6, 6); l(18, 18); m(18, 6); l(6, 18); stroke()

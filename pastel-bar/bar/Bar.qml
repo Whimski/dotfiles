@@ -298,11 +298,13 @@ PanelWindow {
                 visible: Battery.present
 
                 Rectangle {
+                    readonly property bool low: !Battery.charging && Battery.percent <= 20
                     anchors.verticalCenter: parent.verticalCenter
                     height: 26; radius: 9
                     width: battRow.implicitWidth + 16
                     color: Battery.charging ? Theme.alpha(Theme.accent, 0.92)
-                                             : Theme.alpha(Theme.current.hover, 0.5)
+                                             : (low ? Theme.alpha(Theme.danger, 0.18)
+                                                    : Theme.alpha(Theme.current.hover, 0.5))
                     Row {
                         id: battRow
                         anchors.centerIn: parent
@@ -310,13 +312,25 @@ PanelWindow {
                         IconGlyph {
                             anchors.verticalCenter: parent.verticalCenter
                             name: "battery"
-                            color: Battery.charging ? Theme.current.onAccent : Theme.subtext
+                            battPercent: Battery.percent
+                            battCharging: Battery.charging
+                            color: Battery.charging ? Theme.current.onAccent
+                                                     : (parent.parent.low ? Theme.danger : Theme.subtext)
                             size: 14
+                        }
+                        IconGlyph {
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: Battery.charging
+                            width: visible ? implicitWidth : 0
+                            name: "bolt"
+                            color: Theme.current.onAccent
+                            size: 11
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: Battery.percent + "%"
-                            color: Battery.charging ? Theme.current.onAccent : Theme.text
+                            color: Battery.charging ? Theme.current.onAccent
+                                                     : (parent.parent.low ? Theme.danger : Theme.text)
                             font.pixelSize: Theme.fontSize - 3
                             font.weight: Font.Bold
                         }

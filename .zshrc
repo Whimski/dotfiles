@@ -19,7 +19,11 @@ export PASTEL_COLOR_MODE=24bit
 export ANDROID_HOME=/opt/android-sdk
 export PATH=$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools
 export PATH="~/.local/bin:$PATH"
-
+  
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias .....='cd ../../../..'
 alias aria2c='aria2c -s16 -x16'
 alias gitupdateall="git pull && git submodule update --init --recursive --remote"
 alias grep='grep --color'

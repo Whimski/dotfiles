@@ -253,3 +253,6 @@ socket_path = ''
 
 [startup]
 daemon = true
+
+[hosts.yuta]
+addr = "tobi@yuta-local"
