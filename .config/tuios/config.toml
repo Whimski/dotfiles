@@ -179,7 +179,7 @@ cursor_bg = ''
 cursor_fg = ''
 
 [appearance.sidebar]
-enabled = true
+enabled = false
 position = 'right'
 width = 24
 workspaces = ''
@@ -568,7 +568,7 @@ resume_agents = 'ask'
 
 [startup]
 open_default_window = true
-tiled = false
+tiled = true
 start_in_terminal_mode = true
 layout = 'bsp'
 daemon = true
@@ -605,8 +605,8 @@ shake = false
 [dock]
 [dock.clock]
 [hosts]
+[hosts.rikka]
+addr = 'tobi@rikka'
+
 [hosts.yuta]
 addr = 'tobi@yuta-local'
-
-[hosts.rikka]
-addr = "tobi@rikka"
