@@ -596,6 +596,7 @@ idle_minutes = 10
 effect = 'random'
 
 [spotlight]
+enabled = false
 follow = 'mouse'
 radius = 10
 dim = 75
