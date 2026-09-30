@@ -50,8 +50,76 @@ alias ssh_tunnel='ssh -o ProxyCommand="cloudflared access ssh --hostname %h"'
 source ~/.zsh/rsync.zsh
 fpath=(~/.zsh/completions $fpath)
 
+# Quick public tunnel to a local port. Uses cloudflared (random *.trycloudflare.com) when
+# installed, else Pinggy over plain ssh (free: 60 min per tunnel). Only the address and
+# errors are shown; -v shows the provider's full output.
+#   tunnel 8080            http on port 8080
+#   tunnel http 3000       same, explicit
+#   tunnel https 8443      local https server (cloudflared only)
+#   tunnel ssh [port]      ssh (default 22); connect from the other side with the printed command
+#   tunnel -p ...          force Pinggy     tunnel -c ...   force cloudflared
 tunnel() {
-    cloudflared tunnel --url "http://127.0.0.1:$1"
+    local provider verbose=0 proto=http port
+    (( $+commands[cloudflared] )) && provider=cloudflared || provider=pinggy
+    while [[ $1 == -* ]]; do
+        case $1 in
+            -p|--pinggy) provider=pinggy ;;
+            -c|--cloudflared) provider=cloudflared ;;
+            -v|--verbose) verbose=1 ;;
+            *) echo "tunnel: unknown option $1" >&2; return 1 ;;
+        esac
+        shift
+    done
+    case $1 in
+        http|https|ssh) proto=$1; shift ;;
+    esac
+    port=${1:-$([[ $proto == ssh ]] && echo 22)}
+    if [[ -z $port ]]; then
+        echo "usage: tunnel [-p|-c] [-v] [http|https|ssh] <port>   (ssh defaults to 22)" >&2
+        return 1
+    fi
+    if [[ $provider == pinggy && $proto == https ]]; then
+        echo "tunnel: https origins need cloudflared (Pinggy can't verify-skip a local cert)" >&2
+        return 1
+    fi
+
+    # Throwaway random hosts: never record them (or Pinggy's relay) in known_hosts.
+    local noknown=(-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no)
+    local -a cmd
+    if [[ $provider == cloudflared ]]; then
+        cmd=(cloudflared tunnel --url "$proto://127.0.0.1:$port")
+        [[ $proto == https ]] && cmd+=(--no-tls-verify)
+    else
+        cmd=(ssh -T -p 443 $noknown -o LogLevel=ERROR -o ServerAliveInterval=30 -o ExitOnForwardFailure=yes
+             -R0:127.0.0.1:$port $([[ $proto == ssh ]] && echo tcp@)a.pinggy.io)
+    fi
+
+    local shown=0 line host tport
+    print -P "%F{8}Opening $proto tunnel to 127.0.0.1:$port via $provider…%f"
+    $cmd 2>&1 | while IFS= read -r line; do
+        line=${line%$'\r'}
+        (( verbose )) && print -r -- "$line"
+        host= tport=
+        if [[ $line =~ '(https://[a-z0-9-]+\.trycloudflare\.com)' ]]; then
+            host=${match[1]#https://}
+        elif [[ $line =~ '^https://([a-z0-9.-]+)$' && $line != *dashboard.pinggy.io* ]]; then
+            host=${match[1]}
+        elif [[ $line =~ '^tcp://([a-z0-9.-]+):([0-9]+)$' ]]; then
+            host=${match[1]} tport=${match[2]}
+        elif (( ! verbose )) && [[ $line == *' ERR '* || $line == *rror* || $line == *denied* || $line == *failed* ]]; then
+            print -r -- "$line" >&2
+        fi
+        [[ -z $host ]] && continue
+        (( shown++ )) && continue     # Pinggy lists several equivalent addresses; show the first
+        print -P "%F{green}%BTunnel up:%b%f $proto → 127.0.0.1:$port  %F{8}(Ctrl-C to close)%f"
+        if [[ $proto != ssh ]]; then
+            print -r -- "  https://$host"
+        elif [[ $provider == cloudflared ]]; then
+            print -r -- "  ssh -o ProxyCommand=\"cloudflared access ssh --hostname %h\" ${noknown[*]} $USER@$host"
+        else
+            print -r -- "  ssh -p $tport ${noknown[*]} $USER@$host"
+        fi
+    done
 }
 
 disown_app() {
