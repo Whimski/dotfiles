@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Toggle tuios "chrome": the dock and shared borders together.
 # Compact = dock hidden + shared borders; full = dock on top + separate borders.
-# Bound in kitty to ctrl+b > shift+b (tuios has no action that runs a command).
+# Bound in kitty to ctrl+shift+b (tuios has no action that runs a command).
 
 if [[ "$(tuios get-config dockbar_position)" == *hidden* ]]; then
     tuios set-config dockbar_position top >/dev/null

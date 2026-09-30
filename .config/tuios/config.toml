@@ -130,6 +130,7 @@ dockbar_position = 'top'
 preferred_shell = ''
 motion = 'full'
 modal_dim = 30
+whichkey_enabled = true
 whichkey_position = ''
 window_title_position = ''
 hide_clock = false
