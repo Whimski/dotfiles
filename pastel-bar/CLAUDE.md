@@ -45,6 +45,17 @@ UI‑facing surface so components stay backend‑agnostic.
 - `Settings.qml` (singleton) — JSON via `FileView`+`JsonAdapter` at `Quickshell.statePath()`
   (theme/mode/custom accents/pill paddings/fontSize/opacity/wallpapers/`mediaBlacklist`/`weatherLoc`/
   `weatherUnit`/`pillYieldApps`/`launcherSearchFirst`). Import/export dumps the whole adapter to JSON.
+- `panels/ControlCenter.qml` — two glass **drawers** in one fullscreen window: the control center
+  slides in from the **right** edge, the music wing (`components/MediaWing.qml`: blurred‑art glass,
+  cover "sleeve" with a vinyl that slides out and spins while playing, seek bar, transport) from the
+  **left**. The wing always opens with the CC (idle "Nothing Playing" card without a player), or alone via
+  `Ui.mediaOpen` (`menu toggle media` IPC, or click now‑playing in the expanded pill). Keys: Space/←/→ = play‑pause/prev/next.
+- **Motion convention**: panels animate ONE master progress (`ccReveal`, `mediaReveal`, `bloom`,
+  `reveal`) with a linear `Behavior`, and derive slide/fade/tilt/stagger from it in bindings via
+  `Theme.stagger(t, i, step, span)` / `Theme.easeOutBack` / `Theme.easeOutCubic` — so open and close
+  stay in lockstep and cascades need no `SequentialAnimation`s. Continuous spins use `FrameAnimation`
+  (a looping `NumberAnimation` with `paused:` warns and loses the angle). The pill's springy
+  `OutBack` width overshoot is why `Bar.implicitWidth` has +48 slack.
 - `Ui.qml` — transient overlay open‑flags + `openPanel`/`togglePanel(name)` dispatch. `components/`,
   `bar/Bar.qml`, `panels/`, `overlays/`.
 - `panels/TunePanel.qml` — the settings window: left‑sidebar nav (Network/Bluetooth/Audio/Display/
@@ -153,9 +164,18 @@ UI‑facing surface so components stay backend‑agnostic.
 - **Media blacklist**: `services/Media.qml` ignores MPRIS players matching `Settings.mediaBlacklist`
   (case‑insensitive substring vs identity/dbusName/desktopEntry; default `["firefox"]`). Edit it in
   Settings → Widgets → *Ignored media players*, or in `settings.json`.
+- **Glass blur is Hyprland's**, not QML: every overlay/bar `PanelWindow` sets
+  `WlrLayershell.namespace: "pastel-bar"` and `hyprland.lua` has a `pastel-bar-blur` layer rule
+  (`blur = true, ignore_alpha = 0.2`). Anything that should stay *un*‑frosted on those fullscreen
+  surfaces must stay under 20% alpha (e.g. the CC edge vignettes); the dim backdrops of the
+  launcher/power/polkit are deliberately above it, so they frost the whole screen. Glass below ~24%
+  panel opacity drops under the threshold and loses its blur. The wallpaper uses `pastel-wallpaper`.
+  Namespace is fixed at surface creation — restart the shell after changing it.
+- Single‑instance overlays open on the **focused monitor** via `Ui.focusedScreen` (from
+  `Hyprland.focusedMonitor`); each window only re‑targets while hidden.
 - Environment rules: only **one** notification daemon and **one** polkit agent per session (don't also
   run mako/dunst or hyprpolkitagent). **pastelbar renders the wallpaper** (no swww/hyprpaper).
-- The settings window opens on the focused monitor. Reloading resets transient `Ui` flags (open panels
+- Reloading resets transient `Ui` flags (open panels
   close). `Slider`‑like inline containers need an explicit width binding (anchors‑fill on a
   property‑parented item doesn't establish width) — see `TunePanel` `GroupCard`.
 - **`Settings` write/reload race**: `FileView` has `watchChanges:true`→`reload()`, so writing several

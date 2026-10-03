@@ -10,12 +10,24 @@ import "../services"
 // 5-day forecast strip. Data from the Weather service (Open-Meteo).
 PanelWindow {
     id: wp
+    // Open on the focused monitor. Only re-targeted while hidden — moving a mapped
+    // layer surface would re-create it mid-animation.
+    property var _screen: null
+    screen: _screen
+    Component.onCompleted: _screen = Ui.focusedScreen
+    Connections {
+        target: Ui
+        function onFocusedScreenChanged() { if (!wp.visible) wp._screen = Ui.focusedScreen }
+    }
     readonly property bool open: Ui.weatherOpen
     visible: open || panel.opacity > 0.01
 
     anchors { top: true; bottom: true; left: true; right: true }
     color: "transparent"
     exclusiveZone: 0
+    // Layer namespace — Hyprland's `pastel-bar` layer rule blurs whatever is behind
+    // our glass (see hyprland.lua; ignore_alpha keeps fully-clear areas unblurred).
+    WlrLayershell.namespace: "pastel-bar"
     WlrLayershell.layer: WlrLayershell.Top
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
 
@@ -50,11 +62,13 @@ PanelWindow {
         glow: 0.4
 
         transformOrigin: Item.Top
-        scale: wp.open ? 1 : 0.92
+        scale: wp.open ? 1 : 0.88
         opacity: wp.open ? 1 : 0
         transform: Translate { y: wp.open ? 0 : -14
             Behavior on y { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutCubic } } }
-        Behavior on scale { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutCubic } }
+        // springy pop on open, quick tuck on close
+        Behavior on scale { NumberAnimation { duration: wp.open ? Theme.animSlow : Theme.animMed
+                                                easing.type: wp.open ? Easing.OutBack : Easing.InCubic; easing.overshoot: 1.5 } }
         Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
 
         MouseArea { anchors.fill: parent }   // swallow inside clicks

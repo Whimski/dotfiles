@@ -20,6 +20,9 @@ PanelWindow {
     // Expanded/OSD rise to Overlay so a temporary expand is *allowed to override*
     // anything — including true-fullscreen windows, which Hyprland renders above the
     // Top layer. (Top↔Overlay re-commit reliably at runtime; Bottom→Top does not.)
+    // Layer namespace — Hyprland's `pastel-bar` layer rule blurs whatever is behind
+    // our glass (see hyprland.lua; ignore_alpha keeps fully-clear areas unblurred).
+    WlrLayershell.namespace: "pastel-bar"
     WlrLayershell.layer: mode === "idle" ? WlrLayershell.Top : WlrLayershell.Overlay
 
     // The idle "main pill" is removed: nothing shows at rest. The pill appears only
@@ -40,6 +43,17 @@ PanelWindow {
     readonly property string mode: osd !== "" ? "osd" : ((hovered || Ui.barExpanded) ? "expanded" : "idle")
     property bool ready: false                     // suppress OSD flash on startup
 
+    // ---- motion ----
+    // `bloom` is the expanded content's master progress: the clock drops in first,
+    // then now-playing and battery unfurl outward from it (see Theme.stagger).
+    property real bloom: mode === "expanded" && !pillHidden ? 1 : 0
+    Behavior on bloom { NumberAnimation { duration: bar.bloom < 0.5 ? Theme.animDrawer : Theme.animMed; easing.type: Easing.Linear } }
+    function _bloom(i) { return Theme.stagger(bar.bloom, i, 0.18, 0.6) }
+    // A brief glow flare whenever the pill wakes up (expand / OSD / notification).
+    property real flare: 0
+    NumberAnimation { id: flareAnim; target: bar; property: "flare"; from: 1; to: 0; duration: 900; easing.type: Easing.OutCubic }
+    onModeChanged: if (mode !== "idle") flareAnim.restart()
+
 
     // ---- clock ----
     property string timeStr: ""
@@ -54,7 +68,12 @@ PanelWindow {
     Timer { running: true; interval: 1500; onTriggered: bar.ready = true }
 
     // ---- OSD triggers ----
-    function _showOsd(kind) { if (!bar.ready) return; bar.osd = kind; osdTimer.restart() }
+    function _showOsd(kind) {
+        if (!bar.ready) return
+        bar.osd = kind
+        osdTimer.restart()
+        osdPop.restart()
+    }
     Timer { id: osdTimer; interval: 1600; onTriggered: bar.osd = "" }
 
     // Small delay before collapsing so brief exits (e.g. crossing the mask edge
@@ -83,6 +102,7 @@ PanelWindow {
             if (Notifs.dnd) return
             bar.toastActive = true
             toastTimer.restart()
+            flareAnim.restart()
         }
     }
 
@@ -109,7 +129,8 @@ PanelWindow {
     // Reserving a constant amount (not content-driven) keeps the layer surface from
     // resizing when notifications arrive — which would re-send pointer enter/leave.
     readonly property real notifReserve: notifGap + 3 * (Theme.fontSize * 2 + 20) + 20
-    implicitWidth: Math.max(idleW, expW, osdW, notifWidth)
+    // +48 leaves room for the springy width overshoot so it never clips.
+    implicitWidth: Math.max(idleW, expW, osdW, notifWidth) + 48
     implicitHeight: Math.max(idleH, expH, osdH) + notifReserve
     exclusiveZone: 0            // float over the workspace instead of reserving a strip
 
@@ -142,17 +163,24 @@ PanelWindow {
         width: bar.targetWidth
         height: bar.targetHeight
         radius: height / 2
-        glow: bar.hovered ? 0.6 : 0
-        // Hidden while yielding to a configured app (idle only); a temporary expand
-        // brings it back on top.
+        glow: Math.min(1, (bar.hovered ? 0.6 : 0) + bar.flare * 0.9)
+        // Hidden at rest / while yielding to a configured app. Appearing, the pill
+        // "drops" out of the top edge: it pops from a squashed droplet to full size
+        // with a springy overshoot; hiding, it shrinks back up quickly.
         opacity: bar.pillHidden ? 0 : 1
         visible: opacity > 0.01
-        Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
+        transformOrigin: Item.Top
+        scale: bar.pillHidden ? 0.55 : 1
+        Behavior on opacity { NumberAnimation { duration: bar.pillHidden ? Theme.animFast : Theme.animMed } }
+        Behavior on scale {
+            NumberAnimation { duration: bar.pillHidden ? Theme.animMed : Theme.animSlow
+                              easing.type: bar.pillHidden ? Easing.InCubic : Easing.OutBack; easing.overshoot: 1.6 }
+        }
         Behavior on width {
-            NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: Theme.animSlow; easing.type: Easing.OutBack; easing.overshoot: 0.9 }
         }
         Behavior on height {
-            NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: Theme.animSlow; easing.type: Easing.OutBack; easing.overshoot: 1.1 }
         }
 
         MouseArea {
@@ -206,12 +234,26 @@ PanelWindow {
             spacing: 22
 
             // ---- now-playing (circular art + wave + title/artist) ----
+            // Click to open the music wing.
             Row {
+                id: nowPlaying
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 9
+                opacity: bar._bloom(1)
+                transform: Translate { x: (1 - bar._bloom(1)) * -28 }
+
+                // Pointer handlers aren't Items, so the Row doesn't lay them out.
+                // ReleaseWithinBounds grabs on press so the pill's own click
+                // (toggle control center) doesn't also fire.
+                HoverHandler { cursorShape: Qt.PointingHandCursor }
+                TapHandler {
+                    gesturePolicy: TapHandler.ReleaseWithinBounds
+                    onTapped: Ui.mediaOpen = !Ui.mediaOpen
+                }
 
                 // circular album art (masked to a circle)
                 Item {
+                    id: miniArt
                     anchors.verticalCenter: parent.verticalCenter
                     width: 28; height: 28
 
@@ -222,26 +264,46 @@ PanelWindow {
                         visible: Media.artUrl === ""
                         IconGlyph { anchors.centerIn: parent; name: "volume"; size: 15; color: Theme.subtext }
                     }
-                    Image {
-                        id: artImg
+                    // Spin the full-res cover *inside* a fixed circular mask, rather
+                    // than rotating an already-masked 28px texture (which resamples
+                    // the tiny bitmap every frame and smears it). Mipmapped source
+                    // + a 2x supersampled layer keep it crisp while it turns.
+                    Item {
                         anchors.fill: parent
-                        source: Media.artUrl
-                        fillMode: Image.PreserveAspectCrop
-                        visible: false
-                    }
-                    MultiEffect {
-                        anchors.fill: parent
-                        source: artImg
-                        maskEnabled: true
-                        maskSource: artMask
                         visible: Media.artUrl !== ""
+                        layer.enabled: true
+                        layer.smooth: true
+                        layer.textureSize: Qt.size(width * 2, height * 2)
+                        layer.effect: MultiEffect {
+                            maskEnabled: true
+                            maskSource: artMask
+                            maskThresholdMin: 0.5
+                            maskSpreadAtMin: 1.0
+                        }
+                        Image {
+                            id: artImg
+                            anchors.fill: parent
+                            source: Media.artUrl
+                            fillMode: Image.PreserveAspectCrop
+                            sourceSize: Qt.size(112, 112)
+                            smooth: true
+                            mipmap: true
+                            antialiasing: true
+                        }
+                    }
+                    // Spins like a tiny record while playing. Advanced per frame (not
+                    // a looping animation) so pausing keeps the angle.
+                    FrameAnimation {
+                        running: bar.mode === "expanded" && Media.playing
+                        onTriggered: artImg.rotation = (artImg.rotation + frameTime * 60) % 360
                     }
                     Item {
                         id: artMask
                         anchors.fill: parent
                         layer.enabled: true
+                        layer.textureSize: Qt.size(width * 2, height * 2)
                         visible: false
-                        Rectangle { anchors.fill: parent; radius: width / 2 }
+                        Rectangle { anchors.fill: parent; radius: width / 2; antialiasing: true }
                     }
                 }
 
@@ -254,12 +316,12 @@ PanelWindow {
                 Column {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 1
-                    Text {
+                    // scrolls when the title is longer than the slot
+                    Marquee {
                         text: Media.title || "Nothing playing"
                         color: Theme.text
                         font.pixelSize: Theme.fontSize
                         font.weight: Font.Bold
-                        elide: Text.ElideRight
                         width: Math.min(implicitWidth, 150)
                     }
                     Text {
@@ -276,6 +338,9 @@ PanelWindow {
             // ---- clock + date ----
             Column {
                 anchors.verticalCenter: parent.verticalCenter
+                opacity: bar._bloom(0)
+                scale: 0.8 + 0.2 * bar._bloom(0)
+                transform: Translate { y: (1 - bar._bloom(0)) * -10 }
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: bar.timeStr
@@ -296,6 +361,8 @@ PanelWindow {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 8
                 visible: Battery.present
+                opacity: bar._bloom(1)
+                transform: Translate { x: (1 - bar._bloom(1)) * 28 }
 
                 Rectangle {
                     readonly property bool low: !Battery.charging && Battery.percent <= 20
@@ -357,21 +424,52 @@ PanelWindow {
             readonly property real maxVal: bar.osd === "brightness" ? 1 : 2
 
             IconGlyph {
+                id: osdIcon
                 anchors.verticalCenter: parent.verticalCenter
                 name: bar.osd === "brightness" ? "brightness"
                      : (Audio.muted ? "volumeMute" : "volume")
                 color: Theme.text
                 size: 17
+                // brightness glyph turns with the level; both "tick" on each step
+                rotation: bar.osd === "brightness" ? osdView.val * 180 : 0
+                Behavior on rotation { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutCubic } }
             }
-            Rectangle {
+            // per-keypress pop on the icon
+            SequentialAnimation {
+                id: osdPop
+                NumberAnimation { target: osdIcon; property: "scale"; to: 1.3; duration: 90; easing.type: Easing.OutQuad }
+                NumberAnimation { target: osdIcon; property: "scale"; to: 1.0; duration: 320; easing.type: Easing.OutBack; easing.overshoot: 3 }
+            }
+            Item {
                 anchors.verticalCenter: parent.verticalCenter
-                width: 130; height: 6; radius: 3
-                color: Theme.alpha(Theme.subtext, 0.3)
+                width: 130; height: 12
+                readonly property real frac: Math.max(0, Math.min(1, osdView.val / osdView.maxVal))
                 Rectangle {
-                    height: parent.height; radius: parent.radius
-                    width: parent.width * Math.max(0, Math.min(1, osdView.val / osdView.maxVal))
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width; height: 6; radius: 3
+                    color: Theme.alpha(Theme.subtext, 0.3)
+                }
+                Rectangle {
+                    id: osdFill
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: 6; radius: 3
+                    width: Math.max(height, parent.width * parent.frac)
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: Theme.alpha(Theme.accent, 0.65) }
+                        GradientStop { position: 1.0; color: Theme.accent }
+                    }
+                    Behavior on width { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
+                }
+                // glowing knob riding the fill's leading edge
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    x: osdFill.width - width / 2
+                    width: 12; height: 12; radius: 6
                     color: Theme.accent
-                    Behavior on width { NumberAnimation { duration: Theme.animFast } }
+                    border.width: 2
+                    border.color: Theme.alpha("#ffffff", 0.85)
+                    scale: osdIcon.scale
                 }
             }
             Text {
@@ -380,6 +478,8 @@ PanelWindow {
                 color: Theme.text
                 font.pixelSize: Theme.fontSize - 1
                 font.weight: Font.Medium
+                font.features: { "tnum": 1 }
+                width: Math.max(implicitWidth, 38)
             }
         }
     }
@@ -399,8 +499,8 @@ PanelWindow {
         opacity: shown ? 1 : 0
         visible: opacity > 0
         transform: Translate {
-            y: expNotifPanel.shown ? 0 : -10
-            Behavior on y { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutCubic } }
+            y: expNotifPanel.shown ? 0 : -18
+            Behavior on y { NumberAnimation { duration: Theme.animSlow; easing.type: Easing.OutBack; easing.overshoot: 1.4 } }
         }
         Behavior on opacity { NumberAnimation { duration: Theme.animMed } }
         Behavior on height { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
@@ -496,7 +596,8 @@ PanelWindow {
         // the main pill; when shown, it slides back down out of the pill.
         transform: Translate {
             y: toastPill.shown ? 0 : -(toastPill.height + bar.notifGap)
-            Behavior on y { NumberAnimation { duration: Theme.animMed; easing.type: Easing.InOutCubic } }
+            Behavior on y { NumberAnimation { duration: toastPill.shown ? Theme.animSlow : Theme.animMed
+                                              easing.type: toastPill.shown ? Easing.OutBack : Easing.InCubic; easing.overshoot: 1.5 } }
         }
         Behavior on opacity { NumberAnimation { duration: Theme.animMed } }
 

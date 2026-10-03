@@ -16,6 +16,15 @@ import "../services"
 // Opened from the control-center gear (Ui.tuneOpen).
 PanelWindow {
     id: win
+    // Open on the focused monitor. Only re-targeted while hidden — moving a mapped
+    // layer surface would re-create it mid-animation.
+    property var _screen: null
+    screen: _screen
+    Component.onCompleted: _screen = Ui.focusedScreen
+    Connections {
+        target: Ui
+        function onFocusedScreenChanged() { if (!win.visible) win._screen = Ui.focusedScreen }
+    }
     // Stay mapped through the close animation, then unmap.
     readonly property bool open: Ui.tuneOpen
     visible: open || root.opacity > 0.01
@@ -24,6 +33,9 @@ PanelWindow {
     anchors { top: true; bottom: true; left: true; right: true }
     color: "transparent"
     exclusiveZone: 0
+    // Layer namespace — Hyprland's `pastel-bar` layer rule blurs whatever is behind
+    // our glass (see hyprland.lua; ignore_alpha keeps fully-clear areas unblurred).
+    WlrLayershell.namespace: "pastel-bar"
     WlrLayershell.layer: WlrLayershell.Top
     WlrLayershell.keyboardFocus: open ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
@@ -293,11 +305,13 @@ PanelWindow {
         radius: Theme.radius + 4
         glow: 0.45
         // scale + fade + slide from center
-        scale: win.open ? 1 : 0.96
+        scale: win.open ? 1 : 0.88
         opacity: win.open ? 1 : 0
         transform: Translate { y: win.open ? 0 : 10
             Behavior on y { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutCubic } } }
-        Behavior on scale { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutCubic } }
+        // springy pop on open, quick tuck on close
+        Behavior on scale { NumberAnimation { duration: win.open ? Theme.animSlow : Theme.animMed
+                                                easing.type: win.open ? Easing.OutBack : Easing.InCubic; easing.overshoot: 1.5 } }
         Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
 
         // Absorb clicks on the panel background so they don't reach the dismiss catcher.
@@ -556,7 +570,7 @@ PanelWindow {
                     height: 42
                     radius: Theme.radiusSm + 2
                     scale: cfgMa.pressed ? 0.97 : 1
-                    Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
+                    Behavior on scale { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutBack; easing.overshoot: 2.5 } }
                     color: Theme.alpha(Theme.accent, 0.92)
                     Row {
                         anchors.centerIn: parent
@@ -894,7 +908,7 @@ PanelWindow {
                                 }
                             }
                             scale: cma.pressed ? 0.93 : 1
-                            Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
+                            Behavior on scale { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutBack; easing.overshoot: 2.5 } }
                             MouseArea { id: cma; anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Settings.theme = "Custom" }
                         }
                         Repeater {

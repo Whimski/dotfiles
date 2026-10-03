@@ -13,6 +13,8 @@ PanelWindow {
 
     anchors { top: true; bottom: true; left: true; right: true }
     exclusiveZone: 0
+    // Own namespace so the glass blur rule (namespace `pastel-bar`) skips the wallpaper.
+    WlrLayershell.namespace: "pastel-wallpaper"
     WlrLayershell.layer: WlrLayershell.Background
     color: Theme.current.bg
 

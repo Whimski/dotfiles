@@ -142,6 +142,25 @@ QtObject {
     readonly property int spacing: 12
     readonly property int animFast: 120
     readonly property int animMed: 220
+    readonly property int animSlow: 420
+    readonly property int animDrawer: 520
+
+    // Staggered-reveal helper: given a 0..1 master progress `t`, returns the
+    // eased (OutCubic) local progress of the i-th element, where each element
+    // starts `step` later than the previous and takes `span` of `t` to land.
+    // Pure function — bind opacity/translate to it and animate only `t`.
+    function stagger(t, i, step, span) {
+        var p = Math.max(0, Math.min(1, (t - i * step) / span))
+        return 1 - Math.pow(1 - p, 3)
+    }
+    // Easing curves as plain functions, for bindings that derive motion from one
+    // animated progress value instead of each owning a Behavior.
+    function easeOutBack(p, s) {
+        p = Math.max(0, Math.min(1, p)); s = s === undefined ? 1.4 : s
+        var q = p - 1
+        return 1 + (s + 1) * q * q * q + s * q * q
+    }
+    function easeOutCubic(p) { p = Math.max(0, Math.min(1, p)); return 1 - Math.pow(1 - p, 3) }
 
     // ---- live metrics (persisted via Settings) ----
     // Per-state padding: the bar applies these around each state's own content, so

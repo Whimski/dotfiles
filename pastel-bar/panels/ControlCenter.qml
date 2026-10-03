@@ -5,21 +5,91 @@ import ".."
 import "../components"
 import "../services"
 
-// The control center flyout: anchored under the bar's right edge. Header +
-// quick-toggle tiles + volume/brightness sliders + media card + Wi-Fi / Bluetooth
-// / Audio sections + notifications. Scrollable when taller than the screen.
+// The control center: two glass drawers that slide in from opposite screen edges.
+// Right: header + quick-toggle tiles + volume/brightness sliders + Wi-Fi /
+// Bluetooth / Audio sections + notifications (scrollable when taller than the
+// screen). Left: the music wing (MediaWing) — always opens together with the control
+// center (an idle "Nothing Playing" card when no player), or alone via Ui.mediaOpen.
 PanelWindow {
     id: cc
-    // Stay mapped while the close animation plays out, then unmap.
+    // Open on the focused monitor. Only re-targeted while hidden — moving a mapped
+    // layer surface would re-create it mid-animation.
+    property var _screen: null
+    screen: _screen
+    Component.onCompleted: _screen = Ui.focusedScreen
+    Connections {
+        target: Ui
+        function onFocusedScreenChanged() { if (!cc.visible) cc._screen = Ui.focusedScreen }
+    }
     readonly property bool open: Ui.ccOpen
-    visible: open || ccPanel.opacity > 0.01
+    readonly property bool mediaShown: Ui.mediaOpen || Ui.ccOpen || peek
+
+    // ---- track-change peek ----
+    // A new track pops the music wing open for a few seconds on its own. While
+    // only peeking, the window's input is masked to the wing (see `mask`) and it
+    // never takes keyboard focus, so nothing else on screen is blocked. Hovering
+    // the wing holds it open.
+    property bool peek: false
+    readonly property bool peekOnly: peek && !Ui.ccOpen && !Ui.mediaOpen
+    property string _lastTrack: ""
+    property bool _ready: false
+    Timer { running: true; interval: 3000; onTriggered: cc._ready = true }   // no pop on startup
+    Timer { id: peekTimer; interval: 4500; onTriggered: cc.peek = false }
+    // Debounced: title/artist/playing settle over a few signals on a track change.
+    Timer {
+        id: trackSettle
+        interval: 350
+        onTriggered: {
+            var key = Media.title + "\u0001" + Media.artist
+            if (Media.title === "" || key === cc._lastTrack) return
+            cc._lastTrack = key
+            if (!cc._ready || !Media.playing || Ui.ccOpen || Ui.mediaOpen) return
+            cc.peek = true
+            if (!wingHover.hovered) peekTimer.restart()
+        }
+    }
+    Connections {
+        target: Media
+        function onTitleChanged() { trackSettle.restart() }
+        function onArtistChanged() { trackSettle.restart() }
+        function onPlayingChanged() { trackSettle.restart() }
+    }
+    Connections {
+        target: Ui
+        function onCcOpenChanged() { cc.peek = false }
+        function onMediaOpenChanged() { cc.peek = false }
+    }
+
+    // Master open progress for each drawer. Everything else (slide, fade, the
+    // staggered rows) is derived from these, so open and close stay in lockstep.
+    // Opening is slow and springy; closing is quicker so it never feels sticky.
+    property real ccReveal: open ? 1 : 0
+    property real mediaReveal: mediaShown ? 1 : 0
+    Behavior on ccReveal { NumberAnimation { duration: cc.open ? Theme.animDrawer + 120 : Theme.animMed + 80; easing.type: Easing.Linear } }
+    Behavior on mediaReveal { NumberAnimation { duration: cc.mediaShown ? Theme.animDrawer + 200 : Theme.animMed + 80; easing.type: Easing.Linear } }
+
+    // Stay mapped while the close animation plays out, then unmap.
+    visible: ccReveal > 0.001 || mediaReveal > 0.001
+
+    function closeAll() { Ui.ccOpen = false; Ui.mediaOpen = false; cc.peek = false }
+    function _stage(i) { return Theme.stagger(cc.ccReveal, i, 0.08, 0.55) }
 
     // Fullscreen so clicks anywhere outside the panel can dismiss it.
     anchors { top: true; bottom: true; left: true; right: true }
     color: "transparent"
     exclusiveZone: 0
+    // Layer namespace — Hyprland's `pastel-bar` layer rule blurs whatever is behind
+    // our glass (see hyprland.lua; ignore_alpha keeps fully-clear areas unblurred).
+    WlrLayershell.namespace: "pastel-bar"
     WlrLayershell.layer: WlrLayershell.Top
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+    WlrLayershell.keyboardFocus: peekOnly ? WlrKeyboardFocus.None : WlrKeyboardFocus.OnDemand
+    // Full-window input normally (outside clicks dismiss); just the wing while peeking.
+    mask: Region {
+        x: cc.peekOnly ? wing.x : 0
+        y: cc.peekOnly ? wing.y : 0
+        width: cc.peekOnly ? wing.width : cc.width
+        height: cc.peekOnly ? wing.height : cc.height
+    }
 
     readonly property int _topMargin: Theme.barHeight + 12
 
@@ -53,9 +123,6 @@ PanelWindow {
                 (function (i) { l.push({ key: "sink:" + i, item: picker, activate: () => Audio.setSink(Audio.sinks[i]) }) })(si)
             }
         }
-        l.push({ key: "media:prev", item: media.prevItem, activate: () => Media.prev() })
-        l.push({ key: "media:playpause", item: media.playPauseItem, activate: () => Media.playPause() })
-        l.push({ key: "media:next", item: media.nextItem, activate: () => Media.next() })
         if (inner.wifiOpen) {
             l.push({ key: "wifi:rescan", item: wifiSec, activate: () => Net.rescan() })
             if (Net.enabled) {
@@ -100,45 +167,106 @@ PanelWindow {
         return l
     }
 
-    // Click anywhere outside the panel to dismiss the control center.
+    // Click anywhere outside the drawers to dismiss them.
     MouseArea {
         anchors.fill: parent
-        onClicked: Ui.ccOpen = false
+        onClicked: cc.closeAll()
+    }
+
+    // Edge vignettes: a soft shade creeps in from whichever side a drawer opens
+    // on, so the drawer reads as rising out of the screen edge. Kept below the
+    // blur rule's ignore_alpha (0.2) so the shade itself never gets frosted.
+    Rectangle {
+        anchors.fill: parent
+        opacity: Theme.easeOutCubic(cc.ccReveal)
+        gradient: Gradient {
+            orientation: Gradient.Horizontal
+            GradientStop { position: 0.55; color: "transparent" }
+            GradientStop { position: 1.0; color: Theme.alpha("#000000", Theme.dark ? 0.18 : 0.12) }
+        }
+    }
+    Rectangle {
+        anchors.fill: parent
+        opacity: cc.peekOnly ? 0 : Theme.easeOutCubic(cc.mediaReveal)
+        Behavior on opacity { NumberAnimation { duration: Theme.animMed } }
+        gradient: Gradient {
+            orientation: Gradient.Horizontal
+            GradientStop { position: 0.0; color: Theme.alpha("#000000", Theme.dark ? 0.18 : 0.12) }
+            GradientStop { position: 0.45; color: "transparent" }
+        }
     }
 
     Item {
         id: kbScope
         anchors.fill: parent
-        focus: cc.open
+        focus: cc.open || Ui.mediaOpen
         Keys.onPressed: (event) => {
             if (hintOverlay.active) { hintOverlay.handleKey(event); event.accepted = true; return }
             switch (event.key) {
-            case Qt.Key_F: hintOverlay.start(cc._kbList()); break
-            case Qt.Key_Escape: Ui.ccOpen = false; break
+            case Qt.Key_F: if (cc.open) hintOverlay.start(cc._kbList()); break
+            case Qt.Key_Escape: cc.closeAll(); break
+            // music wing transport
+            case Qt.Key_Space: Media.playPause(); break
+            case Qt.Key_Left: Media.prev(); break
+            case Qt.Key_Right: Media.next(); break
             default: return
             }
             event.accepted = true
         }
     }
 
+    // ---- left: music wing ----
+    MediaWing {
+        id: wing
+        reveal: cc.mediaReveal
+        anchors.top: parent.top
+        anchors.topMargin: cc._topMargin
+        anchors.left: parent.left
+        anchors.leftMargin: 14
+        width: 340
+        height: Math.min(implicitHeight, cc.height - cc._topMargin - 24)
+        // Slides in from past the left edge with a gentle overshoot, tilting
+        // slightly as it lands.
+        readonly property real e: Theme.easeOutBack(cc.mediaReveal, 1.1)
+        opacity: Math.min(1, cc.mediaReveal * 2.5)
+        visible: cc.mediaReveal > 0.001
+        transformOrigin: Item.Left
+        transform: [
+            Translate { x: (1 - wing.e) * -(wing.width + 40) },
+            Rotation { origin.x: 0; origin.y: wing.height / 2; axis { x: 0; y: 1; z: 0 }
+                       angle: (1 - Theme.easeOutCubic(cc.mediaReveal)) * 24 }
+        ]
+        MouseArea { anchors.fill: parent; z: -1 }   // swallow background clicks
+        HoverHandler {
+            id: wingHover
+            onHoveredChanged: if (cc.peek) { if (hovered) peekTimer.stop(); else peekTimer.restart() }
+        }
+    }
+
+    // ---- right: control center drawer ----
     GlassPanel {
         id: ccPanel
         anchors.top: parent.top
         anchors.topMargin: cc._topMargin
-        anchors.horizontalCenter: parent.horizontalCenter
-        width: 360
-        height: Math.min(inner.implicitHeight + 24, cc.height - cc._topMargin - 24)
-        radius: Theme.radius
+        anchors.right: parent.right
+        anchors.rightMargin: 14
+        width: 380
+        // content + inner inset (12) + flick margins (28) + a little extra breathing
+        // room at the bottom so the last slider's knob isn't clipped
+        height: Math.min(inner.implicitHeight + 12 + 28 + 10, cc.height - cc._topMargin - 24)
+        radius: Theme.radius + 6
         glow: 0.4
-        // open/close animation on the inner panel (windows can't transform):
-        // scale up from the top center + fade + a small slide-down.
-        transformOrigin: Item.Top
-        scale: cc.open ? 1 : 0.92
-        opacity: cc.open ? 1 : 0
-        transform: Translate { y: cc.open ? 0 : -14
-            Behavior on y { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutCubic } } }
-        Behavior on scale { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutCubic } }
-        Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
+        // Windows can't transform, so the drawer itself does: it slides in from
+        // past the right edge with a gentle overshoot, swinging in on a slight
+        // 3D tilt hinged at the screen edge. Contents then cascade in (_stage).
+        readonly property real e: Theme.easeOutBack(cc.ccReveal, 1.1)
+        opacity: Math.min(1, cc.ccReveal * 2.5)
+        visible: cc.ccReveal > 0.001
+        transform: [
+            Translate { x: (1 - ccPanel.e) * (ccPanel.width + 40) },
+            Rotation { origin.x: ccPanel.width; origin.y: ccPanel.height / 2; axis { x: 0; y: 1; z: 0 }
+                       angle: (1 - Theme.easeOutCubic(cc.ccReveal)) * -24 }
+        ]
 
         // Absorb clicks on the panel background so they don't fall through to the
         // outside-click catcher. Declared before the content so interactive
@@ -177,6 +305,8 @@ PanelWindow {
                 // ---- header ----
                 Row {
                     width: parent.width
+                    opacity: cc._stage(0)
+                    transform: Translate { x: (1 - cc._stage(0)) * 36 }
                     Text {
                         text: "Control Center"
                         color: Theme.text
@@ -202,6 +332,8 @@ PanelWindow {
                 // ---- quick toggles ----
                 Grid {
                     width: parent.width
+                    opacity: cc._stage(1)
+                    transform: Translate { x: (1 - cc._stage(1)) * 48 }
                     columns: 2
                     columnSpacing: 10
                     rowSpacing: 10
@@ -264,6 +396,8 @@ PanelWindow {
                 Slider {
                     id: volSlider
                     width: parent.width
+                    opacity: cc._stage(2)
+                    transform: Translate { x: (1 - cc._stage(2)) * 56 }
                     label: "Volume"; suffix: "%"
                     from: 0; to: 200
                     value: Math.round(Audio.volume * 100)
@@ -272,14 +406,13 @@ PanelWindow {
                 Slider {
                     id: briSlider
                     width: parent.width
+                    opacity: cc._stage(3)
+                    transform: Translate { x: (1 - cc._stage(3)) * 64 }
                     label: "Brightness"; suffix: "%"
                     from: 0; to: 100
                     value: Math.round(Brightness.value * 100)
                     onMoved: (v) => Brightness.setValue(v / 100)
                 }
-
-                // ---- media ----
-                MediaCard { id: media; width: parent.width }
 
                 // ---- Wi-Fi networks (right-click the Wi-Fi tile) ----
                 Rectangle {
@@ -314,7 +447,13 @@ PanelWindow {
                 }
 
                 Rectangle { visible: Notifs.count > 0; width: parent.width; height: 1; color: Theme.strokeGlass }
-                NotificationList { id: notifList; visible: Notifs.count > 0; width: parent.width }
+                NotificationList {
+                    id: notifList
+                    visible: Notifs.count > 0
+                    width: parent.width
+                    opacity: cc._stage(4)
+                    transform: Translate { x: (1 - cc._stage(4)) * 72 }
+                }
             }
 
             // Vimium-style hint mode: "f" drops a lettered badge on every clickable

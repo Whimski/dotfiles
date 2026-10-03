@@ -11,6 +11,15 @@ import "../components"
 // keys move the selection, Enter launches, Esc closes.
 PanelWindow {
     id: win
+    // Open on the focused monitor. Only re-targeted while hidden — moving a mapped
+    // layer surface would re-create it mid-animation.
+    property var _screen: null
+    screen: _screen
+    Component.onCompleted: _screen = Ui.focusedScreen
+    Connections {
+        target: Ui
+        function onFocusedScreenChanged() { if (!win.visible) win._screen = Ui.focusedScreen }
+    }
     // Keep the surface mapped while the close animation plays.
     readonly property bool open: Ui.launcherOpen
     visible: open || box.opacity > 0.01
@@ -18,6 +27,9 @@ PanelWindow {
     anchors { top: true; bottom: true; left: true; right: true }
     exclusiveZone: 0
     color: "transparent"
+    // Layer namespace — Hyprland's `pastel-bar` layer rule blurs whatever is behind
+    // our glass (see hyprland.lua; ignore_alpha keeps fully-clear areas unblurred).
+    WlrLayershell.namespace: "pastel-bar"
     WlrLayershell.layer: WlrLayershell.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
@@ -205,11 +217,13 @@ PanelWindow {
         glow: 0.5
         // quick scale + fade + slight rise on open/close
         transformOrigin: Item.Top
-        scale: win.open ? 1 : 0.96
+        scale: win.open ? 1 : 0.88
         opacity: win.open ? 1 : 0
         transform: Translate { y: win.open ? 0 : -12
             Behavior on y { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutCubic } } }
-        Behavior on scale { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutCubic } }
+        // springy pop on open, quick tuck on close
+        Behavior on scale { NumberAnimation { duration: win.open ? Theme.animSlow : Theme.animMed
+                                                easing.type: win.open ? Easing.OutBack : Easing.InCubic; easing.overshoot: 1.5 } }
         Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
         Behavior on height { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
 

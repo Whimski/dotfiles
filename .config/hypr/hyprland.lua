@@ -209,6 +209,11 @@ hl.layer_rule({ name = "no-blur-bg",            match = { namespace = "^noctalia
 hl.layer_rule({ name = "no-blur-bar-content",   match = { namespace = "^noctalia-bar-content.*"  }, blur = false })
 hl.layer_rule({ name = "no-blur-bar-exclusion", match = { namespace = "^noctalia-bar-exclusion.*"}, blur = false })
 hl.layer_rule({ name = "no-blur-slurp",         match = { title = "slurp"                        }, blur = false })
+-- pastel-bar glass: blur what's behind the translucent panels/pill. ignore_alpha
+-- skips pixels under 20% alpha, so the transparent parts of the fullscreen overlay
+-- windows stay sharp (only the glass — and the dim backdrops of the launcher/power
+-- menu/polkit dialog — get frosted). The wallpaper uses its own namespace.
+hl.layer_rule({ name = "pastel-bar-blur",       match = { namespace = "^pastel-bar$"             }, blur = true, ignore_alpha = 0.2 })
 
 -- ─────────────────────────────────────────────
 -- Window rules
