@@ -83,25 +83,6 @@ QtObject {
         else _fetchWeather(loc.lat, loc.lon)
     }
 
-    // Look up a city by name (Open-Meteo geocoding) and switch to it.
-    function setLocation(name) {
-        var q = ("" + name).trim()
-        if (q === "") return
-        w.loading = true; w.error = ""
-        _get("https://geocoding-api.open-meteo.com/v1/search?name="
-             + encodeURIComponent(q) + "&count=1&language=en&format=json",
-             function(d) {
-                 if (!d.results || d.results.length === 0) {
-                     w.loading = false; w.error = "City not found"; return
-                 }
-                 var r = d.results[0]
-                 var city = r.name + (r.country_code ? ", " + r.country_code : "")
-                 Settings.setWeatherLoc(r.latitude, r.longitude, city)
-                 w.city = city
-                 _fetchWeather(r.latitude, r.longitude)
-             })
-    }
-
     function _geolocate() {
         // ipwho.is: free, HTTPS, no key. { latitude, longitude, city, country_code }
         _get("https://ipwho.is/", function(d) {

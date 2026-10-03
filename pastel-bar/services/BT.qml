@@ -143,7 +143,6 @@ QtObject {
 
     function setPowered(b) { if (adapter) adapter.enabled = b }
     function startScan() { if (adapter) adapter.discovering = true }
-    function stopScan() { if (adapter) adapter.discovering = false }
 
     // ---- per-adapter equivalents (multi-controller radial) ----
     function setAdapterPowered(a, b) { if (a) a.enabled = b }

@@ -27,7 +27,6 @@ QtObject {
     // Qt.darker(x, 1.0) coerces a string or color into a real color so .r/.g/.b
     // are always defined (palette values arrive as strings in some contexts).
     function alpha(c, a) { var k = Qt.darker(c, 1.0); return Qt.rgba(k.r, k.g, k.b, a) }
-    function panelColor(c) { return alpha(c, 1.0) }
 
     // Built-in palettes only — "Custom" is offered separately in the picker.
     readonly property var order: ["Lavender", "Mint", "Peach", "Sky", "Rosé", "Sakura"]
@@ -155,7 +154,6 @@ QtObject {
     readonly property int fontSize: Settings.fontSize
     // Nominal resting (idle) height — used only for overlay placement.
     readonly property int barHeight: Math.max(20, fontSize + 6) + idleVPad * 2
-    readonly property int panelWidth: 340
 
     // ---- futuristic tokens ----
     // Panel/bar glass opacity is user-tunable (Settings); the dark/light variants
@@ -164,6 +162,5 @@ QtObject {
         Settings.panelOpacity + (dark ? -0.04 : 0.06)))
     readonly property color glassBg: alpha(current.panel, glassOpacity)
     readonly property color glow: current.accent
-    readonly property int glowWidth: 16
     readonly property color strokeGlass: alpha(current.border, 0.65)
 }

@@ -192,16 +192,6 @@ Item {
     onConnectedChanged: codecSplit = false
 
     readonly property var codecOptions: codecSplit ? BT.codecProfiles : []
-    readonly property int codecChipIndex: {
-        for (var i = 0; i < chips.length; i++)
-            if (chips[i].kind === "codec") return i
-        return -1
-    }
-    readonly property real codecAngle: codecChipIndex >= 0
-        ? (baseAngle(codecChipIndex) + spin) : -90
-    // The options fan around the codec chip's own bearing, alternating radius so
-    // neighbours can't touch, and the whole fan is clamped into the planet's
-    // cell so nothing escapes a narrow multi-controller column.
     // Profiles orbit the shrunken Hi-Fi planet as evenly spaced moons, revolving
     // with the same `spin` as everything else.
     function optAngle(i) {
@@ -209,10 +199,6 @@ Item {
         return (n > 0 ? (-90 + i * 360 / n) : -90) + spin
     }
     function optRadius(i) { return orbitR }
-    function optPoint(i) {
-        var a = optAngle(i) * Math.PI / 180, r = optRadius(i)
-        return Qt.point(cx + Math.cos(a) * r, cy + Math.sin(a) * r)
-    }
 
     // ---------------------------------------------------------------- actions
     function act(kind) {

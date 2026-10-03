@@ -125,8 +125,8 @@ UI‑facing surface so components stay backend‑agnostic.
   re‑commit reliably, but **`Bottom→Top` does not** (a layer surface can't be raised out of Bottom) —
   so we never lower to Bottom; we hide the idle pill (opacity + drop its input mask) instead.
 - `panels/WeatherPanel.qml` + `services/Weather.qml` — weather flyout via **Open‑Meteo** (free, no
-  API key). Location auto‑detected once from IP (ipwho.is) into `Settings.weatherLoc`, or set by city
-  via Open‑Meteo geocoding. Refetches every 15 min and on open when stale. WMO codes map to the new
+  API key). Location auto‑detected once from IP (ipwho.is) into `Settings.weatherLoc` (no UI to set a
+  city — the old unused `Weather.setLocation` geocoding helper was removed). Refetches every 15 min and on open when stale. WMO codes map to the new
   weather `IconGlyph`s (sun/moon/cloud/cloudSun/rain/snow/storm/fog).
 
 ## Conventions & gotchas

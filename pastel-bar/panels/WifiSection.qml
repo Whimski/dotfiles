@@ -40,6 +40,7 @@ Column {
     Repeater {
         model: Net.enabled ? Net.networks : []
         delegate: Column {
+            id: net
             required property var modelData
             width: sec.width
             spacing: 4
@@ -74,12 +75,12 @@ Column {
                     }
                     IconGlyph {
                         anchors.verticalCenter: parent.verticalCenter
-                        visible: parent.parent.secured
+                        visible: net.secured
                         name: "lock"; size: 13; color: Theme.subtext
                     }
                     IconGlyph {
                         anchors.verticalCenter: parent.verticalCenter
-                        visible: parent.parent.isActive
+                        visible: net.isActive
                         name: "check"; size: 15; color: Theme.accent
                     }
                 }

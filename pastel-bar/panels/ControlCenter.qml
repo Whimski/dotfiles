@@ -25,7 +25,6 @@ PanelWindow {
 
     // Bind the Notifs singleton eagerly so the notification server registers at
     // startup, not only when the flyout first opens.
-    readonly property int _notifCount: Notifs.count
 
     // When opened from a bar pill, expand the matching section.
     Connections {
