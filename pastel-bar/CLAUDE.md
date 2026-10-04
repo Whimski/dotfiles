@@ -46,9 +46,13 @@ UI‑facing surface so components stay backend‑agnostic.
   (theme/mode/custom accents/pill paddings/fontSize/opacity/wallpapers/`mediaBlacklist`/`weatherLoc`/
   `weatherUnit`/`pillYieldApps`/`launcherSearchFirst`). Import/export dumps the whole adapter to JSON.
 - `panels/ControlCenter.qml` — two glass **drawers** in one fullscreen window: the control center
-  slides in from the **right** edge, the music wing (`components/MediaWing.qml`: blurred‑art glass,
-  cover "sleeve" with a vinyl that slides out and spins while playing, seek bar, transport) from the
-  **left**. The wing always opens with the CC (idle "Nothing Playing" card without a player), or alone via
+  slides in from the **right** edge, the music wing (`components/MediaWing.qml`: a steampunk phonograph —
+  blurred‑art glass in a riveted brass frame, engraved nameplate + volume pressure gauge, cover
+  "sleeve" with a vinyl that slides out and spins while playing, a tonearm that swings onto the record
+  and creeps inward with progress, a brass seek rail with a turning cog knob and counter plaques,
+  riveted brass transport buttons with a cog collar on play) from the **left**. Its "brass" is
+  `Theme.accent` tinted toward gold (`wing.brass`/`brassHi`/`brassLo`/`engraved`), so it follows the
+  palette. The wing always opens with the CC (idle "Nothing Playing" card without a player), or alone via
   `Ui.mediaOpen` (`menu toggle media` IPC). Keys: Space/←/→ = play‑pause/prev/next.
 - **Motion convention**: panels animate ONE master progress (`ccReveal`, `mediaReveal`, `bloom`,
   `reveal`) with a linear `Behavior`, and derive slide/fade/tilt/stagger from it in bindings via
