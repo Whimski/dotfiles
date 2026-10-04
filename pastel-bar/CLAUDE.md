@@ -125,8 +125,9 @@ UI‑facing surface so components stay backend‑agnostic.
 - `components/Sprocket.qml` + `ChainDrive.qml` + `MechWing.qml` — more clockwork. `Sprocket` is sized by
   **arc** pitch (`pitchR = teeth*pitch/2π`), so `ChainDrive` (two equal sprockets, centres `links`
   pitches apart) holds exactly `teeth + 2*links` rollers and every roller on a half‑turn sits in a
-  valley; one `drive` angle moves wheels and chain together. `MechWing` is a right‑pointing wing (mirror
-  with `Scale { xScale: -1 }`), `spread` 0..1 unfolds it, `size` scales it, `hingeX/hingeY` are where to
+  valley; one `drive` angle moves wheels and chain together. `MechWing` is a right‑pointing feathered wing
+  (layered primaries/coverts/edge scales rooted on a quadratic arm curve, from a static `feathers`
+  table; mirror with `Scale { xScale: -1 }`), `spread` 0..1 unfolds it, `size` scales it, `hingeX/hingeY` are where to
   attach it. Wings flank the expanded pill (behind it, outside the input mask — `Bar.implicitWidth`
   reserves their width) and the CC/music drawers' inner edges; the drawers `clip`, so those wings are
   siblings in `ControlCenter` that replicate each drawer's slide. Chain drives sit in the CC header

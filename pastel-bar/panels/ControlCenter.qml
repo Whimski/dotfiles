@@ -252,7 +252,7 @@ PanelWindow {
         x: ccPanel.x - width + 14 + (1 - ccPanel.e) * (ccPanel.width + 40)
         y: ccPanel.y + 34 - hingeY
         spread: s
-        size: 1.6
+        size: 1.25
         running: cc.open
         opacity: Math.min(1, s * 3)
         visible: opacity > 0.01
@@ -264,7 +264,7 @@ PanelWindow {
         x: wing.x + wing.width - 14 + (1 - wing.e) * -(wing.width + 40)
         y: wing.y + 34 - hingeY
         spread: s
-        size: 1.6
+        size: 1.25
         running: cc.mediaShown && !cc.peekOnly
         opacity: cc.peekOnly ? 0 : Math.min(1, s * 3)
         visible: opacity > 0.01
