@@ -268,16 +268,6 @@ PanelWindow {
                        angle: (1 - Theme.easeOutCubic(cc.ccReveal)) * -24 }
         ]
 
-        // drafting-sheet backdrop, drawn in with the drawer
-        BlueprintOverlay {
-            anchors.fill: parent
-            reveal: cc.ccReveal
-            fig: "FIG. 1"
-            title: "CONTROL ASSEMBLY"
-            dwg: "CC-01"
-            cornerInset: 16
-        }
-
         // Absorb clicks on the panel background so they don't fall through to the
         // outside-click catcher. Declared before the content so interactive
         // children (sliders, tiles) still receive their own clicks.
