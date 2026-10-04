@@ -11,7 +11,7 @@ import "../services"
 // track's progress). Title/artist, a brass seek rail with a turning cog knob and
 // counter plaques, and a transport row of riveted brass buttons.
 //
-// "Brass" is the palette accent tinted gold, so it still follows the theme.
+// The "brass" fittings are pure Theme.accent, so they follow the palette.
 //
 // `reveal` (0..1) is the drawer's master open progress, driven by the parent;
 // the wing's own rows stagger in off it via Theme.stagger.
@@ -28,7 +28,7 @@ GlassPanel {
     readonly property bool hasArt: Media.artUrl !== ""
     readonly property color fg: hasArt ? "#ffffff" : Theme.text
     readonly property color fgSub: hasArt ? Theme.alpha("#ffffff", 0.78) : Theme.subtext
-    readonly property color brass: Qt.tint(Theme.accent, Theme.alpha("#e0b45c", 0.7))
+    readonly property color brass: Theme.accent
     readonly property color brassHi: Qt.lighter(brass, 1.35)
     readonly property color brassLo: Qt.darker(brass, 1.6)
     readonly property color engraved: Qt.darker(brass, 2.8)
@@ -75,7 +75,7 @@ GlassPanel {
         source: bgArt
         visible: wing.hasArt
         blurEnabled: true; blur: 1.0; blurMax: 64
-        brightness: -0.3; saturation: 0.25
+        brightness: -0.5; saturation: 0.25
         // No auto-padding: otherwise the blur bleeds past the item bounds, the
         // mask stretches over the padded area, and `clip` squares the corners off.
         autoPaddingEnabled: false
@@ -89,13 +89,13 @@ GlassPanel {
         visible: false
         Rectangle { anchors.fill: parent; radius: wing.radius }
     }
+    // darkening scrim — always on, heavier over album art
     Rectangle {
         anchors.fill: parent
         radius: wing.radius
-        visible: wing.hasArt
         gradient: Gradient {
-            GradientStop { position: 0.0; color: Theme.alpha("#000000", 0.15) }
-            GradientStop { position: 1.0; color: Theme.alpha("#000000", 0.55) }
+            GradientStop { position: 0.0; color: Theme.alpha("#000000", wing.hasArt ? 0.45 : 0.4) }
+            GradientStop { position: 1.0; color: Theme.alpha("#000000", wing.hasArt ? 0.75 : 0.6) }
         }
     }
 
@@ -217,7 +217,7 @@ GlassPanel {
                 Rectangle {
                     anchors.centerIn: parent
                     width: parent.width - 5; height: width; radius: width / 2
-                    color: Qt.tint("#1b1712", Theme.alpha(wing.brass, 0.12))
+                    color: Qt.tint("#101012", Theme.alpha(wing.brass, 0.1))
                 }
                 Canvas {
                     anchors.fill: parent
@@ -241,7 +241,7 @@ GlassPanel {
                 Rectangle {
                     x: parent.width / 2 - 0.75; y: parent.height / 2 - 10
                     width: 1.5; height: 10; radius: 0.75
-                    color: "#f2d9a0"
+                    color: wing.brassHi
                     transformOrigin: Item.Bottom
                     rotation: -120 + 240 * Math.min(1, Audio.volume) + gauge.tremble
                     Behavior on rotation { NumberAnimation { duration: 140 } }
@@ -529,12 +529,12 @@ GlassPanel {
                     height: ct.implicitHeight + 4
                     width: ct.implicitWidth + 10
                     radius: 3
-                    color: Qt.tint("#1b1712", Theme.alpha(wing.brass, 0.1))
+                    color: Qt.tint("#101012", Theme.alpha(wing.brass, 0.08))
                     border.width: 1; border.color: Theme.alpha(wing.brass, 0.6)
                     Text {
                         id: ct
                         anchors.centerIn: parent
-                        color: "#f2d9a0"
+                        color: wing.brassHi
                         font.pixelSize: Theme.fontSize - 4
                         font.family: "monospace"
                         font.features: { "tnum": 1 }
