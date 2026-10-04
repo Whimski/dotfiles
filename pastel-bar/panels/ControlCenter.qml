@@ -215,6 +215,50 @@ PanelWindow {
         }
     }
 
+    // ---- machinery behind the music wing ----
+    // Big translucent cogs peeking out from behind the wing's right edge and from
+    // under its bottom edge (running off the screen edge). They ride the wing's
+    // slide, wind into place with mediaReveal, and turn while music plays —
+    // easing up to speed on play and coasting down to an idle crawl on pause.
+    Item {
+        id: machinery
+        anchors.fill: parent
+        opacity: cc.peekOnly ? 0 : Math.min(1, cc.mediaReveal * 2)
+        visible: opacity > 0.01
+        transform: Translate { x: (1 - wing.e) * -(wing.width + 40) }
+
+        property real spin: 0
+        property real speed: Media.playing ? 16 : 2.5
+        Behavior on speed { NumberAnimation { duration: 1400; easing.type: Easing.InOutQuad } }
+        readonly property real drive: spin - 70 * (1 - Theme.easeOutCubic(cc.mediaReveal))
+        FrameAnimation {
+            running: machinery.visible
+            onTriggered: machinery.spin = (machinery.spin + frameTime * machinery.speed) % 36000
+        }
+        readonly property var tints: [Theme.alpha(Theme.subtext, 0.34),
+                                      Theme.alpha(Theme.current.accent2, 0.3),
+                                      Theme.alpha(Theme.accent, 0.26)]
+
+        GearTrain {
+            id: sideTrain
+            module: 5
+            spec: [{ teeth: 28 }, { teeth: 13, ang: 18 }, { teeth: 20, ang: 85 },
+                   { teeth: 9, on: 2, ang: 20 }, { teeth: 24, on: 2, ang: 150 }]
+            colors: machinery.tints
+            drive: machinery.drive
+            x: wing.x + wing.width - 6 - anchor0.x
+            y: wing.y + 120 - anchor0.y
+        }
+        GearTrain {
+            module: 5
+            spec: [{ teeth: 34 }, { teeth: 15, ang: 10 }, { teeth: 22, ang: 175, on: 0 }]
+            colors: [machinery.tints[1], machinery.tints[0], machinery.tints[2]]
+            drive: -machinery.drive * 0.8 + 7
+            x: wing.x + 110 - anchor0.x
+            y: wing.y + wing.height + 4 - anchor0.y
+        }
+    }
+
     // ---- left: music wing ----
     MediaWing {
         id: wing

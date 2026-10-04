@@ -130,6 +130,12 @@ UI‑facing surface so components stay backend‑agnostic.
   table; mirror with `Scale { xScale: -1 }`), `spread` 0..1 unfolds it, `size` scales it, `hingeX/hingeY` are where to
   attach it. Wings flank the expanded pill (behind it, outside the input mask — `Bar.implicitWidth`
   reserves their width). `ChainDrive` is currently unused.
+- **Machinery behind the music wing** — `ControlCenter`'s `machinery` item (declared *before* `MediaWing`
+  so it renders behind it) holds two `components/GearTrain.qml`s: big translucent cogs peeking out of
+  the wing's right edge and from under its bottom edge (off the screen edge). `GearTrain` is the
+  behaviour‑free version of the pill cluster's mesh maths (`spec[i].ang`, optional `spec[i].on` to mesh
+  with an earlier wheel; pin wheel 0 via `anchor0`). They ride the wing's slide, wind in with
+  `mediaReveal`, and turn at 16°/s while playing, easing to a 2.5°/s idle crawl on pause.
 - **Charging = powered clockwork.** `Bar.power` eases 0↔1 on `Battery.charging` and feeds `power` on
   both `ClockworkCluster`s (overdriven spin, brighter escapement flash) and both `MechWing`s (faster,
   wider flap). `components/LightningArcs.qml` (a `Canvas` over pill + wings, outside the input mask)
