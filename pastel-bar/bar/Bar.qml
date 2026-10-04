@@ -312,9 +312,7 @@ PanelWindow {
                     anchors.verticalCenter: parent.verticalCenter
                     height: 26; radius: 9
                     width: battRow.implicitWidth + 16
-                    color: Battery.charging ? Theme.alpha(Theme.accent, 0.92)
-                                             : (low ? Theme.alpha(Theme.danger, 0.18)
-                                                    : Theme.alpha(Theme.current.hover, 0.5))
+                    color: low ? Theme.alpha(Theme.danger, 0.18) : Theme.alpha(Theme.current.hover, 0.5)
                     Row {
                         id: battRow
                         anchors.centerIn: parent
@@ -323,16 +321,13 @@ PanelWindow {
                             anchors.verticalCenter: parent.verticalCenter
                             name: "battery"
                             battPercent: Battery.percent
-                            battCharging: Battery.charging
-                            color: Battery.charging ? Theme.current.onAccent
-                                                     : (parent.parent.low ? Theme.danger : Theme.subtext)
+                            color: parent.parent.low ? Theme.danger : Theme.subtext
                             size: 14
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: Battery.percent + "%"
-                            color: Battery.charging ? Theme.current.onAccent
-                                                     : (parent.parent.low ? Theme.danger : Theme.text)
+                            color: parent.parent.low ? Theme.danger : Theme.text
                             font.pixelSize: Theme.fontSize - 3
                             font.weight: Font.Bold
                         }

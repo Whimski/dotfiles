@@ -139,7 +139,7 @@ UI‑facing surface so components stay backend‑agnostic.
   `glow`. No battery on this desktop: to preview, temporarily force `power` to 1.
 - `services/Battery.qml` — thin wrapper over `Quickshell.Services.UPower`'s `displayDevice`
   (`present`/`percent`/`charging`). The expanded pill's top row shows a single battery pill (icon +
-  `%`, accent‑tinted while charging) instead of the old separate wifi/bt pills; `present` gates it off
+  `%`, no charging styling — the powered clockwork shows charging) instead of the old separate wifi/bt pills; `present` gates it off
   entirely on desktops with no laptop battery. Clicking it opens the control center.
 - The **idle "main pill" is removed** — at rest the bar shows nothing (pill hidden + input mask
   dropped, so it's click-through). The pill appears only when **expanded** (hold **Left Alt** →
