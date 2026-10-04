@@ -226,7 +226,7 @@ PanelWindow {
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
 
-          // top row: clockwork + clock + battery pill
+          // top row: clockwork + clock + battery pill + mirrored clockwork
           Row {
             id: expandedTop
             anchors.horizontalCenter: parent.horizontalCenter
@@ -311,6 +311,19 @@ PanelWindow {
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                         onClicked: Ui.openCC("") }
                 }
+            }
+
+            // ---- mirrored clockwork (right-hand twin; a mirror image still meshes) ----
+            ClockworkCluster {
+                id: clockworkRight
+                anchors.verticalCenter: parent.verticalCenter
+                wind: bar._bloom(1)
+                running: bar.mode === "expanded" && !bar.pillHidden
+                opacity: bar._bloom(1)
+                transform: [
+                    Scale { origin.x: clockworkRight.width / 2; xScale: -1 },
+                    Translate { x: (1 - bar._bloom(1)) * 28 }
+                ]
             }
           }
         }

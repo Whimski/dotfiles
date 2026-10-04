@@ -114,7 +114,8 @@ UI‑facing surface so components stay backend‑agnostic.
     reads changes. `byMonitor` is reassigned wholesale for exactly that reason, and `Bar`'s
     `!!ActiveWindow.byMonitor &&` prefix exists **only** to establish that dependency — don't
     "simplify" it away.
-- `components/ClockworkCluster.qml` + `components/Gear.qml` — the expanded pill's left slot (replaced
+- `components/ClockworkCluster.qml` + `components/Gear.qml` — the expanded pill's outer slots (left, plus
+  an `xScale: -1` mirrored twin on the right — a mirror image still meshes; replaced
   the old now‑playing art/title). A meshing gear train with **one degree of freedom**: every wheel's
   angle is `gain*drive + off`, precomputed from tooth ratios and mesh phasing (Gear's tooth 0 sits at
   angle 0 — the phasing depends on it), so the teeth always interlock. `drive` = smooth spin scaled by
