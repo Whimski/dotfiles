@@ -27,6 +27,9 @@ Item {
 
     readonly property string chars: "asdfghjkl"
 
+    // An entry may also carry `clipTo` (an Item, e.g. a Flickable) — it's dropped
+    // when it lies vertically outside that item's rect. Lets one overlay span
+    // several surfaces, only some of which scroll.
     function start(list) {
         var picked = []
         for (var i = 0; i < list.length; i++) {
@@ -34,6 +37,10 @@ Item {
             if (!e.activate || !e.item || e.item.width <= 0 || e.item.height <= 0) continue
             var p = e.item.mapToItem(root.mapTo, 0, 0)
             if (root.viewport && (p.y + e.item.height < root.viewport.y || p.y > root.viewport.y + root.viewport.height)) continue
+            if (e.clipTo) {
+                var c = e.clipTo.mapToItem(root.mapTo, 0, 0)
+                if (p.y + e.item.height < c.y || p.y > c.y + e.clipTo.height) continue
+            }
             picked.push({ item: e.item, activate: e.activate, x: p.x, y: p.y, w: e.item.width, h: e.item.height })
         }
         var labels = _labels(picked.length)

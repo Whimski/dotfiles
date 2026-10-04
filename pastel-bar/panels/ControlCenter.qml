@@ -109,8 +109,15 @@ PanelWindow {
 
     // Ordered list of every hintable action (see HintOverlay below), rebuilt on
     // demand (cheap, and always reflects current visibility of the optional
-    // sections).
+    // sections). The CC and the music wing share this window (the hotkey opens
+    // both), so their entries go into one list — one label set, no collisions.
     function _kbList() {
+        var l = cc.open ? _ccKbList() : []
+        if (cc.mediaShown && !cc.peekOnly) l = l.concat(wing.hintList())
+        return l
+    }
+
+    function _ccKbList() {
         var l = []
         l.push({ key: "gear", item: gearIcon, activate: () => { Ui.tuneOpen = !Ui.tuneOpen } })
         l.push({ key: "close", item: closeIcon, activate: () => { Ui.ccOpen = false } })
@@ -164,6 +171,8 @@ PanelWindow {
                 })(nfi)
             }
         }
+        // everything above lives in the scrolling drawer — skip what's scrolled away
+        for (var k = 0; k < l.length; k++) l[k].clipTo = flick
         return l
     }
 
@@ -203,7 +212,7 @@ PanelWindow {
         Keys.onPressed: (event) => {
             if (hintOverlay.active) { hintOverlay.handleKey(event); event.accepted = true; return }
             switch (event.key) {
-            case Qt.Key_F: if (cc.open) hintOverlay.start(cc._kbList()); break
+            case Qt.Key_F: hintOverlay.start(cc._kbList()); break
             case Qt.Key_Escape: cc.closeAll(); break
             // music wing transport
             case Qt.Key_Space: Media.playPause(); break
@@ -658,16 +667,19 @@ PanelWindow {
                     transform: Translate { x: (1 - cc._stage(4)) * 72 }
                 }
             }
-
-            // Vimium-style hint mode: "f" drops a lettered badge on every clickable
-            // entry from _kbList(); typing its letters activates it. Lives inside the
-            // Flickable so badge positions share `inner`'s coordinate space and scroll/
-            // clip with it automatically.
-            HintOverlay {
-                id: hintOverlay
-                mapTo: flick.contentItem
-                viewport: ({ y: flick.contentY, height: flick.height })
-            }
         }
+    }
+
+    // Vimium-style hint mode: "f" drops a lettered badge on every clickable entry
+    // from _kbList() — across both drawers; typing its letters activates it. Sits
+    // over the whole window (above the wing and the CC), so scrolling the CC
+    // drawer mid-hint cancels instead of leaving badges stranded.
+    HintOverlay {
+        id: hintOverlay
+        anchors.fill: parent
+    }
+    Connections {
+        target: flick
+        function onContentYChanged() { if (hintOverlay.active) hintOverlay.cancel() }
     }
 }

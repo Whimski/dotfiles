@@ -59,6 +59,16 @@ GlassPanel {
     }
     function _stage(i) { return Theme.stagger(wing.reveal, i, 0.09, 0.5) }
 
+    // Hintable transport ({key, item, activate}, see HintOverlay) — merged into
+    // ControlCenter's list so both drawers share one label set.
+    function hintList() {
+        return [
+            { key: "media:prev", item: prevBtn, activate: () => prevBtn.trigger() },
+            { key: "media:play", item: playBtn, activate: () => playBtn.activated() },
+            { key: "media:next", item: nextBtn, activate: () => nextBtn.trigger() }
+        ]
+    }
+
     // Mpris position isn't pushed; poke the player so `position` re-reads.
     Timer {
         running: wing.live && Media.playing
@@ -582,6 +592,8 @@ GlassPanel {
                 anchors.verticalCenter: parent.verticalCenter
                 property real beat: 0
                 NumberAnimation { id: beatAnim; target: wb; property: "beat"; from: 1; to: 0; duration: 420; easing.type: Easing.OutCubic }
+                // click / hint activation: beat the wing, then fire
+                function trigger() { beatAnim.restart(); wb.activated() }
                 MechWing {
                     id: mw
                     visible: wing.sp
@@ -607,7 +619,7 @@ GlassPanel {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: { beatAnim.restart(); wb.activated() }
+                    onClicked: wb.trigger()
                 }
             }
 
