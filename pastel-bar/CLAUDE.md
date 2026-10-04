@@ -49,7 +49,7 @@ UI‑facing surface so components stay backend‑agnostic.
   slides in from the **right** edge, the music wing (`components/MediaWing.qml`: blurred‑art glass,
   cover "sleeve" with a vinyl that slides out and spins while playing, seek bar, transport) from the
   **left**. The wing always opens with the CC (idle "Nothing Playing" card without a player), or alone via
-  `Ui.mediaOpen` (`menu toggle media` IPC, or click now‑playing in the expanded pill). Keys: Space/←/→ = play‑pause/prev/next.
+  `Ui.mediaOpen` (`menu toggle media` IPC). Keys: Space/←/→ = play‑pause/prev/next.
 - **Motion convention**: panels animate ONE master progress (`ccReveal`, `mediaReveal`, `bloom`,
   `reveal`) with a linear `Behavior`, and derive slide/fade/tilt/stagger from it in bindings via
   `Theme.stagger(t, i, step, span)` / `Theme.easeOutBack` / `Theme.easeOutCubic` — so open and close
@@ -114,6 +114,13 @@ UI‑facing surface so components stay backend‑agnostic.
     reads changes. `byMonitor` is reassigned wholesale for exactly that reason, and `Bar`'s
     `!!ActiveWindow.byMonitor &&` prefix exists **only** to establish that dependency — don't
     "simplify" it away.
+- `components/ClockworkCluster.qml` + `components/Gear.qml` — the expanded pill's left slot (replaced
+  the old now‑playing art/title). A meshing gear train with **one degree of freedom**: every wheel's
+  angle is `gain*drive + off`, precomputed from tooth ratios and mesh phasing (Gear's tooth 0 sits at
+  angle 0 — the phasing depends on it), so the teeth always interlock. `drive` = smooth spin scaled by
+  CPU load (`/proc/stat` via `FileView`) + a once‑a‑second escapement tick (one tooth, `easeOutBack`)
+  + a wind‑up offset bound to `bar._bloom(1)`. Click = decaying spin kick. `drive`/`ticks` wrap at the
+  train's teeth‑LCM period so float precision never drifts the mesh.
 - `services/Battery.qml` — thin wrapper over `Quickshell.Services.UPower`'s `displayDevice`
   (`present`/`percent`/`charging`). The expanded pill's top row shows a single battery pill (icon +
   `%`, accent‑tinted while charging) instead of the old separate wifi/bt pills; `present` gates it off

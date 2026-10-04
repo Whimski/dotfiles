@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import ".."
@@ -45,7 +44,7 @@ PanelWindow {
 
     // ---- motion ----
     // `bloom` is the expanded content's master progress: the clock drops in first,
-    // then now-playing and battery unfurl outward from it (see Theme.stagger).
+    // then the clockwork and battery unfurl outward from it (see Theme.stagger).
     property real bloom: mode === "expanded" && !pillHidden ? 1 : 0
     Behavior on bloom { NumberAnimation { duration: bar.bloom < 0.5 ? Theme.animDrawer : Theme.animMed; easing.type: Easing.Linear } }
     function _bloom(i) { return Theme.stagger(bar.bloom, i, 0.18, 0.6) }
@@ -227,112 +226,19 @@ PanelWindow {
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
 
-          // top row: now-playing + clock + battery pill
+          // top row: clockwork + clock + battery pill
           Row {
             id: expandedTop
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 22
 
-            // ---- now-playing (circular art + wave + title/artist) ----
-            // Click to open the music wing.
-            Row {
-                id: nowPlaying
+            // ---- clockwork (gear train: CPU-load spin + seconds escapement) ----
+            ClockworkCluster {
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 9
+                wind: bar._bloom(1)
+                running: bar.mode === "expanded" && !bar.pillHidden
                 opacity: bar._bloom(1)
                 transform: Translate { x: (1 - bar._bloom(1)) * -28 }
-
-                // Pointer handlers aren't Items, so the Row doesn't lay them out.
-                // ReleaseWithinBounds grabs on press so the pill's own click
-                // (toggle control center) doesn't also fire.
-                HoverHandler { cursorShape: Qt.PointingHandCursor }
-                TapHandler {
-                    gesturePolicy: TapHandler.ReleaseWithinBounds
-                    onTapped: Ui.mediaOpen = !Ui.mediaOpen
-                }
-
-                // circular album art (masked to a circle)
-                Item {
-                    id: miniArt
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 28; height: 28
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: width / 2
-                        color: Theme.alpha(Theme.subtext, 0.25)
-                        visible: Media.artUrl === ""
-                        IconGlyph { anchors.centerIn: parent; name: "volume"; size: 15; color: Theme.subtext }
-                    }
-                    // Spin the full-res cover *inside* a fixed circular mask, rather
-                    // than rotating an already-masked 28px texture (which resamples
-                    // the tiny bitmap every frame and smears it). Mipmapped source
-                    // + a 2x supersampled layer keep it crisp while it turns.
-                    Item {
-                        anchors.fill: parent
-                        visible: Media.artUrl !== ""
-                        layer.enabled: true
-                        layer.smooth: true
-                        layer.textureSize: Qt.size(width * 2, height * 2)
-                        layer.effect: MultiEffect {
-                            maskEnabled: true
-                            maskSource: artMask
-                            maskThresholdMin: 0.5
-                            maskSpreadAtMin: 1.0
-                        }
-                        Image {
-                            id: artImg
-                            anchors.fill: parent
-                            source: Media.artUrl
-                            fillMode: Image.PreserveAspectCrop
-                            sourceSize: Qt.size(112, 112)
-                            smooth: true
-                            mipmap: true
-                            antialiasing: true
-                        }
-                    }
-                    // Spins like a tiny record while playing. Advanced per frame (not
-                    // a looping animation) so pausing keeps the angle.
-                    FrameAnimation {
-                        running: bar.mode === "expanded" && Media.playing
-                        onTriggered: artImg.rotation = (artImg.rotation + frameTime * 60) % 360
-                    }
-                    Item {
-                        id: artMask
-                        anchors.fill: parent
-                        layer.enabled: true
-                        layer.textureSize: Qt.size(width * 2, height * 2)
-                        visible: false
-                        Rectangle { anchors.fill: parent; radius: width / 2; antialiasing: true }
-                    }
-                }
-
-                AudioWave {
-                    anchors.verticalCenter: parent.verticalCenter
-                    active: Media.playing
-                    implicitWidth: 18
-                }
-
-                Column {
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 1
-                    // scrolls when the title is longer than the slot
-                    Marquee {
-                        text: Media.title || "Nothing playing"
-                        color: Theme.text
-                        font.pixelSize: Theme.fontSize
-                        font.weight: Font.Bold
-                        width: Math.min(implicitWidth, 150)
-                    }
-                    Text {
-                        text: Media.artist
-                        color: Theme.subtext
-                        font.pixelSize: Theme.fontSize - 3
-                        visible: Media.artist !== ""
-                        elide: Text.ElideRight
-                        width: Math.min(implicitWidth, 150)
-                    }
-                }
             }
 
             // ---- clock + date ----
