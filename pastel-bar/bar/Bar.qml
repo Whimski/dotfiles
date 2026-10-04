@@ -328,14 +328,6 @@ PanelWindow {
                                                      : (parent.parent.low ? Theme.danger : Theme.subtext)
                             size: 14
                         }
-                        IconGlyph {
-                            anchors.verticalCenter: parent.verticalCenter
-                            visible: Battery.charging
-                            width: visible ? implicitWidth : 0
-                            name: "bolt"
-                            color: Theme.current.onAccent
-                            size: 11
-                        }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: Battery.percent + "%"
