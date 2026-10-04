@@ -48,6 +48,14 @@ PanelWindow {
     property real bloom: mode === "expanded" && !pillHidden ? 1 : 0
     Behavior on bloom { NumberAnimation { duration: bar.bloom < 0.5 ? Theme.animDrawer : Theme.animMed; easing.type: Easing.Linear } }
     function _bloom(i) { return Theme.stagger(bar.bloom, i, 0.18, 0.6) }
+    // Charging "powers up" the clockwork: gears overdrive, wings beat faster and
+    // lightning crackles between them. `power` eases in/out so it spins up/down.
+    property real power: Battery.charging ? 1 : 0
+    Behavior on power { NumberAnimation { duration: 900; easing.type: Easing.InOutQuad } }
+    // per-strike glow kick on the pill, decays fast
+    property real zap: 0
+    NumberAnimation { id: zapAnim; target: bar; property: "zap"; from: 1; to: 0; duration: 260; easing.type: Easing.OutCubic }
+
     // A brief glow flare whenever the pill wakes up (expand / OSD / notification).
     property real flare: 0
     NumberAnimation { id: flareAnim; target: bar; property: "flare"; from: 1; to: 0; duration: 900; easing.type: Easing.OutCubic }
@@ -165,6 +173,7 @@ PanelWindow {
         x: panel.x + panel.width - bar.wingTuck
         y: panel.y + panel.height / 2 - hingeY
         spread: bar._bloom(2)
+        power: bar.power
         running: bar.mode === "expanded" && !bar.pillHidden
         opacity: Math.min(1, spread * 3)
         visible: opacity > 0.01
@@ -174,6 +183,7 @@ PanelWindow {
         x: panel.x - width + bar.wingTuck
         y: panel.y + panel.height / 2 - hingeY
         spread: bar._bloom(2)
+        power: bar.power
         running: bar.mode === "expanded" && !bar.pillHidden
         opacity: Math.min(1, spread * 3)
         visible: opacity > 0.01
@@ -187,7 +197,7 @@ PanelWindow {
         width: bar.targetWidth
         height: bar.targetHeight
         radius: height / 2
-        glow: Math.min(1, (bar.hovered ? 0.6 : 0) + bar.flare * 0.9)
+        glow: Math.min(1, (bar.hovered ? 0.6 : 0) + bar.flare * 0.9 + bar.power * (0.25 + 0.6 * bar.zap))
         // Hidden at rest / while yielding to a configured app. Appearing, the pill
         // "drops" out of the top edge: it pops from a squashed droplet to full size
         // with a springy overshoot; hiding, it shrinks back up quickly.
@@ -259,7 +269,9 @@ PanelWindow {
 
             // ---- clockwork (gear train: CPU-load spin + seconds escapement) ----
             ClockworkCluster {
+                id: clockworkLeft
                 anchors.verticalCenter: parent.verticalCenter
+                power: bar.power
                 wind: bar._bloom(1)
                 running: bar.mode === "expanded" && !bar.pillHidden
                 opacity: bar._bloom(1)
@@ -342,6 +354,7 @@ PanelWindow {
             ClockworkCluster {
                 id: clockworkRight
                 anchors.verticalCenter: parent.verticalCenter
+                power: bar.power
                 wind: bar._bloom(1)
                 running: bar.mode === "expanded" && !bar.pillHidden
                 opacity: bar._bloom(1)
@@ -425,6 +438,37 @@ PanelWindow {
                 font.features: { "tnum": 1 }
                 width: Math.max(implicitWidth, 38)
             }
+        }
+    }
+
+    // ---------- charging lightning (over the pill, gears and wings) ----------
+    // Decorative only: outside the input mask, so it never eats clicks.
+    LightningArcs {
+        id: lightning
+        x: wingL.x
+        y: 0
+        width: wingR.x + wingR.width - wingL.x
+        height: panel.height + 30
+        active: bar.power > 0.5 && bar.mode === "expanded" && !bar.pillHidden && bar.bloom > 0.9
+        visible: active
+        onStruck: zapAnim.restart()
+        links: function () {
+            var out = []
+            function m(item, p) { return item.mapToItem(lightning, p.x, p.y) }
+            function link(a, b) { out.push([a.x, a.y, b.x, b.y]) }
+            function rnd(lo, hi) { return lo + Math.random() * (hi - lo) }
+            var sides = [[clockworkLeft, wingL], [clockworkRight, wingR]]
+            for (var i = 0; i < 2; i++) {
+                var cw = sides[i][0], wg = sides[i][1]
+                var hinge = m(wg, Qt.point(wg.hingeX, wg.hingeY))
+                link(m(cw, cw.wheelCenter(0)), hinge)                       // gears → wing hinge
+                link(m(cw, cw.wheelCenter(0)), m(cw, cw.wheelCenter(2)))    // across the train
+                link(m(cw, cw.wheelCenter(1)), m(cw, cw.wheelCenter(3)))
+                link(hinge, m(wg, wg.armPoint(1)))                          // along the arm
+                link(m(wg, wg.armPoint(rnd(0.3, 1))), m(wg, wg.tipPoint(Math.floor(rnd(3, 11)))))  // out to a feather tip
+                link(m(wg, wg.armPoint(rnd(0.5, 1))), m(wg, wg.tipPoint(Math.floor(rnd(6, 11)))))
+            }
+            return out
         }
     }
 

@@ -18,7 +18,8 @@ Item {
     id: wing
     property real spread: 1
     property bool running: true
-    property real size: 1           // uniform scale (the drawers use a bigger wing)
+    property real size: 1           // uniform scale
+    property real power: 0          // 0..1 while charging: faster, wider flap
     property color tipColor: Theme.accent
     property color baseColor: Theme.current.accent2
     property color armColor: Theme.alpha(Theme.subtext, 0.9)
@@ -40,9 +41,9 @@ Item {
     property real phase: 0
     FrameAnimation {
         running: wing.running && wing.visible && wing.spread > 0.01
-        onTriggered: wing.phase = (wing.phase + frameTime * 2.2) % (2 * Math.PI)
+        onTriggered: wing.phase = (wing.phase + frameTime * 2.2 * (1 + 1.8 * wing.power)) % (2 * Math.PI)
     }
-    readonly property real flap: Math.sin(phase) * spread
+    readonly property real flap: Math.sin(phase) * spread * (1 + 0.7 * power)
     readonly property real armSwing: 58 * (1 - spread) + flap * 6
 
     // The arm's centre line, in body coords relative to the hinge.
@@ -88,6 +89,20 @@ Item {
             out[i].x = p.x; out[i].y = p.y; out[i].fold = _tan(out[i].t)
         }
         return out
+    }
+
+    // Anchor points in this item's coords (for LightningArcs): a point on the
+    // arm at t, and the tip of primary feather k (0 = shoulder .. 10 = wingtip).
+    function _toOuter(x, y) {
+        var r = armSwing * Math.PI / 180, c = Math.cos(r), s = Math.sin(r)
+        return Qt.point((_hx + x * c - y * s) * size, (_hy + x * s + y * c) * size)
+    }
+    function armPoint(t) { var p = _bez(t); return _toOuter(p.x, p.y) }
+    function tipPoint(k) {
+        var f = feathers[k]
+        var a = (f.fold + (f.ang - f.fold) * spread) * Math.PI / 180
+        var L = f.len * (0.55 + 0.45 * spread)
+        return _toOuter(f.x + L * Math.cos(a), f.y + L * Math.sin(a))
     }
 
   Item {

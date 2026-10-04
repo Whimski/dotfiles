@@ -16,6 +16,7 @@ Item {
     property real wind: 1          // 0..1 reveal progress
     property bool running: true    // tick + sample only while shown
     property real module: 2.2
+    property real power: 0         // 0..1 while charging: overdrives the spin, brightens the flash
 
     // Train, first wheel = driver. `ang` = direction (deg) from the previous wheel.
     readonly property var spec: [
@@ -78,7 +79,7 @@ Item {
     FrameAnimation {
         running: root.running && root.visible
         onTriggered: {
-            var speed = (4 + 70 * root.load) * root.wind + root.boost
+            var speed = ((4 + 70 * root.load) * (1 + 4 * root.power) + 140 * root.power) * root.wind + root.boost
             root.smooth = (root.smooth + frameTime * speed) % root.period
         }
     }
@@ -128,7 +129,7 @@ Item {
                 anchors.centerIn: parent
                 width: wheel.width + 6; height: width; radius: width / 2
                 color: Theme.accent
-                opacity: 0.35 * (1 - root.tickP) * root.wind
+                opacity: (0.35 + 0.4 * root.power) * (1 - root.tickP) * root.wind
             }
             Gear {
                 id: wheel
@@ -141,6 +142,9 @@ Item {
             }
         }
     }
+
+    // centre of wheel i in this item's coords (for LightningArcs anchors)
+    function wheelCenter(i) { var w = train.wheels[i]; return Qt.point(w.x, w.y) }
 
     HoverHandler { cursorShape: Qt.PointingHandCursor }
     TapHandler {

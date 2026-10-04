@@ -130,6 +130,13 @@ UI‑facing surface so components stay backend‑agnostic.
   table; mirror with `Scale { xScale: -1 }`), `spread` 0..1 unfolds it, `size` scales it, `hingeX/hingeY` are where to
   attach it. Wings flank the expanded pill (behind it, outside the input mask — `Bar.implicitWidth`
   reserves their width). `ChainDrive` is currently unused.
+- **Charging = powered clockwork.** `Bar.power` eases 0↔1 on `Battery.charging` and feeds `power` on
+  both `ClockworkCluster`s (overdriven spin, brighter escapement flash) and both `MechWing`s (faster,
+  wider flap). `components/LightningArcs.qml` (a `Canvas` over pill + wings, outside the input mask)
+  strikes flickering zig‑zag bolts between anchors re‑read per strike via its `links()` function —
+  `ClockworkCluster.wheelCenter(i)`, `MechWing.armPoint(t)`/`tipPoint(k)`, mapped with `mapToItem` (so
+  the mirrored twins just work). Each strike fires `struck`, which kicks `Bar.zap` into the pill's
+  `glow`. No battery on this desktop: to preview, temporarily force `power` to 1.
 - `services/Battery.qml` — thin wrapper over `Quickshell.Services.UPower`'s `displayDevice`
   (`present`/`percent`/`charging`). The expanded pill's top row shows a single battery pill (icon +
   `%`, accent‑tinted while charging) instead of the old separate wifi/bt pills; `present` gates it off
