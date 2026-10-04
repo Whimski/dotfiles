@@ -129,9 +129,13 @@ UI‑facing surface so components stay backend‑agnostic.
   (layered primaries/coverts/edge scales rooted on a quadratic arm curve, from a static `feathers`
   table; mirror with `Scale { xScale: -1 }`), `spread` 0..1 unfolds it, `size` scales it, `hingeX/hingeY` are where to
   attach it. Wings flank the expanded pill (behind it, outside the input mask — `Bar.implicitWidth`
-  reserves their width) and the CC/music drawers' inner edges; the drawers `clip`, so those wings are
-  siblings in `ControlCenter` that replicate each drawer's slide. Chain drives sit in the CC header
-  (runs while open) and the music wing header (runs only while playing).
+  reserves their width). `ChainDrive` is currently unused.
+- `components/BlueprintOverlay.qml` — drafting‑sheet backdrop (a `Canvas`) behind the CC and music
+  drawers: grid, corner registration targets, live `W`/`H` dimension lines, a protractor arc in the
+  top‑right corner, and a FIG/DWG title strip in the bottom margin. Drawn in stages off the drawer's
+  `reveal`; repaints only on reveal/size/ink change. Keep its marks in the panel margins or at low
+  alpha so the controls stay legible. `MediaWing` adds a matching vinyl construction drawing (dashed
+  circle, centre lines, `Ø` callout) that tracks the record's slide; ink turns white over album art.
 - `services/Battery.qml` — thin wrapper over `Quickshell.Services.UPower`'s `displayDevice`
   (`present`/`percent`/`charging`). The expanded pill's top row shows a single battery pill (icon +
   `%`, accent‑tinted while charging) instead of the old separate wifi/bt pills; `present` gates it off

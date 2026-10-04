@@ -243,33 +243,6 @@ PanelWindow {
         }
     }
 
-    // ---- clockwork wings on the drawers' inner edges ----
-    // The drawers clip their contents, so the wings are siblings that ride along
-    // with each drawer's slide and unfold once it has landed.
-    MechWing {
-        id: ccWing
-        readonly property real s: Theme.stagger(cc.ccReveal, 2, 0.08, 0.55)
-        x: ccPanel.x - width + 14 + (1 - ccPanel.e) * (ccPanel.width + 40)
-        y: ccPanel.y + 34 - hingeY
-        spread: s
-        size: 1.25
-        running: cc.open
-        opacity: Math.min(1, s * 3)
-        visible: opacity > 0.01
-        transform: Scale { origin.x: ccWing.width / 2; xScale: -1 }
-    }
-    MechWing {
-        id: mediaWingDeco
-        readonly property real s: Theme.stagger(cc.mediaReveal, 2, 0.08, 0.55)
-        x: wing.x + wing.width - 14 + (1 - wing.e) * -(wing.width + 40)
-        y: wing.y + 34 - hingeY
-        spread: s
-        size: 1.25
-        running: cc.mediaShown && !cc.peekOnly
-        opacity: cc.peekOnly ? 0 : Math.min(1, s * 3)
-        visible: opacity > 0.01
-    }
-
     // ---- right: control center drawer ----
     GlassPanel {
         id: ccPanel
@@ -294,6 +267,16 @@ PanelWindow {
             Rotation { origin.x: ccPanel.width; origin.y: ccPanel.height / 2; axis { x: 0; y: 1; z: 0 }
                        angle: (1 - Theme.easeOutCubic(cc.ccReveal)) * -24 }
         ]
+
+        // drafting-sheet backdrop, drawn in with the drawer
+        BlueprintOverlay {
+            anchors.fill: parent
+            reveal: cc.ccReveal
+            fig: "FIG. 1"
+            title: "CONTROL ASSEMBLY"
+            dwg: "CC-01"
+            cornerInset: 16
+        }
 
         // Absorb clicks on the panel background so they don't fall through to the
         // outside-click catcher. Declared before the content so interactive
@@ -339,18 +322,8 @@ PanelWindow {
                         color: Theme.text
                         font.pixelSize: Theme.fontSize + 3
                         font.weight: Font.Bold
-                        width: parent.width - 56 - ccChain.width - 14
+                        width: parent.width - 56
                     }
-                    // sprocket chain: winds in with the header, runs while open
-                    ChainDrive {
-                        id: ccChain
-                        anchors.verticalCenter: parent.verticalCenter
-                        teeth: 9; pitch: 7; links: 5
-                        speed: 50
-                        wind: cc._stage(0)
-                        running: cc.open
-                    }
-                    Item { width: 14; height: 1 }
                     IconGlyph {
                         id: gearIcon
                         name: "gear"; size: 18

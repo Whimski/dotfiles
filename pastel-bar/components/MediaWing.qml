@@ -75,34 +75,27 @@ GlassPanel {
         }
     }
 
+    // drafting-sheet backdrop (white ink over album art, accent otherwise)
+    BlueprintOverlay {
+        anchors.fill: parent
+        reveal: wing.reveal
+        ink: wing.hasArt ? "#ffffff" : Theme.accent
+        fig: "FIG. 2"
+        title: "PHONOGRAPH"
+        dwg: "MW-02"
+        cornerInset: 16
+    }
+
     Column {
         id: col
         anchors { left: parent.left; right: parent.right; top: parent.top; margins: 18 }
         spacing: 14
 
         // ---- header ----
-        Item {
-          width: parent.width
-          height: Math.max(headRow.implicitHeight, mediaChain.height)
-          opacity: wing._stage(0)
-          transform: Translate { x: (1 - wing._stage(0)) * -24 }
-          // sprocket chain: turns only while music plays
-          ChainDrive {
-            id: mediaChain
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            teeth: 9; pitch: 7; links: 5
-            speed: 60
-            wind: wing._stage(0)
-            running: Media.playing && wing.live
-            color: wing.hasArt ? Theme.alpha("#ffffff", 0.45) : Theme.alpha(Theme.subtext, 0.5)
-            chainColor: wing.hasArt ? Theme.alpha("#ffffff", 0.7) : Theme.alpha(Theme.text, 0.55)
-            pin: wing.fg
-          }
-          Row {
-            id: headRow
-            anchors.verticalCenter: parent.verticalCenter
+        Row {
             spacing: 8
+            opacity: wing._stage(0)
+            transform: Translate { x: (1 - wing._stage(0)) * -24 }
             AudioWave { anchors.verticalCenter: parent.verticalCenter; active: Media.playing; color: wing.hasArt ? "#ffffff" : Theme.accent }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
@@ -113,7 +106,6 @@ GlassPanel {
                 font.letterSpacing: 1.2
                 font.capitalization: Font.AllUppercase
             }
-          }
         }
 
         // ---- sleeve + vinyl ----
@@ -126,6 +118,61 @@ GlassPanel {
 
             readonly property real sleeve: 188
             readonly property real disc: 176
+
+            // construction drawing for the record: dashed circle, centre lines and
+            // a diameter callout. Behind the vinyl, follows its slide.
+            Canvas {
+                id: vinylPlan
+                anchors.fill: parent
+                readonly property real cx: vinyl.x + vinyl.width / 2
+                readonly property real p: wing._stage(3)
+                readonly property color ink: wing.hasArt ? "#ffffff" : Theme.accent
+                onCxChanged: requestPaint()
+                onPChanged: requestPaint()
+                onInkChanged: requestPaint()
+                onPaint: {
+                    var ctx = getContext("2d")
+                    ctx.reset()
+                    if (p <= 0.001) return
+                    var k = ink, cy = height / 2, R = stage.disc / 2 + 7
+                    function col(a) { return Qt.rgba(k.r, k.g, k.b, a) }
+                    ctx.lineWidth = 1
+                    // dashed construction circle, drawn round as it reveals
+                    ctx.strokeStyle = col(0.45 * p)
+                    var seg = Math.PI / 36
+                    for (var a = -Math.PI / 2; a < -Math.PI / 2 + 2 * Math.PI * p; a += seg) {
+                        ctx.beginPath(); ctx.arc(cx, cy, R, a, a + seg * 0.55, false); ctx.stroke()
+                    }
+                    // long-short centre lines, running past the circle
+                    ctx.strokeStyle = col(0.32 * p)
+                    function chain(x1, y1, x2, y2) {
+                        var L = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / L, uy = (y2 - y1) / L, u = 0
+                        var pat = [10, 3, 2, 3], i = 0
+                        while (u < L) {
+                            var e = Math.min(L, u + pat[i % 4])
+                            if (i % 2 === 0) { ctx.beginPath(); ctx.moveTo(x1 + ux * u, y1 + uy * u); ctx.lineTo(x1 + ux * e, y1 + uy * e); ctx.stroke() }
+                            u = e; i++
+                        }
+                    }
+                    var ext = (R + 10) * p
+                    chain(cx - ext, cy, cx + ext, cy)
+                    chain(cx, cy - Math.min(ext, cy), cx, cy + Math.min(ext, cy))
+                    // diameter callout: leader from the circle at 45° down-right to a shelf
+                    var s = Math.max(0, p * 2 - 1)
+                    if (s > 0) {
+                        var lx = cx + R * Math.SQRT1_2, ly = cy + R * Math.SQRT1_2
+                        var label = "\u00D8 " + stage.disc + " · 33\u2153"
+                        ctx.font = "8px monospace"
+                        var tw = ctx.measureText(label).width
+                        var ex = Math.min(width - tw - 2, lx + 14), ey = Math.min(height - 3, ly + 10)
+                        ctx.strokeStyle = col(0.55 * s)
+                        ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(ex, ey); ctx.lineTo(ex + tw, ey); ctx.stroke()
+                        ctx.fillStyle = col(0.75 * s)
+                        ctx.beginPath(); ctx.arc(lx, ly, 1.8, 0, 2 * Math.PI); ctx.fill()
+                        ctx.fillText(label, ex, ey - 3)
+                    }
+                }
+            }
 
             // vinyl record — slides out of the sleeve while playing
             Item {
