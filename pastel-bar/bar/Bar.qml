@@ -52,6 +52,11 @@ PanelWindow {
     // lightning crackles between them. `power` eases in/out so it spins up/down.
     property real power: Battery.charging ? 1 : 0
     Behavior on power { NumberAnimation { duration: 900; easing.type: Easing.InOutQuad } }
+    // Low battery (≤20%, not charging) wears it down: wings droop, gears strain.
+    // Deepens as the charge drains toward empty.
+    property real weak: Battery.present && !Battery.charging && Battery.percent <= 20
+                        ? 0.6 + 0.4 * Math.max(0, 20 - Battery.percent) / 20 : 0
+    Behavior on weak { NumberAnimation { duration: 1400; easing.type: Easing.InOutQuad } }
     // per-strike glow kick on the pill, decays fast
     property real zap: 0
     NumberAnimation { id: zapAnim; target: bar; property: "zap"; from: 1; to: 0; duration: 260; easing.type: Easing.OutCubic }
@@ -174,6 +179,7 @@ PanelWindow {
         y: panel.y + panel.height / 2 - hingeY
         spread: bar._bloom(2)
         power: bar.power
+        droop: bar.weak
         running: bar.mode === "expanded" && !bar.pillHidden
         opacity: Math.min(1, spread * 3)
         visible: opacity > 0.01
@@ -184,6 +190,7 @@ PanelWindow {
         y: panel.y + panel.height / 2 - hingeY
         spread: bar._bloom(2)
         power: bar.power
+        droop: bar.weak
         running: bar.mode === "expanded" && !bar.pillHidden
         opacity: Math.min(1, spread * 3)
         visible: opacity > 0.01
@@ -272,6 +279,7 @@ PanelWindow {
                 id: clockworkLeft
                 anchors.verticalCenter: parent.verticalCenter
                 power: bar.power
+                strain: bar.weak
                 wind: bar._bloom(1)
                 running: bar.mode === "expanded" && !bar.pillHidden
                 opacity: bar._bloom(1)
@@ -342,6 +350,7 @@ PanelWindow {
                 id: clockworkRight
                 anchors.verticalCenter: parent.verticalCenter
                 power: bar.power
+                strain: bar.weak
                 wind: bar._bloom(1)
                 running: bar.mode === "expanded" && !bar.pillHidden
                 opacity: bar._bloom(1)

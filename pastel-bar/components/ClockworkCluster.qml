@@ -17,6 +17,7 @@ Item {
     property bool running: true    // tick + sample only while shown
     property real module: 2.2
     property real power: 0         // 0..1 while charging: overdrives the spin, brightens the flash
+    property real strain: 0        // 0..1 on low battery: grinding spin, laboured / failing ticks
 
     // Train, first wheel = driver. `ang` = direction (deg) from the previous wheel.
     readonly property var spec: [
@@ -73,17 +74,25 @@ Item {
     Behavior on load { NumberAnimation { duration: 900; easing.type: Easing.InOutQuad } }
 
     readonly property real step: 360 / spec[0].teeth
-    readonly property real drive: smooth + (ticks - 1 + Theme.easeOutBack(tickP, 2.2)) * step
+    // A failed tick (low battery) heaves forward and slips back without advancing.
+    property bool _failTick: false
+    readonly property real _tickShape: _failTick ? 1 + 0.42 * Math.sin(Math.PI * tickP)
+                                                 : Theme.easeOutBack(tickP, 0.3 + 1.9 * (1 - strain))
+    property real _t: 0             // seconds, for the strain shudder
+    readonly property real drive: smooth + (ticks - 1 + _tickShape) * step
                                   - 110 * (1 - wind)
+                                  + strain * 1.4 * Math.sin(_t * 33) * Math.max(0, Math.sin(_t * 1.7))
 
     FrameAnimation {
         running: root.running && root.visible
         onTriggered: {
-            var speed = ((4 + 70 * root.load) * (1 + 4 * root.power) + 140 * root.power) * root.wind + root.boost
+            var speed = ((4 + 70 * root.load) * (1 + 4 * root.power) + 140 * root.power)
+                        * (1 - 0.88 * root.strain) * root.wind + root.boost
             root.smooth = (root.smooth + frameTime * speed) % root.period
+            root._t = (root._t + frameTime) % 1000
         }
     }
-    NumberAnimation { id: tickAnim; target: root; property: "tickP"; from: 0; to: 1; duration: 320 }
+    NumberAnimation { id: tickAnim; target: root; property: "tickP"; from: 0; to: 1; duration: 320 + 520 * root.strain }
     NumberAnimation { id: kickAnim; target: root; property: "boost"; from: 900; to: 0; duration: 1600; easing.type: Easing.OutCubic }
 
     // ---- CPU load from /proc/stat ----
@@ -102,7 +111,9 @@ Item {
         running: root.running
         interval: 1000; repeat: true; triggeredOnStart: true
         onTriggered: {
-            root.ticks = (root.ticks + 1) % root.teethLcm   // teethLcm ticks = one period
+            root._failTick = Math.random() < root.strain * 0.55
+            if (!root._failTick)
+                root.ticks = (root.ticks + 1) % root.teethLcm   // teethLcm ticks = one period
             tickAnim.restart()
             root._sample()
         }
@@ -129,7 +140,7 @@ Item {
                 anchors.centerIn: parent
                 width: wheel.width + 6; height: width; radius: width / 2
                 color: Theme.accent
-                opacity: (0.35 + 0.4 * root.power) * (1 - root.tickP) * root.wind
+                opacity: (0.35 + 0.4 * root.power) * (1 - 0.7 * root.strain) * (1 - root.tickP) * root.wind
             }
             Gear {
                 id: wheel

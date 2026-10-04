@@ -137,6 +137,11 @@ UI‑facing surface so components stay backend‑agnostic.
   `ClockworkCluster.wheelCenter(i)`, `MechWing.armPoint(t)`/`tipPoint(k)`, mapped with `mapToItem` (so
   the mirrored twins just work). Each strike fires `struck`, which kicks `Bar.zap` into the pill's
   `glow`. No battery on this desktop: to preview, temporarily force `power` to 1.
+- **Low battery = worn‑down clockwork.** `Bar.weak` (≤20 %, not charging; 0.6→1 as it drains, eased)
+  feeds `droop` on the `MechWing`s (arm sags, feathers hang via `_sag(t)` — tip most — flap slows and
+  weakens) and `strain` on the `ClockworkCluster`s (spin slowed ~90 %, a shudder on `drive`, laboured
+  ticks with no overshoot, and ~half the ticks *fail*: `_failTick` heaves forward and slips back
+  without advancing `ticks`). To preview, temporarily force `weak` to 1.
 - `services/Battery.qml` — thin wrapper over `Quickshell.Services.UPower`'s `displayDevice`
   (`present`/`percent`/`charging`). The expanded pill's top row shows a single battery pill (icon +
   `%`, no charging styling — the powered clockwork shows charging) instead of the old separate wifi/bt pills; `present` gates it off

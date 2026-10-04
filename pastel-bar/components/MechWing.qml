@@ -20,6 +20,7 @@ Item {
     property bool running: true
     property real size: 1           // uniform scale
     property real power: 0          // 0..1 while charging: faster, wider flap
+    property real droop: 0          // 0..1 on low battery: arm sags, feathers hang, flap goes feeble
     property color tipColor: Theme.accent
     property color baseColor: Theme.current.accent2
     property color armColor: Theme.alpha(Theme.subtext, 0.9)
@@ -41,10 +42,12 @@ Item {
     property real phase: 0
     FrameAnimation {
         running: wing.running && wing.visible && wing.spread > 0.01
-        onTriggered: wing.phase = (wing.phase + frameTime * 2.2 * (1 + 1.8 * wing.power)) % (2 * Math.PI)
+        onTriggered: wing.phase = (wing.phase + frameTime * 2.2 * (1 + 1.8 * wing.power) * (1 - 0.65 * wing.droop)) % (2 * Math.PI)
     }
-    readonly property real flap: Math.sin(phase) * spread * (1 + 0.7 * power)
-    readonly property real armSwing: 58 * (1 - spread) + flap * 6
+    readonly property real flap: Math.sin(phase) * spread * (1 + 0.7 * power) * (1 - 0.6 * droop)
+    readonly property real armSwing: 58 * (1 - spread) + flap * 6 + 34 * droop * spread
+    // extra sag per feather: the wingtip hangs most
+    function _sag(t) { return droop * spread * (8 + 22 * t) }
 
     // The arm's centre line, in body coords relative to the hinge.
     readonly property point _p0: Qt.point(0, 0)
@@ -100,7 +103,7 @@ Item {
     function armPoint(t) { var p = _bez(t); return _toOuter(p.x, p.y) }
     function tipPoint(k) {
         var f = feathers[k]
-        var a = (f.fold + (f.ang - f.fold) * spread) * Math.PI / 180
+        var a = (f.fold + (f.ang - f.fold) * spread + _sag(f.t)) * Math.PI / 180
         var L = f.len * (0.55 + 0.45 * spread)
         return _toOuter(f.x + L * Math.cos(a), f.y + L * Math.sin(a))
     }
@@ -131,7 +134,7 @@ Item {
                 transformOrigin: Item.Left
                 // fold → fan; the flap fans the shoulder feathers a little wider
                 rotation: f.fold + (f.ang - f.fold) * wing.spread
-                          + wing.flap * (1 - f.t) * 5
+                          + wing.flap * (1 - f.t) * 5 + wing._sag(f.t)
                 scale: 0.55 + 0.45 * wing.spread
 
                 Shape {
