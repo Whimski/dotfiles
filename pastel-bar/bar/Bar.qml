@@ -129,7 +129,10 @@ PanelWindow {
     // resizing when notifications arrive — which would re-send pointer enter/leave.
     readonly property real notifReserve: notifGap + 3 * (Theme.fontSize * 2 + 20) + 20
     // +48 leaves room for the springy width overshoot so it never clips.
-    implicitWidth: Math.max(idleW, expW, osdW, notifWidth) + 48
+    // + room for the clockwork wings that flank the expanded pill (they overlap
+    // its edge by `wingTuck`).
+    readonly property real wingTuck: 12
+    implicitWidth: Math.max(idleW, expW + 2 * (wingL.width - wingTuck), osdW, notifWidth) + 48
     implicitHeight: Math.max(idleH, expH, osdH) + notifReserve
     exclusiveZone: 0            // float over the workspace instead of reserving a strip
 
@@ -153,6 +156,28 @@ PanelWindow {
         y: 0
         width: bar._maskW
         height: bar._maskBottom
+    }
+
+    // ---- clockwork wings (decorative, behind the pill, outside the input mask) ----
+    // They unfold after the pill lands (bloom stage 2) and fold back first on close.
+    MechWing {
+        id: wingR
+        x: panel.x + panel.width - bar.wingTuck
+        y: panel.y + panel.height / 2 - hingeY
+        spread: bar._bloom(2)
+        running: bar.mode === "expanded" && !bar.pillHidden
+        opacity: Math.min(1, spread * 3)
+        visible: opacity > 0.01
+    }
+    MechWing {
+        id: wingL
+        x: panel.x - width + bar.wingTuck
+        y: panel.y + panel.height / 2 - hingeY
+        spread: bar._bloom(2)
+        running: bar.mode === "expanded" && !bar.pillHidden
+        opacity: Math.min(1, spread * 3)
+        visible: opacity > 0.01
+        transform: Scale { origin.x: wingL.width / 2; xScale: -1 }
     }
 
     GlassPanel {

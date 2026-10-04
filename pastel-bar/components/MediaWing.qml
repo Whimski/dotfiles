@@ -81,10 +81,28 @@ GlassPanel {
         spacing: 14
 
         // ---- header ----
-        Row {
+        Item {
+          width: parent.width
+          height: Math.max(headRow.implicitHeight, mediaChain.height)
+          opacity: wing._stage(0)
+          transform: Translate { x: (1 - wing._stage(0)) * -24 }
+          // sprocket chain: turns only while music plays
+          ChainDrive {
+            id: mediaChain
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            teeth: 9; pitch: 7; links: 5
+            speed: 60
+            wind: wing._stage(0)
+            running: Media.playing && wing.live
+            color: wing.hasArt ? Theme.alpha("#ffffff", 0.45) : Theme.alpha(Theme.subtext, 0.5)
+            chainColor: wing.hasArt ? Theme.alpha("#ffffff", 0.7) : Theme.alpha(Theme.text, 0.55)
+            pin: wing.fg
+          }
+          Row {
+            id: headRow
+            anchors.verticalCenter: parent.verticalCenter
             spacing: 8
-            opacity: wing._stage(0)
-            transform: Translate { x: (1 - wing._stage(0)) * -24 }
             AudioWave { anchors.verticalCenter: parent.verticalCenter; active: Media.playing; color: wing.hasArt ? "#ffffff" : Theme.accent }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
@@ -95,6 +113,7 @@ GlassPanel {
                 font.letterSpacing: 1.2
                 font.capitalization: Font.AllUppercase
             }
+          }
         }
 
         // ---- sleeve + vinyl ----
