@@ -21,6 +21,7 @@ Item {
     property real size: 1           // uniform scale
     property real power: 0          // 0..1 while charging: faster, wider flap
     property real droop: 0          // 0..1 on low battery: arm sags, feathers hang, flap goes feeble
+    property real tilt: 0           // deg; a constant downward swing (keeps tips clear of a screen edge)
     property color tipColor: Theme.accent
     property color baseColor: Theme.current.accent2
     property color armColor: Theme.alpha(Theme.subtext, 0.9)
@@ -45,7 +46,7 @@ Item {
         onTriggered: wing.phase = (wing.phase + frameTime * 2.2 * (1 + 1.8 * wing.power) * (1 - 0.65 * wing.droop)) % (2 * Math.PI)
     }
     readonly property real flap: Math.sin(phase) * spread * (1 + 0.7 * power) * (1 - 0.6 * droop)
-    readonly property real armSwing: 58 * (1 - spread) + flap * 6 + 34 * droop * spread
+    readonly property real armSwing: 58 * (1 - spread) + flap * 6 + 34 * droop * spread + tilt
     // extra sag per feather: the wingtip hangs most
     function _sag(t) { return droop * spread * (8 + 22 * t) }
 

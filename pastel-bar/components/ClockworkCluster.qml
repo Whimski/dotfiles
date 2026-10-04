@@ -20,10 +20,11 @@ Item {
     property real strain: 0        // 0..1 on low battery: grinding spin, laboured / failing ticks
 
     // Train, first wheel = driver. `ang` = direction (deg) from the previous wheel.
+    // Optional tooth/web/spokes/twist/engrave style each wheel (see Gear).
     readonly property var spec: [
-        { teeth: 14 },
-        { teeth: 9,  ang: -32 },
-        { teeth: 7,  ang: 38 },     // escapement wheel — glows on each tick
+        { teeth: 14, tooth: "block", web: "spokes", spokes: 5, twist: 22 },
+        { teeth: 9,  ang: -32, tooth: "round", web: "solid" },
+        { teeth: 7,  ang: 38, tooth: "saw" },     // escapement wheel — glows on each tick
         { teeth: 11, ang: -24 }
     ]
     readonly property int escIndex: 2
@@ -132,6 +133,7 @@ Item {
             required property int index
             readonly property var w: root.train.wheels[index]
             readonly property bool esc: index === root.escIndex
+            readonly property var s: root.spec[index]
             x: w.x; y: w.y
 
             // escapement flash
@@ -146,6 +148,11 @@ Item {
                 id: wheel
                 anchors.centerIn: parent
                 teeth: parent.w.teeth
+                tooth: parent.s.tooth || "trap"
+                web: parent.s.web || "auto"
+                spokes: parent.s.spokes || 0
+                twist: parent.s.twist || 0
+                engrave: !!parent.s.engrave
                 module: root.module
                 color: root.colors[parent.index % root.colors.length]
                 pin: parent.esc ? Theme.current.onAccent : Theme.text

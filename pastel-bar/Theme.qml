@@ -132,6 +132,9 @@ QtObject {
 
     // ---- convenience colour accessors (track `current`) ----
     readonly property color accent: current.accent
+    // Steampunk mode: gears, wings, brass frames, pipes, the phonograph wing and
+    // the pill's build-up. Off = the plain glass look. Components branch on this.
+    readonly property bool steampunk: Settings.steampunk
     readonly property color text: current.text
     readonly property color subtext: current.subtext
     readonly property color danger: current.danger

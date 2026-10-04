@@ -307,6 +307,21 @@ Item {
             NumberAnimation { from: 0.0; to: 0.55; duration: 1800; easing.type: Easing.InOutSine }
         }
     }
+    // steampunk: the planet is a cog — a toothed ring behind the disc, turning
+    // with the orbit, brighter when connected
+    Gear {
+        visible: Theme.steampunk
+        teeth: 30
+        module: (planet.centerR + 3) / (teeth / 2 - 1.2)
+        tooth: "block"; web: "solid"; engrave: true
+        x: planet.cx - width / 2
+        y: planet.cy - height / 2
+        color: Theme.alpha(Theme.accent, planet.connected ? 0.6 : 0.3)
+        rim: Theme.alpha("#000000", 0.35)
+        pin: "transparent"
+        rotation: planet.spin * 0.5
+        Behavior on module { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutCubic } }
+    }
     Rectangle {
         id: centerDisc
         x: planet.cx - width / 2

@@ -23,6 +23,10 @@ PanelWindow {
     // Keep the surface mapped while the close animation plays.
     readonly property bool open: Ui.launcherOpen
     visible: open || box.opacity > 0.01
+    // steampunk: master open progress — the frame assembles, the backdrop
+    // clockwork winds in, and closing runs it backwards before the panel fades
+    property real spReveal: open ? 1 : 0
+    Behavior on spReveal { NumberAnimation { duration: win.open ? 820 : 420; easing.type: Easing.Linear } }
 
     anchors { top: true; bottom: true; left: true; right: true }
     exclusiveZone: 0
@@ -198,11 +202,20 @@ PanelWindow {
 
     // scrim / click-outside to close
     MouseArea { anchors.fill: parent; onClicked: Ui.launcherOpen = false }
+    // Kept under the blur rule's ignore_alpha (0.2) so the launcher only dims
+    // the screen — it does not frost it (by request).
     Rectangle {
         anchors.fill: parent
-        color: Theme.alpha("#000000", 0.25)
-        opacity: win.open ? 1 : 0
+        color: Theme.alpha("#000000", 0.15)
+        opacity: Theme.steampunk ? win.spReveal : (win.open ? 1 : 0)
         Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
+    }
+
+    PanelMachinery {
+        anchors.fill: parent
+        rx: box.x; ry: box.y; rw: box.width; rh: box.height
+        reveal: win.spReveal
+        variant: 1
     }
 
     GlassPanel {
@@ -217,14 +230,15 @@ PanelWindow {
         glow: 0.5
         // quick scale + fade + slight rise on open/close
         transformOrigin: Item.Top
-        scale: win.open ? 1 : 0.88
-        opacity: win.open ? 1 : 0
+        scale: Theme.steampunk ? 0.9 + 0.1 * Theme.easeOutBack(Math.min(1, win.spReveal * 1.6), 1.5)
+                               : (win.open ? 1 : 0.88)
+        opacity: Theme.steampunk ? Math.min(1, win.spReveal * 3) : (win.open ? 1 : 0)
         transform: Translate { y: win.open ? 0 : -12
             Behavior on y { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutCubic } } }
         // springy pop on open, quick tuck on close
-        Behavior on scale { NumberAnimation { duration: win.open ? Theme.animSlow : Theme.animMed
+        Behavior on scale { enabled: !Theme.steampunk; NumberAnimation { duration: win.open ? Theme.animSlow : Theme.animMed
                                                 easing.type: win.open ? Easing.OutBack : Easing.InCubic; easing.overshoot: 1.5 } }
-        Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
+        Behavior on opacity { enabled: !Theme.steampunk; NumberAnimation { duration: Theme.animFast } }
         Behavior on height { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
 
         MouseArea { anchors.fill: parent }   // swallow clicks inside the box
@@ -348,7 +362,26 @@ PanelWindow {
                     width: list.width
                     height: 46
                     radius: Theme.radiusSm
-                    color: index === win.sel ? Theme.alpha(Theme.accent, 0.2) : "transparent"
+                    readonly property bool cur: index === win.sel
+                    color: cur ? Theme.alpha(Theme.accent, Theme.steampunk ? 0.12 : 0.2) : "transparent"
+                    // steampunk: the selected row gets a brass outline and a cog at
+                    // its right end that spins in as the selection lands
+                    border.width: Theme.steampunk && cur ? 1.3 : 0
+                    border.color: Theme.alpha(Theme.accent, 0.75)
+                    property real selP: cur ? 1 : 0
+                    Behavior on selP { NumberAnimation { duration: Theme.animMed + 60; easing.type: Easing.OutBack; easing.overshoot: 1.6 } }
+                    Gear {
+                        visible: Theme.steampunk && parent.selP > 0.02
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.right: parent.right; anchors.rightMargin: 10
+                        teeth: 10; module: 1.6
+                        tooth: "block"; web: "solid"
+                        color: Theme.alpha(Theme.accent, 0.85)
+                        rim: Theme.alpha("#000000", 0.4)
+                        pin: Qt.darker(Theme.accent, 2.4)
+                        scale: parent.selP
+                        rotation: parent.selP * 270
+                    }
 
                     Row {
                         anchors.fill: parent
@@ -394,6 +427,19 @@ PanelWindow {
                     }
                 }
             }
+        }
+    
+        // steampunk: the frame assembles with the reveal
+        BrassFrame {
+            anchors.fill: parent
+            anchors.margins: 6
+            radius: Math.max(4, box.radius - 6)
+            color: Theme.alpha(Theme.accent, 0.72)
+            corners: ["screw", "cog", "screw", "cross"]
+            plate: "bottom"
+            rail: false
+            build: win.spReveal
+            spin: win.spReveal * 160
         }
     }
 }

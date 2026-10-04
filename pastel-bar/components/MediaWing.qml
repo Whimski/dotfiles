@@ -4,12 +4,13 @@ import ".."
 import "../services"
 
 // The music wing: the left-hand drawer that slides in opposite the control
-// center, dressed as a steampunk phonograph. Blurred album art fills the glass
-// inside a riveted brass frame; an engraved nameplate and a volume pressure gauge
-// head it. The cover sits in a "sleeve" with a vinyl record that slides out and
-// spins while playing, and a tonearm swings onto it (creeping inward with the
-// track's progress). Title/artist, a brass seek rail with a turning cog knob and
-// counter plaques, and a transport row of riveted brass buttons.
+// center. Blurred album art fills the glass inside a brass line-art frame; a
+// name tab with a callout rail heads it. The cover sits centred in a grand
+// brass border — double frame, cogs in every corner, a big half-cog rising
+// behind it, side cogs, a tooth rack and rivets — that assembles with the reveal
+// and turns while music plays. Title/artist, a brass seek rail with a slim turning cog knob and
+// counter plaques, and a transport row: a riveted play button flanked by small
+// clockwork wings for prev/next.
 //
 // The "brass" fittings are pure Theme.accent, so they follow the palette.
 //
@@ -32,6 +33,9 @@ GlassPanel {
     readonly property color brassHi: Qt.lighter(brass, 1.35)
     readonly property color brassLo: Qt.darker(brass, 1.6)
     readonly property color engraved: Qt.darker(brass, 2.8)
+    // steampunk mode: the phonograph dressing. Off = a clean glass music card
+    // (centred cover, plain label, plain seek bar and round buttons).
+    readonly property bool sp: Theme.steampunk
 
     // a domed brass rivet with a specular dot
     component Rivet: Item {
@@ -99,55 +103,23 @@ GlassPanel {
         }
     }
 
-    // ---- riveted brass frame ----
-    Item {
-        id: frame
+    // ---- brass frame: cross-head screws up top, cogs at the bottom corners
+    // that turn with the music, a link plate riding the bottom edge ----
+    property real cogSpin: 0
+    FrameAnimation {
+        running: wing.sp && wing.live && Media.playing
+        onTriggered: wing.cogSpin = (wing.cogSpin + frameTime * 24) % 3600
+    }
+    BrassFrame {
+        visible: wing.sp
         anchors.fill: parent
-        opacity: wing._stage(0)
-        Rectangle {
-            anchors.fill: parent; anchors.margins: 5
-            radius: wing.radius - 5
-            color: "transparent"
-            border.width: 1.6; border.color: Theme.alpha(wing.brass, 0.75)
-        }
-        Rectangle {
-            anchors.fill: parent; anchors.margins: 9
-            radius: wing.radius - 9
-            color: "transparent"
-            border.width: 1; border.color: Theme.alpha(wing.brass, 0.28)
-        }
-        // corner rivets, then evenly spaced rivets along each straight edge
-        Repeater {
-            model: 4
-            delegate: Rivet {
-                required property int index
-                d: 7
-                x: index % 2 ? frame.width - 12 - d : 12
-                y: index < 2 ? 12 : frame.height - 12 - d
-            }
-        }
-        Repeater {
-            id: hRivets
-            readonly property int n: Math.max(0, Math.floor((frame.width - 80) / 52))
-            model: n * 2
-            delegate: Rivet {
-                required property int index
-                readonly property int k: index % hRivets.n
-                x: 40 + (frame.width - 80) * (k + 0.5) / hRivets.n - d / 2
-                y: index < hRivets.n ? 5.8 - d / 2 : frame.height - 5.8 - d / 2
-            }
-        }
-        Repeater {
-            id: vRivets
-            readonly property int n: Math.max(0, Math.floor((frame.height - 80) / 52))
-            model: n * 2
-            delegate: Rivet {
-                required property int index
-                readonly property int k: index % vRivets.n
-                x: index < vRivets.n ? 5.8 - d / 2 : frame.width - 5.8 - d / 2
-                y: 40 + (frame.height - 80) * (k + 0.5) / vRivets.n - d / 2
-            }
-        }
+        anchors.margins: 11         // inset: the wing clips, and the rails + corner cogs overhang
+        radius: wing.radius - 11
+        color: Theme.alpha(wing.brass, 0.8)
+        corners: ["cross", "cross", "cog", "cog"]
+        plate: "bottom"
+        spin: wing.cogSpin + wing.reveal * 120
+        build: wing.reveal
     }
 
     Column {
@@ -155,197 +127,199 @@ GlassPanel {
         anchors { left: parent.left; right: parent.right; top: parent.top; margins: 18 }
         spacing: 14
 
-        // ---- header: engraved nameplate + volume pressure gauge ----
+        // ---- header: a line-art name tab (screw, brass lettering, a little cog
+        // seated on its end) with a callout rail running off to the right ----
         Item {
             width: parent.width
-            height: 30
+            height: 26
             opacity: wing._stage(0)
             transform: Translate { x: (1 - wing._stage(0)) * -24 }
 
             Rectangle {
                 id: plate
                 anchors.verticalCenter: parent.verticalCenter
-                height: 24
-                width: plateText.implicitWidth + 40
-                radius: 5
-                border.width: 1; border.color: Theme.alpha(wing.brassLo, 0.9)
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: wing.brassHi }
-                    GradientStop { position: 0.55; color: wing.brass }
-                    GradientStop { position: 1.0; color: wing.brassLo }
+                height: 22
+                width: plateText.implicitWidth + 44
+                radius: height / 2
+                color: wing.sp ? Theme.alpha(wing.brass, 0.1) : "transparent"
+                border.width: wing.sp ? 1.5 : 0; border.color: Theme.alpha(wing.brass, 0.85)
+                // dim offset rail under the tab's straight run
+                Rectangle {
+                    visible: wing.sp
+                    x: plate.radius; y: plate.height + 3
+                    width: plate.width * 0.55; height: 1
+                    color: Theme.alpha(wing.brass, 0.4)
                 }
-                Rivet { d: 6; x: 6; anchors.verticalCenter: parent.verticalCenter }
-                Rivet { d: 6; x: parent.width - 12; anchors.verticalCenter: parent.verticalCenter }
-                // engraving: a light offset under the dark text
-                Text {
-                    anchors.centerIn: parent; anchors.verticalCenterOffset: 1
-                    text: plateText.text; font: plateText.font
-                    color: Theme.alpha("#ffffff", 0.35)
+                Screw {
+                    visible: wing.sp
+                    size: 9
+                    x: 7; anchors.verticalCenter: parent.verticalCenter
+                    color: Theme.alpha(wing.brass, 0.9)
                 }
                 Text {
                     id: plateText
-                    anchors.centerIn: parent
+                    x: wing.sp ? 22 : 0; anchors.verticalCenter: parent.verticalCenter
                     text: Media.available ? "Now Playing" : "Nothing Playing"
-                    color: wing.engraved
-                    font.pixelSize: Theme.fontSize - 3
+                    color: wing.sp ? wing.brassHi : wing.fgSub
+                    font.pixelSize: Theme.fontSize - 4
                     font.weight: Font.Bold
-                    font.letterSpacing: 2
+                    font.letterSpacing: 2.2
                     font.capitalization: Font.AllUppercase
                 }
             }
-
-            // volume gauge: needle sweeps -120°..120° with the volume and
-            // trembles while music plays, like a live pressure line
-            Item {
-                id: gauge
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                width: 30; height: 30
-                property real t: 0
-                FrameAnimation {
-                    running: wing.live && Media.playing
-                    onTriggered: gauge.t = (gauge.t + frameTime) % 1000
-                }
-                readonly property real tremble: Media.playing ? Math.sin(t * 23) * 2 + Math.sin(t * 6.3) * 1.5 : 0
-                Rectangle {
-                    anchors.fill: parent; radius: width / 2
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: wing.brassHi }
-                        GradientStop { position: 1.0; color: wing.brassLo }
-                    }
-                }
-                Rectangle {
-                    anchors.centerIn: parent
-                    width: parent.width - 5; height: width; radius: width / 2
-                    color: Qt.tint("#101012", Theme.alpha(wing.brass, 0.1))
-                }
-                Canvas {
-                    anchors.fill: parent
-                    readonly property color ink: wing.brassHi
-                    onInkChanged: requestPaint()
-                    onPaint: {
-                        var ctx = getContext("2d"); ctx.reset()
-                        var c = width / 2, k = ink
-                        ctx.lineWidth = 1
-                        for (var i = 0; i <= 8; i++) {
-                            var a = (-210 + i * 30) * Math.PI / 180
-                            var r0 = i % 2 ? 9 : 8, r1 = 11.5
-                            ctx.strokeStyle = i >= 7 ? Qt.rgba(0.95, 0.45, 0.4, 0.9) : Qt.rgba(k.r, k.g, k.b, 0.85)
-                            ctx.beginPath()
-                            ctx.moveTo(c + r0 * Math.cos(a), c + r0 * Math.sin(a))
-                            ctx.lineTo(c + r1 * Math.cos(a), c + r1 * Math.sin(a))
-                            ctx.stroke()
-                        }
-                    }
-                }
-                Rectangle {
-                    x: parent.width / 2 - 0.75; y: parent.height / 2 - 10
-                    width: 1.5; height: 10; radius: 0.75
-                    color: wing.brassHi
-                    transformOrigin: Item.Bottom
-                    rotation: -120 + 240 * Math.min(1, Audio.volume) + gauge.tremble
-                    Behavior on rotation { NumberAnimation { duration: 140 } }
-                }
-                Rectangle { anchors.centerIn: parent; width: 4; height: 4; radius: 2; color: wing.brassHi }
+            Gear {
+                id: plateCog
+                visible: wing.sp
+                anchors.verticalCenter: plate.verticalCenter
+                x: plate.width - width / 2 - 2
+                teeth: 10; module: 1.5
+                tooth: "block"; web: "solid"
+                color: wing.brass
+                rim: Theme.alpha("#000000", 0.4)
+                pin: wing.engraved
+                rotation: wing.cogSpin * 2.5
             }
-            Text {
-                anchors.right: gauge.left; anchors.rightMargin: 5
-                anchors.verticalCenter: parent.verticalCenter
-                text: "VOL"
-                color: wing.fgSub
-                font.pixelSize: Theme.fontSize - 6
-                font.weight: Font.Bold
-                font.letterSpacing: 1.2
+            // callout rail off to the right edge, ending in a ring
+            Rectangle {
+                visible: wing.sp
+                x: plateCog.x + plateCog.width + 2
+                width: parent.width - x - 8
+                anchors.verticalCenter: plate.verticalCenter
+                height: 1.5; radius: 0.75
+                color: Theme.alpha(wing.brass, 0.7)
+            }
+            Rectangle {
+                visible: wing.sp
+                anchors.right: parent.right
+                anchors.verticalCenter: plate.verticalCenter
+                width: 8; height: 8; radius: 4
+                color: "transparent"
+                border.width: 1.5; border.color: Theme.alpha(wing.brass, 0.8)
             }
         }
 
-        // ---- sleeve + vinyl ----
+        // ---- cover art, centred; in steampunk mode it sits in a grand brass
+        // border that assembles with the reveal ----
         Item {
             id: stage
             width: parent.width
-            height: 196
+            height: wing.sp ? 252 : 196
             opacity: wing._stage(1)
             transform: Translate { x: (1 - wing._stage(1)) * -40 }
 
-            readonly property real sleeve: 188
-            readonly property real disc: 176
+            readonly property real sleeve: wing.sp ? 180 : 188
+            readonly property real pad: 18          // border band around the cover
+            // the border's own build, a beat behind the stage's fade-in
+            readonly property real build: Theme.stagger(wing.reveal, 1.4, 0.1, 0.55)
 
-            // vinyl record — slides out of the sleeve while playing
+            // ---- grand border (declared first: the cover sits on top of it) ----
             Item {
-                id: vinyl
-                width: stage.disc; height: stage.disc
-                anchors.verticalCenter: parent.verticalCenter
-                // Peeks out further when playing; the open reveal also rolls it out.
-                x: (stage.sleeve - stage.disc) / 2
-                   + (Media.playing ? stage.disc * 0.5 : stage.disc * 0.3) * wing._stage(2)
-                Behavior on x { NumberAnimation { duration: Theme.animSlow + 200; easing.type: Easing.OutBack; easing.overshoot: 1.3 } }
+                id: border
+                visible: wing.sp
+                anchors.centerIn: sleeve
+                width: stage.sleeve + stage.pad * 2; height: width
+                readonly property real gp: Theme.easeOutBack(Math.max(0, Math.min(1, stage.build * 1.4 - 0.2)), 1.3)
 
-                Item {
-                    id: platter
+                // big half-cog rising behind the top edge, smaller ones at the sides
+                Gear {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    y: -height / 2 + 6 + (1 - border.gp) * 40
+                    teeth: 26; module: 3
+                    tooth: "block"; web: "spokes"; spokes: 6; engrave: true
+                    color: Theme.alpha(wing.brass, 0.5)
+                    rim: Theme.alpha("#000000", 0.4)
+                    pin: wing.brassHi
+                    opacity: border.gp
+                    rotation: wing.cogSpin * 0.6 - 90 * (1 - border.gp)
+                }
+                Repeater {
+                    model: 2
+                    Gear {
+                        required property int index
+                        anchors.verticalCenter: parent.verticalCenter
+                        x: (index ? parent.width : 0) - width / 2 + (index ? -1 : 1) * (1 - border.gp) * 30
+                        teeth: 14; module: 2.6
+                        tooth: index ? "round" : "saw"; web: "solid"; engrave: true
+                        color: Theme.alpha(wing.brass, 0.45)
+                        rim: Theme.alpha("#000000", 0.4)
+                        pin: wing.brassHi
+                        opacity: border.gp
+                        rotation: (index ? -1 : 1) * wing.cogSpin * 1.1 + index * 12
+                    }
+                }
+                // backing plate so the cogs only show round the outside
+                Rectangle {
                     anchors.fill: parent
-                    // Advanced per frame (not a looping animation) so pausing keeps the angle.
-                    FrameAnimation {
-                        running: wing.live && Media.playing
-                        onTriggered: platter.rotation = (platter.rotation + frameTime * 69) % 360
-                    }
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: width / 2
-                        color: "#141118"
-                        border.width: 1
-                        border.color: Theme.alpha("#ffffff", 0.08)
-                    }
-                    // grooves
+                    radius: 16
+                    color: Qt.tint("#0c0b0e", Theme.alpha(wing.brass, 0.06))
+                    opacity: Math.min(1, stage.build * 2)
+                }
+                // gear-tooth rack hanging under the bottom edge
+                Row {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    y: parent.height + 1
+                    spacing: 4
                     Repeater {
-                        model: 7
-                        delegate: Rectangle {
+                        model: 15
+                        Rectangle {
                             required property int index
-                            readonly property real d: platter.width * (0.94 - index * 0.075)
-                            anchors.centerIn: parent
-                            width: d; height: d; radius: d / 2
-                            color: "transparent"
-                            border.width: 1
-                            border.color: Theme.alpha("#ffffff", index % 2 ? 0.035 : 0.07)
+                            readonly property real p: Math.max(0, Math.min(1, stage.build * 2.2 - 1.1 - Math.abs(index - 7) * 0.05))
+                            width: 3; height: 5 * Theme.easeOutBack(p, 2.5)
+                            radius: 1
+                            color: Theme.alpha(wing.brass, 0.75)
                         }
                     }
-                    // sheen — a soft diagonal highlight that turns with the record
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: parent.width * 0.9; height: 10; radius: 5
-                        rotation: -35
-                        gradient: Gradient {
-                            orientation: Gradient.Horizontal
-                            GradientStop { position: 0.0; color: "transparent" }
-                            GradientStop { position: 0.5; color: Theme.alpha("#ffffff", 0.07) }
-                            GradientStop { position: 1.0; color: "transparent" }
-                        }
-                    }
-                    // label = cover art
-                    Item {
-                        id: label
-                        anchors.centerIn: parent
-                        width: platter.width * 0.36; height: width
-                        Rectangle { anchors.fill: parent; radius: width / 2; color: Theme.accent }
-                        Image { id: labelArt; anchors.fill: parent; source: Media.artUrl; fillMode: Image.PreserveAspectCrop; visible: false }
-                        MultiEffect { anchors.fill: parent; source: labelArt; visible: wing.hasArt; maskEnabled: true; maskSource: labelMask }
-                        Item { id: labelMask; anchors.fill: parent; layer.enabled: true; visible: false
-                            Rectangle { anchors.fill: parent; radius: width / 2 } }
-                        Rectangle { anchors.centerIn: parent; width: 8; height: 8; radius: 4; color: "#141118" }
+                }
+                // outer frame: cogs in every corner, a plate under the cover
+                BrassFrame {
+                    anchors.fill: parent
+                    radius: 16
+                    line: 2
+                    color: Theme.alpha(wing.brass, 0.9)
+                    corners: ["cog", "cog", "cog", "cog"]
+                    plate: "bottom"
+                    rail: false
+                    build: stage.build
+                    spin: wing.cogSpin * 2
+                }
+                // inner frame line, a step inside
+                BrassFrame {
+                    anchors.fill: parent
+                    anchors.margins: 6
+                    radius: 11
+                    line: 1
+                    color: Theme.alpha(wing.brass, 0.5)
+                    corners: ["none", "none", "none", "none"]
+                    rail: false
+                    build: Math.max(0, stage.build * 1.3 - 0.3)
+                }
+                // rivets along the band between the two lines
+                Repeater {
+                    model: 8
+                    Rivet {
+                        required property int index
+                        readonly property int k: index % 4
+                        readonly property real p: Math.max(0, Math.min(1, stage.build * 2 - 1 - k * 0.08))
+                        d: 4
+                        x: border.width * (0.3 + k * 0.133) - d / 2
+                        y: (index < 4 ? 3 : border.height - 3) - d / 2
+                        scale: Theme.easeOutBack(p, 2)
                     }
                 }
             }
 
-            // sleeve — the cover, on top of the record
+            // the cover
             Item {
                 id: sleeve
                 width: stage.sleeve; height: stage.sleeve
                 anchors.verticalCenter: parent.verticalCenter
+                anchors.verticalCenterOffset: wing.sp ? 6 : 0
+                x: (stage.width - width) / 2
 
                 Rectangle {
                     id: sleeveFill
                     anchors.fill: parent
-                    radius: Theme.radius
+                    radius: wing.sp ? 8 : Theme.radius
                     gradient: Gradient {
                         GradientStop { position: 0.0; color: Theme.accent }
                         GradientStop { position: 1.0; color: Qt.darker(Theme.accent, 1.5) }
@@ -363,72 +337,25 @@ GlassPanel {
                 Image { id: coverArt; anchors.fill: parent; source: Media.artUrl; fillMode: Image.PreserveAspectCrop; visible: false }
                 MultiEffect { anchors.fill: parent; source: coverArt; visible: wing.hasArt; maskEnabled: true; maskSource: coverMask }
                 Item { id: coverMask; anchors.fill: parent; layer.enabled: true; visible: false
-                    Rectangle { anchors.fill: parent; radius: Theme.radius } }
+                    Rectangle { anchors.fill: parent; radius: wing.sp ? 8 : Theme.radius } }
                 // glossy edge
                 Rectangle {
                     anchors.fill: parent
-                    radius: Theme.radius
+                    radius: wing.sp ? 8 : Theme.radius
                     color: "transparent"
                     border.width: 1
                     border.color: Theme.alpha("#ffffff", 0.18)
                 }
             }
+        }
 
-            // phonograph tonearm: parked straight down off the record; swings onto
-            // it when playing and creeps toward the label as the track plays
-            Item {
-                id: tonearm
-                readonly property real frac: Media.length > 0 ? Math.max(0, Math.min(1, Media.position / Media.length)) : 0
-                x: stage.width - 18; y: 16
-                opacity: wing._stage(2)
-                Item {
-                    id: armPivot
-                    rotation: Media.playing ? 21 + 9 * tonearm.frac : 0
-                    Behavior on rotation { NumberAnimation { duration: 900; easing.type: Easing.InOutCubic } }
-                    // arm tube
-                    Rectangle {
-                        x: -2.5; y: 0
-                        width: 5; height: 128; radius: 2.5
-                        border.width: 0.6; border.color: Theme.alpha("#000000", 0.4)
-                        gradient: Gradient {
-                            orientation: Gradient.Horizontal
-                            GradientStop { position: 0.0; color: wing.brassLo }
-                            GradientStop { position: 0.45; color: wing.brassHi }
-                            GradientStop { position: 1.0; color: wing.brassLo }
-                        }
-                    }
-                    // headshell + stylus
-                    Rectangle {
-                        x: -7; y: 122
-                        width: 12; height: 18; radius: 3
-                        rotation: 18
-                        border.width: 0.6; border.color: Theme.alpha("#000000", 0.4)
-                        gradient: Gradient {
-                            GradientStop { position: 0.0; color: wing.brassHi }
-                            GradientStop { position: 1.0; color: wing.brassLo }
-                        }
-                        Rectangle { x: 2; y: parent.height - 2; width: 2; height: 4; color: "#e8e1d4" }
-                    }
-                    // counterweight behind the pivot
-                    Rectangle {
-                        x: -6; y: -22
-                        width: 12; height: 14; radius: 3
-                        color: wing.brassLo
-                        border.width: 0.6; border.color: Theme.alpha("#000000", 0.4)
-                    }
-                }
-                // pivot base
-                Rectangle {
-                    x: -11; y: -11
-                    width: 22; height: 22; radius: 11
-                    border.width: 0.8; border.color: Theme.alpha("#000000", 0.4)
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: wing.brassHi }
-                        GradientStop { position: 1.0; color: wing.brassLo }
-                    }
-                }
-                Rivet { d: 8; x: -4; y: -4 }
-            }
+        BrassDivider {
+            visible: wing.sp
+            width: parent.width
+            build: wing._stage(3)
+            color: Theme.alpha(wing.brass, 0.75)
+            ends: "dot"; centre: "cog"; rail: false
+            spin: Media.position * 30
         }
 
         // ---- title / artist ----
@@ -489,7 +416,7 @@ GlassPanel {
                     }
                 }
                 Repeater {
-                    model: 11
+                    model: wing.sp ? 11 : 0
                     delegate: Rectangle {
                         required property int index
                         x: (seek.width - 1) * index / 10
@@ -498,11 +425,24 @@ GlassPanel {
                         color: Theme.alpha(wing.brass, 0.6)
                     }
                 }
-                // cog knob: rides the rail and turns with the playhead
-                Gear {
+                // plain mode: a round knob
+                Rectangle {
+                    visible: !wing.sp
                     anchors.verticalCenter: parent.verticalCenter
                     x: seek.width * seek.frac - width / 2
-                    teeth: 10; module: 1.7
+                    width: 12; height: 12; radius: 6
+                    color: wing.brassHi
+                    scale: seek.hot ? 1.25 : 1
+                    Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutBack } }
+                    Behavior on x { NumberAnimation { duration: 480; easing.type: Easing.Linear } }
+                }
+                // cog knob: rides the rail and turns with the playhead
+                Gear {
+                    visible: wing.sp
+                    anchors.verticalCenter: parent.verticalCenter
+                    x: seek.width * seek.frac - width / 2
+                    teeth: 14; module: 0.95
+                    tooth: "fine"
                     scale: seek.hot ? 1.25 : 1
                     Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutBack } }
                     color: wing.brass
@@ -529,12 +469,12 @@ GlassPanel {
                     height: ct.implicitHeight + 4
                     width: ct.implicitWidth + 10
                     radius: 3
-                    color: Qt.tint("#101012", Theme.alpha(wing.brass, 0.08))
-                    border.width: 1; border.color: Theme.alpha(wing.brass, 0.6)
+                    color: wing.sp ? Qt.tint("#101012", Theme.alpha(wing.brass, 0.08)) : "transparent"
+                    border.width: wing.sp ? 1 : 0; border.color: Theme.alpha(wing.brass, 0.6)
                     Text {
                         id: ct
                         anchors.centerIn: parent
-                        color: wing.brassHi
+                        color: wing.sp ? wing.brassHi : wing.fgSub
                         font.pixelSize: Theme.fontSize - 4
                         font.family: "monospace"
                         font.features: { "tnum": 1 }
@@ -548,7 +488,7 @@ GlassPanel {
         // ---- transport ----
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 26
+            spacing: wing.sp ? 14 : 22
             opacity: wing._stage(5)
             transform: Translate { y: (1 - wing._stage(5)) * 16 }
 
@@ -565,10 +505,11 @@ GlassPanel {
                 // play: a cog collar that turns while music plays
                 Gear {
                     id: collar
-                    visible: b.primary
+                    visible: b.primary && wing.sp
                     anchors.centerIn: parent
-                    teeth: 24; module: 2.6
-                    color: wing.brassLo
+                    teeth: 40; module: 1.7
+                    tooth: "fine"
+                    color: Theme.alpha(wing.brass, 0.55)
                     rim: Theme.alpha("#000000", 0.4)
                     pin: "transparent"
                     property real spin: 0
@@ -581,7 +522,7 @@ GlassPanel {
                 Rectangle {
                     anchors.fill: parent
                     radius: width / 2
-                    border.width: b.primary ? 0 : 1.5
+                    border.width: 0
                     border.color: Theme.alpha(wing.brass, bma.containsMouse ? 0.95 : 0.65)
                     gradient: Gradient {
                         GradientStop { position: 0.0; color: b.primary ? wing.brassHi : Theme.alpha(wing.brass, bma.containsMouse ? 0.3 : 0.12) }
@@ -604,7 +545,7 @@ GlassPanel {
                 }
                 // four rivets round the ring
                 Repeater {
-                    model: 4
+                    model: wing.sp ? 4 : 0
                     delegate: Rivet {
                         required property int index
                         readonly property real a: Math.PI / 4 + index * Math.PI / 2
@@ -617,9 +558,62 @@ GlassPanel {
                 MouseArea { id: bma; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: b.activated() }
             }
 
-            Btn { id: prevBtn; icon: "prev"; onActivated: Media.prev() }
+            // prev/next: small clockwork wings pointing away from the play
+            // button. Half-folded at rest; hovering spreads and flaps them, and a
+            // click gives a quick beat outward.
+            component WingBtn: Item {
+                id: wb
+                property bool pointLeft: false
+                property string icon: ""
+                signal activated()
+                width: wing.sp ? 72 : 44; height: 48
+                // plain mode: a round glass button
+                Rectangle {
+                    visible: !wing.sp
+                    anchors.centerIn: parent
+                    width: 40; height: 40; radius: 20
+                    color: Theme.alpha(wing.brass, wma.containsMouse ? 0.3 : 0.12)
+                    border.width: 1.5
+                    border.color: Theme.alpha(wing.brass, wma.containsMouse ? 0.95 : 0.65)
+                    scale: wma.pressed ? 0.86 : (wma.containsMouse ? 1.1 : 1)
+                    Behavior on scale { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutBack; easing.overshoot: 2 } }
+                    IconGlyph { anchors.centerIn: parent; name: wb.icon; size: 17; color: wing.fg }
+                }
+                anchors.verticalCenter: parent.verticalCenter
+                property real beat: 0
+                NumberAnimation { id: beatAnim; target: wb; property: "beat"; from: 1; to: 0; duration: 420; easing.type: Easing.OutCubic }
+                MechWing {
+                    id: mw
+                    visible: wing.sp
+                    size: 0.6
+                    spread: wma.containsMouse ? 1 : 0.88
+                    Behavior on spread { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutBack } }
+                    running: wma.containsMouse && wing.live
+                    tipColor: wing.brassHi
+                    baseColor: wing.brass
+                    armColor: wing.brassLo
+                    rivet: wing.brassHi
+                    x: wb.pointLeft ? wb.width - width + 4 : -4
+                    y: (wb.height - height) / 2 + 4
+                    transform: [
+                        Scale { origin.x: mw.width / 2; xScale: wb.pointLeft ? -1 : 1 },
+                        Translate { x: (wb.pointLeft ? -1 : 1) * 7 * wb.beat }
+                    ]
+                    scale: wma.pressed ? 0.9 : 1
+                    Behavior on scale { NumberAnimation { duration: Theme.animFast } }
+                }
+                MouseArea {
+                    id: wma
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: { beatAnim.restart(); wb.activated() }
+                }
+            }
+
+            WingBtn { id: prevBtn; pointLeft: true; icon: "prev"; onActivated: Media.prev() }
             Btn { id: playBtn; icon: Media.playing ? "pause" : "play"; size: 58; primary: true; onActivated: Media.playPause() }
-            Btn { id: nextBtn; icon: "next"; onActivated: Media.next() }
+            WingBtn { id: nextBtn; icon: "next"; onActivated: Media.next() }
         }
     }
 }

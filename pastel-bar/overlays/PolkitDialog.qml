@@ -22,6 +22,10 @@ PanelWindow {
     // Keep mapped through the close animation, then unmap.
     readonly property bool open: Polkit.active
     visible: open || pkPanel.opacity > 0.01
+    // steampunk: master open progress — the frame assembles, the backdrop
+    // clockwork winds in, and closing runs it backwards before the panel fades
+    property real spReveal: open ? 1 : 0
+    Behavior on spReveal { NumberAnimation { duration: win.open ? 820 : 420; easing.type: Easing.Linear } }
 
     anchors { top: true; bottom: true; left: true; right: true }
     exclusiveZone: 0
@@ -43,8 +47,15 @@ PanelWindow {
     Rectangle {
         anchors.fill: parent
         color: Theme.alpha("#000000", 0.45)
-        opacity: win.open ? 1 : 0
+        opacity: Theme.steampunk ? win.spReveal : (win.open ? 1 : 0)
         Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
+    }
+
+    PanelMachinery {
+        anchors.fill: parent
+        rx: pkPanel.x; ry: pkPanel.y; rw: pkPanel.width; rh: pkPanel.height
+        reveal: win.spReveal
+        variant: 3
     }
 
     GlassPanel {
@@ -55,12 +66,13 @@ PanelWindow {
         radius: Theme.radius
         glow: 0.6
         // quick scale + fade in/out from the centre
-        scale: win.open ? 1 : 0.88
-        opacity: win.open ? 1 : 0
+        scale: Theme.steampunk ? 0.9 + 0.1 * Theme.easeOutBack(Math.min(1, win.spReveal * 1.6), 1.5)
+                               : (win.open ? 1 : 0.88)
+        opacity: Theme.steampunk ? Math.min(1, win.spReveal * 3) : (win.open ? 1 : 0)
         // springy pop on open, quick tuck on close
-        Behavior on scale { NumberAnimation { duration: win.open ? Theme.animSlow : Theme.animMed
+        Behavior on scale { enabled: !Theme.steampunk; NumberAnimation { duration: win.open ? Theme.animSlow : Theme.animMed
                                                 easing.type: win.open ? Easing.OutBack : Easing.InCubic; easing.overshoot: 1.5 } }
-        Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
+        Behavior on opacity { enabled: !Theme.steampunk; NumberAnimation { duration: Theme.animFast } }
         Behavior on height { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
         MouseArea { anchors.fill: parent }
 
@@ -144,19 +156,50 @@ PanelWindow {
                 spacing: 10
 
                 Rectangle {
-                    width: 92; height: 34; radius: 9
-                    color: cancelMa.containsMouse ? Theme.alpha(Theme.current.hover, 0.8) : Theme.alpha(Theme.current.hover, 0.5)
-                    border.width: 1; border.color: Theme.strokeGlass
+                    width: 92; height: 34; radius: Theme.steampunk ? 17 : 9
+                    color: Theme.steampunk ? Theme.alpha("#000000", cancelMa.containsMouse ? 0.12 : 0.22)
+                         : (cancelMa.containsMouse ? Theme.alpha(Theme.current.hover, 0.8) : Theme.alpha(Theme.current.hover, 0.5))
+                    border.width: Theme.steampunk ? 1.4 : 1
+                    border.color: Theme.steampunk ? Theme.alpha(Theme.accent, cancelMa.containsMouse ? 0.8 : 0.45) : Theme.strokeGlass
                     Text { anchors.centerIn: parent; text: "Cancel"; color: Theme.text; font.pixelSize: Theme.fontSize - 2 }
                     MouseArea { id: cancelMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Polkit.cancel() }
                 }
                 Rectangle {
-                    width: 118; height: 34; radius: 9
-                    color: Theme.alpha(Theme.accent, okMa.containsMouse ? 1.0 : 0.92)
-                    Text { anchors.centerIn: parent; text: "Authenticate"; color: Theme.current.onAccent; font.pixelSize: Theme.fontSize - 2; font.weight: Font.DemiBold }
+                    id: okBtn
+                    width: 118; height: 34; radius: Theme.steampunk ? 17 : 9
+                    color: Theme.steampunk ? Theme.alpha(Theme.accent, okMa.containsMouse ? 0.32 : 0.2)
+                                           : Theme.alpha(Theme.accent, okMa.containsMouse ? 1.0 : 0.92)
+                    border.width: Theme.steampunk ? 1.6 : 0
+                    border.color: Theme.alpha(Theme.accent, 0.95)
+                    // steampunk: a rivet in each rounded end
+                    Repeater {
+                        model: Theme.steampunk ? 2 : 0
+                        Screw {
+                            required property int index
+                            size: 8
+                            anchors.verticalCenter: parent.verticalCenter
+                            x: index ? okBtn.width - 13 - width / 2 : 13 - width / 2
+                            color: Theme.alpha(Theme.accent, 0.9)
+                        }
+                    }
+                    Text { anchors.centerIn: parent; text: "Authenticate"
+                           color: Theme.steampunk ? Qt.lighter(Theme.accent, 1.25) : Theme.current.onAccent; font.pixelSize: Theme.fontSize - 2; font.weight: Font.DemiBold }
                     MouseArea { id: okMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Polkit.submit(pw.text) }
                 }
             }
+        }
+    
+        // steampunk: the frame assembles with the reveal
+        BrassFrame {
+            anchors.fill: parent
+            anchors.margins: 6
+            radius: Math.max(4, pkPanel.radius - 6)
+            color: Theme.alpha(Theme.accent, 0.72)
+            corners: ["cross", "cross", "cog", "cog"]
+            plate: "bottom"
+            rail: false
+            build: win.spReveal
+            spin: win.spReveal * 160
         }
     }
 }

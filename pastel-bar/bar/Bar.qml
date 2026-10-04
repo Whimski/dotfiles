@@ -35,6 +35,18 @@ PanelWindow {
     readonly property bool yieldToApp: !!screen && !!ActiveWindow.byMonitor
         && ActiveWindow.matches(screen.name, Settings.pillYieldApps)
     readonly property bool pillHidden: mode === "idle" || (mode === "expanded" && yieldToApp)
+    // While a collapse winds down, keep drawing the expanded pill so its brass
+    // dressing (PillFrame) and content can unbuild off `bloom` in reverse; only
+    // hide it once everything is packed away. Input is still dropped at once
+    // (the mask follows pillHidden), so a closing pill never eats clicks.
+    readonly property bool winding: mode === "idle" && bloom > 0.02
+    // same for the OSD in steampunk mode: its pill dressing unbuilds off osdReveal
+    property real osdReveal: mode === "osd" ? 1 : 0
+    Behavior on osdReveal { NumberAnimation { duration: Theme.steampunk ? (bar.mode === "osd" ? 620 : 380) : Theme.animFast
+                                              easing.type: Easing.Linear } }
+    readonly property bool osdWinding: Theme.steampunk && mode === "idle" && !winding && osdReveal > 0.02
+    readonly property bool shownHidden: pillHidden && !winding && !osdWinding
+    readonly property bool expLayout: mode === "expanded" || winding
 
     // ---- state ----
     property bool hovered: false
@@ -46,8 +58,13 @@ PanelWindow {
     // `bloom` is the expanded content's master progress: the clock drops in first,
     // then the clockwork and battery unfurl outward from it (see Theme.stagger).
     property real bloom: mode === "expanded" && !pillHidden ? 1 : 0
-    Behavior on bloom { NumberAnimation { duration: bar.bloom < 0.5 ? Theme.animDrawer : Theme.animMed; easing.type: Easing.Linear } }
+    // Opening is a long, staged build (PillFrame's rails → caps → screws → steam);
+    // closing replays it backwards, quicker.
+    Behavior on bloom { NumberAnimation { duration: Theme.steampunk ? (bar.bloom < 0.5 ? 1000 : 560)
+                                                                  : (bar.bloom < 0.5 ? Theme.animDrawer : Theme.animMed)
+                                          easing.type: Easing.Linear } }
     function _bloom(i) { return Theme.stagger(bar.bloom, i, 0.18, 0.6) }
+    function _seg(a, b) { return Math.max(0, Math.min(1, (bar.bloom - a) / (b - a))) }
     // Charging "powers up" the clockwork: gears overdrive, wings beat faster and
     // lightning crackles between them. `power` eases in/out so it spins up/down.
     property real power: Battery.charging ? 1 : 0
@@ -133,8 +150,8 @@ PanelWindow {
     readonly property real expH: expandedView.implicitHeight + Theme.expVPad * 2
     readonly property real osdH: osdView.implicitHeight + Theme.idleVPad * 2
 
-    readonly property real targetWidth: mode === "osd" ? osdW : mode === "expanded" ? expW : idleW
-    readonly property real targetHeight: mode === "osd" ? osdH : mode === "expanded" ? expH : idleH
+    readonly property real targetWidth: mode === "osd" || osdWinding ? osdW : expLayout ? expW : idleW
+    readonly property real targetHeight: mode === "osd" || osdWinding ? osdH : expLayout ? expH : idleH
 
     // The window also reserves a fixed strip BELOW the pill for the notification
     // surface (expanded list / idle toast) that hangs off the pill's bottom edge.
@@ -180,9 +197,10 @@ PanelWindow {
         spread: bar._bloom(2)
         power: bar.power
         droop: bar.weak
+        tilt: 14      // the pill hugs the top edge — swing the wings down so the flap never clips it
         running: bar.mode === "expanded" && !bar.pillHidden
         opacity: Math.min(1, spread * 3)
-        visible: opacity > 0.01
+        visible: Theme.steampunk && opacity > 0.01
     }
     MechWing {
         id: wingL
@@ -191,9 +209,10 @@ PanelWindow {
         spread: bar._bloom(2)
         power: bar.power
         droop: bar.weak
+        tilt: 14      // the pill hugs the top edge — swing the wings down so the flap never clips it
         running: bar.mode === "expanded" && !bar.pillHidden
         opacity: Math.min(1, spread * 3)
-        visible: opacity > 0.01
+        visible: Theme.steampunk && opacity > 0.01
         transform: Scale { origin.x: wingL.width / 2; xScale: -1 }
     }
 
@@ -208,14 +227,16 @@ PanelWindow {
         // Hidden at rest / while yielding to a configured app. Appearing, the pill
         // "drops" out of the top edge: it pops from a squashed droplet to full size
         // with a springy overshoot; hiding, it shrinks back up quickly.
-        opacity: bar.pillHidden ? 0 : 1
+        // (while winding down it fades with the last of the bloom)
+        opacity: bar.shownHidden ? 0 : (bar.winding ? Math.min(1, bar.bloom * 6)
+                                      : bar.osdWinding ? Math.min(1, bar.osdReveal * 6) : 1)
         visible: opacity > 0.01
         transformOrigin: Item.Top
-        scale: bar.pillHidden ? 0.55 : 1
-        Behavior on opacity { NumberAnimation { duration: bar.pillHidden ? Theme.animFast : Theme.animMed } }
+        scale: bar.shownHidden ? 0.55 : (bar.winding ? 0.8 + 0.2 * Math.min(1, bar.bloom * 4) : 1)
+        Behavior on opacity { NumberAnimation { duration: bar.shownHidden ? Theme.animFast : Theme.animMed } }
         Behavior on scale {
-            NumberAnimation { duration: bar.pillHidden ? Theme.animMed : Theme.animSlow
-                              easing.type: bar.pillHidden ? Easing.InCubic : Easing.OutBack; easing.overshoot: 1.6 }
+            NumberAnimation { duration: bar.shownHidden ? Theme.animMed : Theme.animSlow
+                              easing.type: bar.shownHidden ? Easing.InCubic : Easing.OutBack; easing.overshoot: 1.6 }
         }
         Behavior on width {
             NumberAnimation { duration: Theme.animSlow; easing.type: Easing.OutBack; easing.overshoot: 0.9 }
@@ -237,12 +258,22 @@ PanelWindow {
             }
         }
 
+        // ---------- steampunk dressing (builds / unbuilds off bloom) ----------
+        PillFrame {
+            anchors.fill: parent
+            visible: (bar.expLayout || bar.mode === "osd" || bar.osdWinding) && Theme.steampunk
+            t: bar.expLayout ? bar.bloom : bar.osdReveal
+            pulse: bar.mode === "expanded" ? 1 - clockworkLeft.tickP : 0
+        }
+
         // ---------- idle ----------
         Row {
             id: idleView
             anchors.centerIn: parent
             spacing: 10
-            opacity: bar.mode === "idle" ? 1 : 0
+            // the idle pill is retired (pill hidden at rest); never let its clock
+            // ghost through while the expanded pill winds down
+            opacity: bar.mode === "idle" && !bar.pillHidden ? 1 : 0
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
 
@@ -264,19 +295,47 @@ PanelWindow {
             id: expandedView
             anchors.centerIn: parent
             spacing: 8
-            opacity: bar.mode === "expanded" ? 1 : 0
+            opacity: bar.expLayout ? 1 : 0
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
+
+          // brass posts between the clockwork and the clock: a rail that extends
+          // from its middle, then a ring at each end
+          component BrassPost: Item {
+              property real p: 0
+              visible: Theme.steampunk
+              anchors.verticalCenter: parent.verticalCenter
+              width: 8; height: 34
+              readonly property real len: (height - 8) * Theme.easeOutCubic(p)
+              Rectangle {
+                  x: (parent.width - width) / 2; y: (parent.height - height) / 2
+                  width: 1.6; height: parent.len
+                  color: Theme.alpha(Theme.accent, 0.8)
+              }
+              Repeater {
+                  model: 2
+                  Rectangle {
+                      required property int index
+                      width: 6; height: 6; radius: 3
+                      x: 1
+                      y: parent.height / 2 + (index ? 1 : -1) * parent.len / 2 - 3
+                      scale: Theme.easeOutBack(Math.max(0, parent.p * 2 - 1), 2.5)
+                      color: "transparent"
+                      border.width: 1.4; border.color: Theme.alpha(Theme.accent, 0.85)
+                  }
+              }
+          }
 
           // top row: clockwork + clock + battery pill + mirrored clockwork
           Row {
             id: expandedTop
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 22
+            spacing: 14
 
             // ---- clockwork (gear train: CPU-load spin + seconds escapement) ----
             ClockworkCluster {
                 id: clockworkLeft
+                visible: Theme.steampunk
                 anchors.verticalCenter: parent.verticalCenter
                 power: bar.power
                 strain: bar.weak
@@ -285,6 +344,7 @@ PanelWindow {
                 opacity: bar._bloom(1)
                 transform: Translate { x: (1 - bar._bloom(1)) * -28 }
             }
+            BrassPost { p: bar._seg(0.22, 0.55) }
 
             // ---- clock + date ----
             Column {
@@ -302,7 +362,7 @@ PanelWindow {
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: bar.dateStr
-                    color: Theme.subtext
+                    color: Theme.steampunk ? Theme.alpha(Qt.lighter(Theme.accent, 1.15), 0.9) : Theme.subtext
                     font.pixelSize: Theme.fontSize - 3
                 }
             }
@@ -318,9 +378,12 @@ PanelWindow {
                 Rectangle {
                     readonly property bool low: !Battery.charging && Battery.percent <= 20
                     anchors.verticalCenter: parent.verticalCenter
-                    height: 26; radius: 9
+                    height: 26; radius: 13
                     width: battRow.implicitWidth + 16
-                    color: low ? Theme.alpha(Theme.danger, 0.18) : Theme.alpha(Theme.current.hover, 0.5)
+                    color: low ? Theme.alpha(Theme.danger, 0.18)
+                               : Theme.steampunk ? Theme.alpha("#000000", 0.2) : Theme.alpha(Theme.current.hover, 0.5)
+                    border.width: Theme.steampunk || low ? 1.4 : 0
+                    border.color: low ? Theme.alpha(Theme.danger, 0.8) : Theme.alpha(Theme.accent, 0.75)
                     Row {
                         id: battRow
                         anchors.centerIn: parent
@@ -345,9 +408,12 @@ PanelWindow {
                 }
             }
 
+            BrassPost { p: bar._seg(0.28, 0.61) }
+
             // ---- mirrored clockwork (right-hand twin; a mirror image still meshes) ----
             ClockworkCluster {
                 id: clockworkRight
+                visible: Theme.steampunk
                 anchors.verticalCenter: parent.verticalCenter
                 power: bar.power
                 strain: bar.weak
@@ -366,7 +432,7 @@ PanelWindow {
             id: osdView
             anchors.centerIn: parent
             spacing: 10
-            opacity: bar.mode === "osd" ? 1 : 0
+            opacity: bar.mode === "osd" || bar.osdWinding ? 1 : 0
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
 
@@ -376,9 +442,20 @@ PanelWindow {
             // to whichever max applies so a full bar reads correctly per kind.
             readonly property real maxVal: bar.osd === "brightness" ? 1 : 2
 
+            // steampunk: the icon sits in a brass porthole that pops in
+            Item {
+                anchors.verticalCenter: parent.verticalCenter
+                width: Theme.steampunk ? 28 : osdIcon.width; height: Theme.steampunk ? 28 : osdIcon.height
+                Rectangle {
+                    visible: Theme.steampunk
+                    anchors.fill: parent; radius: width / 2
+                    color: Theme.alpha("#000000", 0.3)
+                    border.width: 1.5; border.color: Theme.alpha(Theme.accent, 0.85)
+                    scale: Theme.easeOutBack(Math.min(1, bar.osdReveal * 2), 2)
+                }
             IconGlyph {
                 id: osdIcon
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.centerIn: parent
                 name: bar.osd === "brightness" ? "brightness"
                      : (Audio.muted ? "volumeMute" : "volume")
                 color: Theme.text
@@ -386,6 +463,7 @@ PanelWindow {
                 // brightness glyph turns with the level; both "tick" on each step
                 rotation: bar.osd === "brightness" ? osdView.val * 180 : 0
                 Behavior on rotation { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutCubic } }
+            }
             }
             // per-keypress pop on the icon
             SequentialAnimation {
@@ -400,7 +478,20 @@ PanelWindow {
                 Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width; height: 6; radius: 3
-                    color: Theme.alpha(Theme.subtext, 0.3)
+                    color: Theme.steampunk ? Theme.alpha("#000000", 0.3) : Theme.alpha(Theme.subtext, 0.3)
+                    border.width: Theme.steampunk ? 1 : 0
+                    border.color: Theme.alpha(Theme.accent, 0.55)
+                }
+                // steampunk: gauge ticks that light up as the fill passes them
+                Repeater {
+                    model: Theme.steampunk ? 11 : 0
+                    Rectangle {
+                        required property int index
+                        x: (parent.width - 1) * index / 10
+                        y: parent.height / 2 + 5
+                        width: 1; height: (index % 5 === 0 ? 4 : 2.5) * Theme.easeOutBack(Math.max(0, Math.min(1, bar.osdReveal * 2.2 - index * 0.08)), 2)
+                        color: Theme.alpha(Theme.accent, index / 10 <= parent.frac ? 0.9 : 0.35)
+                    }
                 }
                 Rectangle {
                     id: osdFill
@@ -414,8 +505,22 @@ PanelWindow {
                     }
                     Behavior on width { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
                 }
+                // steampunk: a cog knob that turns with the level
+                Gear {
+                    visible: Theme.steampunk
+                    anchors.verticalCenter: parent.verticalCenter
+                    x: osdFill.width - width / 2
+                    teeth: 12; module: 1.25
+                    tooth: "block"; web: "solid"; engrave: true
+                    color: Theme.accent
+                    rim: Theme.alpha("#000000", 0.4)
+                    pin: Qt.darker(Theme.accent, 2.4)
+                    rotation: osdFill.width * 3
+                    scale: osdIcon.scale * Theme.easeOutBack(Math.min(1, bar.osdReveal * 1.8), 2)
+                }
                 // glowing knob riding the fill's leading edge
                 Rectangle {
+                    visible: !Theme.steampunk
                     anchors.verticalCenter: parent.verticalCenter
                     x: osdFill.width - width / 2
                     width: 12; height: 12; radius: 6
@@ -428,7 +533,8 @@ PanelWindow {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: Math.round(osdView.val * 100) + "%"
-                color: Theme.text
+                color: Theme.steampunk ? Qt.lighter(Theme.accent, 1.2) : Theme.text
+                font.family: Theme.steampunk ? "monospace" : font.family
                 font.pixelSize: Theme.fontSize - 1
                 font.weight: Font.Medium
                 font.features: { "tnum": 1 }
@@ -445,7 +551,7 @@ PanelWindow {
         y: 0
         width: wingR.x + wingR.width - wingL.x
         height: panel.height + 30
-        active: bar.power > 0.5 && bar.mode === "expanded" && !bar.pillHidden && bar.bloom > 0.9
+        active: Theme.steampunk && bar.power > 0.5 && bar.mode === "expanded" && !bar.pillHidden && bar.bloom > 0.9
         visible: active
         onStruck: zapAnim.restart()
         links: function () {
@@ -498,6 +604,16 @@ PanelWindow {
             onExited: collapseTimer.restart()
         }
 
+        BrassFrame {
+            anchors.fill: parent
+            anchors.margins: 4
+            radius: Theme.radius - 4
+            color: Theme.alpha(Theme.accent, 0.7)
+            corners: ["screw", "screw", "screw", "screw"]
+            rail: false
+            build: expNotifPanel.shown ? Math.max(0, bar.bloom * 1.6 - 0.6) : 0
+        }
+
         Column {
             id: expNotifCol
             anchors { left: parent.left; right: parent.right; top: parent.top; margins: 8 }
@@ -511,10 +627,15 @@ PanelWindow {
                     readonly property var n: Notifs.list[Notifs.count - 1 - index]
                     width: expNotifCol.width
                     radius: Theme.radiusSm
-                    color: Theme.alpha(Theme.current.hover, 0.5)
-                    border.width: 1
-                    border.color: Theme.strokeGlass
+                    color: Theme.steampunk ? Theme.alpha("#000000", 0.2) : Theme.alpha(Theme.current.hover, 0.5)
+                    border.width: Theme.steampunk ? 1.2 : 1
+                    border.color: Theme.steampunk ? Theme.alpha(Theme.accent, 0.4) : Theme.strokeGlass
                     implicitHeight: nrow.implicitHeight + 12
+                    // steampunk: cards drop in one after another as the list opens
+                    readonly property real dropP: Theme.steampunk
+                        ? Theme.easeOutBack(Math.max(0, Math.min(1, bar.bloom * 2.2 - 1 - index * 0.18)), 1.6) : 1
+                    opacity: Math.min(1, dropP * 1.5)
+                    transform: Translate { y: (1 - nCard.dropP) * -14 }
 
                     MouseArea {
                         anchors.fill: parent
@@ -572,6 +693,19 @@ PanelWindow {
         height: toastRow.implicitHeight + 12
         radius: height / 2
         glow: 0.3
+        // steampunk: a brass outline that draws as it drops out of the pill
+        border.width: Theme.steampunk ? 1.5 : 1
+        border.color: Theme.steampunk ? Theme.alpha(Theme.accent, 0.8 * toastPill.drawP) : Theme.strokeGlass
+        property real drawP: shown ? 1 : 0
+        Behavior on drawP { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
+        PillFrame {
+            anchors.fill: parent
+            visible: Theme.steampunk
+            inset: 3
+            line: 1.2
+            showPlate: false
+            t: toastPill.drawP
+        }
 
         readonly property bool shown: bar.mode === "idle" && bar.toastActive && bar.latestNotif !== null && !bar.yieldToApp
         opacity: shown ? 1 : 0

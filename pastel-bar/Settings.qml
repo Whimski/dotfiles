@@ -24,6 +24,7 @@ Singleton {
     property alias launcherIcons: adapter.launcherIcons  // show app icons in the launcher list
     property alias launcherSearchFirst: adapter.launcherSearchFirst  // hide app list until a query is typed
     property alias notifToastContent: adapter.notifToastContent  // show body text in the idle toast
+    property alias steampunk: adapter.steampunk          // clockwork/brass dressing everywhere (off = plain glass)
     // Apps the pill must not sit on top of: when one of these is the active window
     // on a monitor, that monitor's bar shows no pill at all — including a
     // hold-to-expand, which is otherwise allowed to override even fullscreen. The
@@ -177,6 +178,7 @@ Singleton {
             property bool launcherIcons: true
             property bool launcherSearchFirst: false
             property bool notifToastContent: true
+            property bool steampunk: false
             property var pillYieldApps: []
             property var mediaBlacklist: ["firefox"]
             property string wallpaper: ""

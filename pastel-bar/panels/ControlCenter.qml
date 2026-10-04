@@ -223,8 +223,9 @@ PanelWindow {
     Item {
         id: machinery
         anchors.fill: parent
-        opacity: cc.peekOnly ? 0 : Math.min(1, cc.mediaReveal * 2)
-        visible: opacity > 0.01
+        // shown on a track-change peek too — the cogs come with the wing
+        opacity: Math.min(1, cc.mediaReveal * 2)
+        visible: Theme.steampunk && opacity > 0.01
         transform: Translate { x: (1 - wing.e) * -(wing.width + 40) }
 
         property real spin: 0
@@ -242,22 +243,67 @@ PanelWindow {
         GearTrain {
             id: sideTrain
             module: 5
-            spec: [{ teeth: 28 }, { teeth: 13, ang: 18 }, { teeth: 20, ang: 85 },
-                   { teeth: 9, on: 2, ang: 20 }, { teeth: 24, on: 2, ang: 150 }]
+            spec: [{ teeth: 28, tooth: "block", web: "spokes", spokes: 6, engrave: true },
+                   { teeth: 13, ang: 18, web: "holes", spokes: 4 },
+                   { teeth: 20, ang: 85, tooth: "round", web: "spokes", spokes: 5, twist: 24 },
+                   { teeth: 9, on: 2, ang: 20, tooth: "block", web: "solid" },
+                   { teeth: 24, on: 2, ang: 150, web: "rings" }]
             colors: machinery.tints
             drive: machinery.drive
             x: wing.x + wing.width - 6 - anchor0.x
             y: wing.y + 120 - anchor0.y
         }
         GearTrain {
+            id: underTrain
             module: 5
-            spec: [{ teeth: 34 }, { teeth: 15, ang: 10 }, { teeth: 22, ang: 175, on: 0 }]
+            spec: [{ teeth: 34, tooth: "block", web: "spokes", spokes: 8, engrave: true },
+                   { teeth: 15, ang: 10, tooth: "round", web: "holes", spokes: 5 },
+                   { teeth: 22, ang: 175, on: 0, web: "spokes", spokes: 6, twist: -20 }]
             colors: [machinery.tints[1], machinery.tints[0], machinery.tints[2]]
             drive: -machinery.drive * 0.8 + 7
             x: wing.x + 110 - anchor0.x
             y: wing.y + wing.height + 4 - anchor0.y
         }
+
+        // line-art plumbing round the cogs (after the "Decor elements" sheet):
+        // arc rails hugging the big wheels, pipes run off the wing's edges
+        readonly property color line: Theme.alpha(Theme.accent, 0.62)
+        BrassArc {
+            readonly property point c: cc.wheelAt(sideTrain, 0)
+            cx: c.x; cy: c.y; r: cc.tipOf(sideTrain, 0) + 10
+            start: -78; sweep: 112
+            twin: true
+            color: machinery.line
+        }
+        BrassArc {
+            readonly property point c: cc.wheelAt(underTrain, 0)
+            cx: c.x; cy: c.y; r: cc.tipOf(underTrain, 0) + 10
+            start: 25; sweep: 120
+            ends: "dot"
+            color: machinery.line
+        }
+        BrassPipe {
+            anchors.fill: parent
+            readonly property real endY: cc.wheelAt(sideTrain, 0).y + 40
+            points: [[wing.x + wing.width, wing.y + 34],
+                     [wing.x + wing.width + 190, wing.y + 34],
+                     [wing.x + wing.width + 190, endY]]
+            color: machinery.line
+        }
+        BrassPipe {
+            anchors.fill: parent
+            readonly property real bx: wing.x + wing.width - 64
+            readonly property real by: wing.y + wing.height
+            points: [[bx, by], [bx, by + 74], [bx + 150, by + 74], [bx + 150, by + 120]]
+            bore: 8
+            color: machinery.line
+        }
     }
+
+    // wheel i's centre (parent coords) and tip radius, for hanging rails and
+    // pipes off a GearTrain
+    function wheelAt(t, i) { var w = t.train.wheels[i]; return Qt.point(t.x + w.x, t.y + w.y) }
+    function tipOf(t, i) { return t.module * (t.spec[i].teeth / 2 + 1) }
 
     // ---- left: music wing ----
     MediaWing {
@@ -287,6 +333,81 @@ PanelWindow {
         }
     }
 
+    // ---- machinery behind the control center ----
+    // The CC's own clockwork, built differently from the wing's: a saw-toothed
+    // train peeking out of the drawer's left edge, a ring-engraved one under its
+    // bottom, arc rails and pipes. Rides the drawer's slide, winds in with
+    // ccReveal and crawls round while open.
+    Item {
+        id: ccMachinery
+        anchors.fill: parent
+        opacity: Math.min(1, cc.ccReveal * 2)
+        visible: Theme.steampunk && opacity > 0.01
+        transform: Translate { x: (1 - ccPanel.e) * (ccPanel.width + 40) }
+
+        property real spin: 0
+        FrameAnimation {
+            running: ccMachinery.visible
+            onTriggered: ccMachinery.spin = (ccMachinery.spin + frameTime * 5) % 36000
+        }
+        readonly property real drive: spin + 90 * (1 - Theme.easeOutCubic(cc.ccReveal))
+        readonly property color line: Theme.alpha(Theme.accent, 0.62)
+
+        GearTrain {
+            id: ccSideTrain
+            module: 5
+            spec: [{ teeth: 30, tooth: "saw", web: "spokes", spokes: 7, twist: 18 },
+                   { teeth: 12, ang: 165, tooth: "round", web: "solid", engrave: true },
+                   { teeth: 22, ang: 115, on: 0, web: "holes", spokes: 6 },
+                   { teeth: 10, ang: 195, on: 2, tooth: "block", web: "solid" }]
+            colors: [machinery.tints[2], machinery.tints[0], machinery.tints[1]]
+            drive: ccMachinery.drive
+            x: ccPanel.x + 8 - anchor0.x
+            y: ccPanel.y + ccPanel.height * 0.5 - anchor0.y
+        }
+        GearTrain {
+            id: ccUnderTrain
+            module: 5
+            spec: [{ teeth: 26, web: "rings" },
+                   { teeth: 14, ang: 165, tooth: "block", web: "spokes", spokes: 4 },
+                   { teeth: 18, ang: 20, on: 0, tooth: "fine", web: "spokes", spokes: 6, twist: -22 }]
+            colors: [machinery.tints[0], machinery.tints[2], machinery.tints[1]]
+            drive: -ccMachinery.drive * 1.2
+            x: ccPanel.x + ccPanel.width - 90 - anchor0.x
+            y: ccPanel.y + ccPanel.height + 6 - anchor0.y
+        }
+        BrassArc {
+            readonly property point c: cc.wheelAt(ccSideTrain, 0)
+            cx: c.x; cy: c.y; r: cc.tipOf(ccSideTrain, 0) + 10
+            start: 105; sweep: 125
+            twin: true
+            color: ccMachinery.line
+        }
+        BrassArc {
+            readonly property point c: cc.wheelAt(ccUnderTrain, 0)
+            cx: c.x; cy: c.y; r: cc.tipOf(ccUnderTrain, 0) + 10
+            start: 40; sweep: 105
+            ends: "dot"
+            color: ccMachinery.line
+        }
+        BrassPipe {
+            anchors.fill: parent
+            readonly property real endY: cc.wheelAt(ccSideTrain, 0).y - cc.tipOf(ccSideTrain, 0) - 26
+            points: [[ccPanel.x, ccPanel.y + 64],
+                     [ccPanel.x - 96, ccPanel.y + 64],
+                     [ccPanel.x - 96, endY]]
+            color: ccMachinery.line
+        }
+        BrassPipe {
+            anchors.fill: parent
+            readonly property real bx: ccPanel.x + 70
+            readonly property real by: ccPanel.y + ccPanel.height
+            points: [[bx, by], [bx, by + 60], [bx - 170, by + 60], [bx - 170, by + 104]]
+            bore: 8
+            color: ccMachinery.line
+        }
+    }
+
     // ---- right: control center drawer ----
     GlassPanel {
         id: ccPanel
@@ -311,6 +432,21 @@ PanelWindow {
             Rotation { origin.x: ccPanel.width; origin.y: ccPanel.height / 2; axis { x: 0; y: 1; z: 0 }
                        angle: (1 - Theme.easeOutCubic(cc.ccReveal)) * -24 }
         ]
+
+        // steampunk frame: screws, a cog at bottom-left that winds in with the
+        // reveal, and a link plate riding the top edge (the music wing mirrors
+        // this with its own mix, so the two drawers aren't twins)
+        BrassFrame {
+            visible: Theme.steampunk
+            anchors.fill: parent
+            anchors.margins: 6
+            radius: ccPanel.radius - 6
+            color: Theme.alpha(Theme.accent, 0.7)
+            corners: ["screw", "cross", "screw", "cog"]
+            plate: "top"
+            spin: cc.ccReveal * 135
+            build: cc.ccReveal
+        }
 
         // Absorb clicks on the panel background so they don't fall through to the
         // outside-click catcher. Declared before the content so interactive
@@ -373,6 +509,15 @@ PanelWindow {
                     }
                 }
 
+                BrassDivider {
+                    visible: Theme.steampunk
+                    width: parent.width
+                    build: cc._stage(0)
+                    color: Theme.alpha(Theme.accent, 0.8)
+                    ends: "screw"; centre: "cog"
+                    spin: cc.ccReveal * -180
+                }
+
                 // ---- quick toggles ----
                 Grid {
                     width: parent.width
@@ -386,6 +531,7 @@ PanelWindow {
                     ToggleTile {
                         id: wifiTile
                         width: parent.cellW
+                        fitting: "gears"
                         icon: Net.enabled ? "wifi" : "wifiOff"
                         label: "Wi-Fi"
                         sub: Net.enabled ? (Net.activeSsid !== "" ? Net.activeSsid : "On") : "Off"
@@ -396,6 +542,7 @@ PanelWindow {
                     ToggleTile {
                         id: btTile
                         width: parent.cellW
+                        fitting: "rails"
                         icon: BT.powered ? "bluetooth" : "bluetoothOff"
                         label: "Bluetooth"
                         sub: BT.powered ? (BT.connectedCount > 0 ? BT.connectedCount + " connected" : "On") : "Off"
@@ -406,6 +553,7 @@ PanelWindow {
                     ToggleTile {
                         id: audioTile
                         width: parent.cellW
+                        fitting: "plate"
                         icon: Audio.muted ? "volumeMute" : "volume"
                         label: "Audio"
                         sub: Audio.deviceName
@@ -416,6 +564,7 @@ PanelWindow {
                     ToggleTile {
                         id: dndTile
                         width: parent.cellW
+                        fitting: "screws"
                         icon: "bell"
                         label: "DND"
                         sub: Notifs.dnd ? "On" : "Off"
@@ -459,9 +608,11 @@ PanelWindow {
                 }
 
                 // ---- Wi-Fi networks (right-click the Wi-Fi tile) ----
-                Rectangle {
+                BrassDivider {
                     visible: inner.wifiOpen
-                    width: parent.width; height: 1; color: Theme.strokeGlass
+                    width: parent.width
+                    color: Theme.alpha(Theme.accent, 0.7)
+                    ends: "dot"; centre: "plate"; rail: false
                 }
                 Item {
                     width: parent.width
@@ -475,9 +626,11 @@ PanelWindow {
                 }
 
                 // ---- Bluetooth devices (right-click the Bluetooth tile) ----
-                Rectangle {
+                BrassDivider {
                     visible: inner.btOpen
-                    width: parent.width; height: 1; color: Theme.strokeGlass
+                    width: parent.width
+                    color: Theme.alpha(Theme.accent, 0.7)
+                    ends: "knurl"; centre: "none"; ticks: true
                 }
                 Item {
                     width: parent.width
@@ -490,7 +643,13 @@ PanelWindow {
                     BluetoothSection { id: btSec; width: parent.width }
                 }
 
-                Rectangle { visible: Notifs.count > 0; width: parent.width; height: 1; color: Theme.strokeGlass }
+                BrassDivider {
+                    visible: Notifs.count > 0
+                    width: parent.width
+                    build: cc._stage(4)
+                    color: Theme.alpha(Theme.accent, 0.7)
+                    ends: "knurl"; centre: "plate"
+                }
                 NotificationList {
                     id: notifList
                     visible: Notifs.count > 0

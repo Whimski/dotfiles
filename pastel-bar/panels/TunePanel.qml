@@ -28,6 +28,10 @@ PanelWindow {
     // Stay mapped through the close animation, then unmap.
     readonly property bool open: Ui.tuneOpen
     visible: open || root.opacity > 0.01
+    // Master open progress (steampunk mode): the frame assembles, the backdrop
+    // clockwork slides out and winds in, and closing runs it all backwards.
+    property real reveal: open ? 1 : 0
+    Behavior on reveal { NumberAnimation { duration: win.open ? 900 : 460; easing.type: Easing.Linear } }
 
     // Fullscreen so clicks outside the panel can dismiss it (and so it can center).
     anchors { top: true; bottom: true; left: true; right: true }
@@ -53,7 +57,7 @@ PanelWindow {
         { id: "bluetooth", label: "Bluetooth",         icon: "bluetooth", kw: "bt device pair headphones" },
         { id: "audio",     label: "Audio",             icon: "volume",    kw: "sound output volume sink speaker" },
         { id: "display",   label: "Display",           icon: "monitor",   kw: "brightness font size bar pill padding text yield apps cover on top layer window class" },
-        { id: "style",     label: "Wallpaper & Style", icon: "palette",   kw: "theme palette dark light auto wallpaper colour glass opacity accent" },
+        { id: "style",     label: "Wallpaper & Style", icon: "palette",   kw: "theme palette dark light auto wallpaper colour glass opacity accent steampunk clockwork brass gears" },
         { id: "widgets",   label: "Widgets",           icon: "widgets",   kw: "launcher icons notification popup media player blacklist ignore firefox now playing search hide apps list" },
         { id: "about",     label: "About",             icon: "info",      kw: "version about pastelbar quickshell backup export import settings file restore" }
     ]
@@ -184,6 +188,7 @@ PanelWindow {
     function _kbStyleList() {
         var l = []
         l.push({ key: "style:dark", item: darkRow, activate: () => Settings.mode = (Settings.mode === "dark" ? "light" : "dark") })
+        l.push({ key: "style:steampunk", item: steampunkRow, activate: () => Settings.steampunk = !Settings.steampunk })
         l.push({ key: "style:auto", item: autoRow, activate: () => Settings.mode = (Settings.mode === "auto" ? (Theme.dark ? "dark" : "light") : "auto") })
         l.push({ key: "style:paletteCustom", item: customSw, activate: () => Settings.theme = "Custom" })
         for (var p = 0; p < paletteRepeater.count; p++) {
@@ -297,6 +302,13 @@ PanelWindow {
         }
     }
 
+    PanelMachinery {
+        anchors.fill: parent
+        rx: root.x; ry: root.y; rw: root.width; rh: root.height
+        reveal: win.reveal
+        variant: 0
+    }
+
     GlassPanel {
         id: root
         anchors.centerIn: parent
@@ -305,14 +317,18 @@ PanelWindow {
         radius: Theme.radius + 4
         glow: 0.45
         // scale + fade + slide from center
-        scale: win.open ? 1 : 0.88
-        opacity: win.open ? 1 : 0
+        // steampunk: follows the master reveal so the frame's teardown is seen
+        // before the panel fades; plain: the springy pop
+        scale: Theme.steampunk ? 0.9 + 0.1 * Theme.easeOutBack(Math.min(1, win.reveal * 1.6), 1.5)
+                               : (win.open ? 1 : 0.88)
+        opacity: Theme.steampunk ? Math.min(1, win.reveal * 3) : (win.open ? 1 : 0)
         transform: Translate { y: win.open ? 0 : 10
             Behavior on y { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutCubic } } }
         // springy pop on open, quick tuck on close
-        Behavior on scale { NumberAnimation { duration: win.open ? Theme.animSlow : Theme.animMed
-                                                easing.type: win.open ? Easing.OutBack : Easing.InCubic; easing.overshoot: 1.5 } }
-        Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
+        Behavior on scale { enabled: !Theme.steampunk
+                            NumberAnimation { duration: win.open ? Theme.animSlow : Theme.animMed
+                                              easing.type: win.open ? Easing.OutBack : Easing.InCubic; easing.overshoot: 1.5 } }
+        Behavior on opacity { enabled: !Theme.steampunk; NumberAnimation { duration: Theme.animFast } }
 
         // Absorb clicks on the panel background so they don't reach the dismiss catcher.
         MouseArea { anchors.fill: parent }
@@ -325,16 +341,31 @@ PanelWindow {
             property bool checked: false
             signal toggled()
             width: 46; height: 26; radius: 13
-            color: Theme.alpha(Theme.current.hover, 0.6)
-            border.width: 1
-            border.color: Theme.strokeGlass
+            color: Theme.steampunk ? Theme.alpha("#000000", 0.25) : Theme.alpha(Theme.current.hover, 0.6)
+            border.width: Theme.steampunk ? 1.5 : 1
+            border.color: Theme.steampunk ? Theme.alpha(Theme.accent, sw.checked ? 0.95 : 0.5) : Theme.strokeGlass
             Rectangle {
                 anchors.fill: parent; radius: parent.radius
                 opacity: sw.checked ? 1 : 0
                 Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
-                color: Theme.alpha(Theme.accent, 0.92)
+                color: Theme.steampunk ? Theme.alpha(Theme.accent, 0.3) : Theme.alpha(Theme.accent, 0.92)
+            }
+            // steampunk: a cog that rolls along the slot (its turn follows its travel)
+            Gear {
+                id: swCog
+                visible: Theme.steampunk
+                anchors.verticalCenter: parent.verticalCenter
+                teeth: 10; module: 1.8
+                tooth: "block"; web: "solid"; engrave: true
+                color: sw.checked ? Qt.lighter(Theme.accent, 1.15) : Theme.alpha(Theme.accent, 0.7)
+                rim: Theme.alpha("#000000", 0.4)
+                pin: Qt.darker(Theme.accent, 2.4)
+                x: sw.checked ? parent.width - width + 1 : -1
+                Behavior on x { NumberAnimation { duration: Theme.animMed + 80; easing.type: Easing.OutBack; easing.overshoot: 1.4 } }
+                rotation: x / (width / 2) * 180 / Math.PI
             }
             Rectangle {
+                visible: !Theme.steampunk
                 width: 20; height: 20; radius: 10
                 color: Theme.dark ? "#e9e9ef" : "#ffffff"
                 anchors.verticalCenter: parent.verticalCenter
@@ -355,17 +386,29 @@ PanelWindow {
             width: parent ? parent.width : 0
             radius: Theme.radiusSm + 2
             implicitHeight: 62
-            color: Theme.alpha(Theme.current.hover, trMa.containsMouse ? 0.62 : 0.45)
-            border.width: 1
-            border.color: Theme.strokeGlass
+            color: Theme.steampunk ? Theme.alpha("#000000", trMa.containsMouse ? 0.12 : 0.2)
+                                   : Theme.alpha(Theme.current.hover, trMa.containsMouse ? 0.62 : 0.45)
+            border.width: Theme.steampunk ? 1.3 : 1
+            border.color: Theme.steampunk ? Theme.alpha(Theme.accent, trMa.containsMouse ? 0.7 : 0.38) : Theme.strokeGlass
             Behavior on color { ColorAnimation { duration: Theme.animFast } }
+            // steampunk: a porthole ring behind the icon
+            Rectangle {
+                visible: Theme.steampunk
+                x: 16 + 10 - width / 2; anchors.verticalCenter: parent.verticalCenter
+                width: 34; height: 34; radius: 17
+                color: Theme.alpha("#000000", 0.25)
+                border.width: 1.4
+                border.color: Theme.alpha(Theme.accent, tr.checked ? 0.9 : 0.45)
+                Behavior on border.color { ColorAnimation { duration: Theme.animMed } }
+            }
             MouseArea { id: trMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: tr.toggled() }
             Row {
                 anchors.fill: parent
                 anchors.leftMargin: 16
                 anchors.rightMargin: 16
                 spacing: 14
-                IconGlyph { anchors.verticalCenter: parent.verticalCenter; name: tr.icon; size: 20; color: Theme.text }
+                IconGlyph { anchors.verticalCenter: parent.verticalCenter; name: tr.icon; size: 20
+                            color: Theme.steampunk && tr.checked ? Qt.lighter(Theme.accent, 1.2) : Theme.text }
                 Column {
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width - 20 - 46 - 28
@@ -386,10 +429,22 @@ PanelWindow {
             property real ipad: 16
             width: parent ? parent.width : 0
             radius: Theme.radiusSm + 2
-            color: Theme.alpha(Theme.current.hover, 0.42)
-            border.width: 1
-            border.color: Theme.strokeGlass
+            color: Theme.steampunk ? Theme.alpha("#000000", 0.18) : Theme.alpha(Theme.current.hover, 0.42)
+            border.width: Theme.steampunk ? 1.3 : 1
+            border.color: Theme.steampunk ? Theme.alpha(Theme.accent, 0.36) : Theme.strokeGlass
             implicitHeight: gcCol.implicitHeight + ipad * 2
+            // steampunk: a small screw in each corner
+            Repeater {
+                model: Theme.steampunk ? 4 : 0
+                Screw {
+                    required property int index
+                    size: 7
+                    x: index % 2 ? gcard.width - 5 - width : 5
+                    y: index < 2 ? 5 : gcard.height - 5 - height
+                    color: Theme.alpha(Theme.accent, 0.6)
+                    slot: index % 2 ? -45 : 45
+                }
+            }
             // Explicit width binding (like Page/Section) — anchors.fill on a
             // property-parented item doesn't reliably establish width here.
             property Column _col: Column {
@@ -404,10 +459,25 @@ PanelWindow {
 
         // A small uppercase section label.
         component GroupLabel: Text {
-            color: Theme.subtext
+            id: gl
+            color: Theme.steampunk ? Qt.lighter(Theme.accent, 1.15) : Theme.subtext
             font.pixelSize: Theme.fontSize - 4
             font.weight: Font.Bold
-            font.letterSpacing: 1
+            font.letterSpacing: Theme.steampunk ? 2 : 1
+            // steampunk: a short brass rule trailing the label, ending in a ring
+            Rectangle {
+                visible: Theme.steampunk
+                x: gl.implicitWidth + 10; anchors.verticalCenter: parent.verticalCenter
+                width: 56; height: 1.2
+                color: Theme.alpha(Theme.accent, 0.55)
+            }
+            Rectangle {
+                visible: Theme.steampunk
+                x: gl.implicitWidth + 66; anchors.verticalCenter: parent.verticalCenter
+                width: 6; height: 6; radius: 3
+                color: "transparent"
+                border.width: 1.2; border.color: Theme.alpha(Theme.accent, 0.7)
+            }
         }
 
         // A sidebar navigation entry (accent gradient when active).
@@ -420,20 +490,54 @@ PanelWindow {
             width: parent ? parent.width : 0
             height: 42
             radius: Theme.radiusSm + 2
-            color: Theme.alpha(Theme.current.hover, active ? 0 : (navMa.containsMouse ? 0.5 : 0))
+            color: Theme.alpha(Theme.current.hover, active || Theme.steampunk ? 0 : (navMa.containsMouse ? 0.5 : 0))
             Behavior on color { ColorAnimation { duration: Theme.animFast } }
             Rectangle {
+                visible: !Theme.steampunk
                 anchors.fill: parent; radius: parent.radius
                 opacity: nav.active ? 1 : 0
                 Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
                 color: Theme.alpha(Theme.accent, 0.92)
             }
+            // steampunk: a brass tab that slides out from the left when selected,
+            // with a cog seated on its rounded end (half outside, clear of the
+            // label) that spins in
+            property real tabP: active ? 1 : 0
+            Behavior on tabP { NumberAnimation { duration: Theme.animSlow; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
+            Rectangle {
+                visible: Theme.steampunk
+                height: parent.height
+                width: Math.max(height, parent.width * nav.tabP)
+                opacity: Math.min(1, nav.tabP * 2) + (navMa.containsMouse ? 0.35 : 0) * (1 - nav.tabP)
+                radius: height / 2
+                color: Theme.alpha(Theme.accent, 0.16 * nav.tabP)
+                border.width: 1.4
+                border.color: Theme.alpha(Theme.accent, 0.4 + 0.5 * nav.tabP)
+            }
+            Gear {
+                visible: Theme.steampunk && nav.tabP > 0.02
+                anchors.verticalCenter: parent.verticalCenter
+                x: parent.width * nav.tabP - width / 2 - 2
+                teeth: 10; module: 1.6
+                tooth: "block"; web: "solid"
+                color: Theme.alpha(Theme.accent, 0.9)
+                rim: Theme.alpha("#000000", 0.4)
+                pin: Qt.darker(Theme.accent, 2.4)
+                scale: Math.max(0, nav.tabP)
+                rotation: nav.tabP * 300
+            }
             Row {
                 anchors.fill: parent
                 anchors.leftMargin: 14
                 spacing: 12
-                IconGlyph { anchors.verticalCenter: parent.verticalCenter; name: nav.icon; size: 18; color: nav.active ? Theme.current.onAccent : Theme.text }
-                Text { anchors.verticalCenter: parent.verticalCenter; text: nav.label; color: nav.active ? Theme.current.onAccent : Theme.text; font.pixelSize: Theme.fontSize - 1; font.weight: nav.active ? Font.DemiBold : Font.Normal }
+                IconGlyph { anchors.verticalCenter: parent.verticalCenter; name: nav.icon; size: 18
+                            color: nav.active ? (Theme.steampunk ? Qt.lighter(Theme.accent, 1.25) : Theme.current.onAccent) : Theme.text }
+                Text { anchors.verticalCenter: parent.verticalCenter; text: nav.label
+                       // leave room for the tab's end cog in steampunk mode
+                       width: nav.width - 14 - 18 - 12 - (Theme.steampunk ? 12 : 8)
+                       elide: Text.ElideRight
+                       color: nav.active ? (Theme.steampunk ? Qt.lighter(Theme.accent, 1.25) : Theme.current.onAccent) : Theme.text
+                       font.pixelSize: Theme.fontSize - 1; font.weight: nav.active ? Font.DemiBold : Font.Normal }
             }
             MouseArea { id: navMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: nav.clicked() }
         }
@@ -452,16 +556,29 @@ PanelWindow {
             contentHeight: pcol.implicitHeight
             clip: true
             boundsBehavior: Flickable.StopAtBounds
+            // steampunk: each page swap draws its header rule and slides content in
+            property real shown: visible ? 1 : 0
+            Behavior on shown { NumberAnimation { duration: 650; easing.type: Easing.Linear } }
             property Column _wrap: Column {
                 id: pcol
                 parent: pg.contentItem
                 width: pg.width
                 spacing: 14
+                opacity: Theme.steampunk ? Math.min(1, pg.shown * 2.5) : 1
+                transform: Translate { x: Theme.steampunk ? (1 - Theme.easeOutCubic(Math.min(1, pg.shown * 1.6))) * 28 : 0 }
                 Column {
                     width: parent.width
                     spacing: 3
                     Text { text: pg.title; color: Theme.text; font.pixelSize: Theme.fontSize + 8; font.weight: Font.Bold }
                     Text { text: pg.subtitle; visible: text !== ""; color: Theme.subtext; font.pixelSize: Theme.fontSize - 2 }
+                    BrassDivider {
+                        visible: Theme.steampunk
+                        width: Math.min(320, parent.width)
+                        build: pg.shown * win.reveal
+                        color: Theme.alpha(Theme.accent, 0.75)
+                        ends: "dot"; centre: "cog"; rail: false
+                        spin: pg.shown * 200
+                    }
                 }
                 Item { width: 1; height: 2 }
             }
@@ -491,14 +608,27 @@ PanelWindow {
                 width: Math.min(340, header.width * 0.4)
                 height: 36
                 radius: height / 2
-                color: Theme.alpha(Theme.current.hover, 0.5)
-                border.width: 1
-                border.color: searchInput.activeFocus ? Theme.alpha(Theme.accent, 0.6) : Theme.strokeGlass
+                color: Theme.steampunk ? Theme.alpha("#000000", 0.22) : Theme.alpha(Theme.current.hover, 0.5)
+                border.width: Theme.steampunk ? 1.5 : 1
+                border.color: searchInput.activeFocus ? Theme.alpha(Theme.accent, Theme.steampunk ? 0.95 : 0.6)
+                            : (Theme.steampunk ? Theme.alpha(Theme.accent, 0.45) : Theme.strokeGlass)
+                Gear {
+                    visible: Theme.steampunk
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.right: parent.right; anchors.rightMargin: 8
+                    teeth: 10; module: 1.6
+                    tooth: "block"; web: "solid"
+                    color: Theme.alpha(Theme.accent, searchInput.activeFocus ? 0.9 : 0.5)
+                    rim: Theme.alpha("#000000", 0.4)
+                    pin: Qt.darker(Theme.accent, 2.4)
+                    rotation: searchInput.text.length * 36
+                    Behavior on rotation { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutBack; easing.overshoot: 2 } }
+                }
                 Behavior on border.color { ColorAnimation { duration: Theme.animFast } }
                 Row {
                     anchors.fill: parent
                     anchors.leftMargin: 14
-                    anchors.rightMargin: 12
+                    anchors.rightMargin: Theme.steampunk ? 30 : 12
                     spacing: 9
                     IconGlyph { anchors.verticalCenter: parent.verticalCenter; name: "search"; size: 15; color: Theme.subtext }
                     TextInput {
@@ -548,8 +678,10 @@ PanelWindow {
         Rectangle {
             id: headerRule
             anchors { top: header.bottom; left: parent.left; right: parent.right }
-            height: 1
-            color: Theme.strokeGlass
+            height: Theme.steampunk ? 1.4 : 1
+            color: Theme.steampunk ? Theme.alpha(Theme.accent, 0.5) : Theme.strokeGlass
+            transform: Scale { origin.x: headerRule.width / 2
+                               xScale: Theme.steampunk ? Theme.easeOutCubic(Math.min(1, win.reveal * 1.5)) : 1 }
         }
 
         // =============================== sidebar ===============================
@@ -571,14 +703,31 @@ PanelWindow {
                     radius: Theme.radiusSm + 2
                     scale: cfgMa.pressed ? 0.97 : 1
                     Behavior on scale { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutBack; easing.overshoot: 2.5 } }
-                    color: Theme.alpha(Theme.accent, 0.92)
+                    color: Theme.steampunk ? Theme.alpha(Theme.accent, cfgMa.containsMouse ? 0.26 : 0.16) : Theme.alpha(Theme.accent, 0.92)
+                    border.width: Theme.steampunk ? 1.5 : 0
+                    border.color: Theme.alpha(Theme.accent, 0.85)
+                    Repeater {
+                        model: Theme.steampunk ? 2 : 0
+                        Screw {
+                            required property int index
+                            size: 8
+                            anchors.verticalCenter: parent.verticalCenter
+                            x: index ? cfgBtn.width - 10 - width : 10
+                            color: Theme.alpha(Theme.accent, 0.85)
+                            slot: cfgMa.containsMouse ? 135 : 45
+                            Behavior on slot { NumberAnimation { duration: Theme.animSlow; easing.type: Easing.OutBack } }
+                        }
+                    }
                     Row {
                         anchors.centerIn: parent
                         spacing: 8
-                        IconGlyph { anchors.verticalCenter: parent.verticalCenter; name: "edit"; size: 16; color: Theme.current.onAccent }
-                        Text { anchors.verticalCenter: parent.verticalCenter; text: "Config file"; color: Theme.current.onAccent; font.pixelSize: Theme.fontSize - 1; font.weight: Font.DemiBold }
+                        IconGlyph { anchors.verticalCenter: parent.verticalCenter; name: "edit"; size: 16
+                                    color: Theme.steampunk ? Qt.lighter(Theme.accent, 1.25) : Theme.current.onAccent }
+                        Text { anchors.verticalCenter: parent.verticalCenter; text: "Config file"
+                               color: Theme.steampunk ? Qt.lighter(Theme.accent, 1.25) : Theme.current.onAccent
+                               font.pixelSize: Theme.fontSize - 1; font.weight: Font.DemiBold }
                     }
-                    MouseArea { id: cfgMa; anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: openCfg.running = true }
+                    MouseArea { id: cfgMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: openCfg.running = true }
                 }
 
                 Item { width: 1; height: 4 }
@@ -600,8 +749,10 @@ PanelWindow {
         Rectangle {
             id: sideRule
             anchors { top: headerRule.bottom; bottom: parent.bottom; left: sidebar.right }
-            width: 1
-            color: Theme.strokeGlass
+            width: Theme.steampunk ? 1.4 : 1
+            color: Theme.steampunk ? Theme.alpha(Theme.accent, 0.5) : Theme.strokeGlass
+            transform: Scale { origin.y: 0
+                               yScale: Theme.steampunk ? Theme.easeOutCubic(Math.max(0, Math.min(1, win.reveal * 1.6 - 0.3))) : 1 }
         }
 
         // =============================== content ===============================
@@ -861,6 +1012,14 @@ PanelWindow {
                     sub: Settings.mode === "auto" ? "Following schedule" : "Manual"
                     checked: Theme.dark
                     onToggled: Settings.mode = (Settings.mode === "dark" ? "light" : "dark")
+                }
+                ToggleRow {
+                    id: steampunkRow
+                    icon: "gear"
+                    label: "Steampunk mode"
+                    sub: "Clockwork, brass fittings and pipes everywhere"
+                    checked: Theme.steampunk
+                    onToggled: Settings.steampunk = !Settings.steampunk
                 }
                 ToggleRow {
                     id: autoRow
@@ -1332,6 +1491,19 @@ PanelWindow {
         // Vimium-style hint mode overlay — mapped into `root`'s coordinate space
         // (not any one Flickable's) since it covers both the static sidebar and
         // whichever page's scrolling content is currently visible.
+        // steampunk: the frame assembles with the reveal (corners differ from the
+        // CC and music wing so no two panels match)
+        BrassFrame {
+            anchors.fill: parent
+            anchors.margins: 7
+            radius: root.radius - 7
+            color: Theme.alpha(Theme.accent, 0.72)
+            corners: ["cog", "cross", "screw", "cog"]
+            plate: "bottom"
+            build: win.reveal
+            spin: win.reveal * 160
+        }
+
         HintOverlay {
             id: hintOverlay
             mapTo: root

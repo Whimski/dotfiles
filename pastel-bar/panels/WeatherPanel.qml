@@ -21,6 +21,10 @@ PanelWindow {
     }
     readonly property bool open: Ui.weatherOpen
     visible: open || panel.opacity > 0.01
+    // steampunk: master open progress — the frame assembles, the backdrop
+    // clockwork winds in, and closing runs it backwards before the panel fades
+    property real spReveal: open ? 1 : 0
+    Behavior on spReveal { NumberAnimation { duration: wp.open ? 820 : 420; easing.type: Easing.Linear } }
 
     anchors { top: true; bottom: true; left: true; right: true }
     color: "transparent"
@@ -51,6 +55,13 @@ PanelWindow {
         Keys.onEscapePressed: Ui.weatherOpen = false
     }
 
+    PanelMachinery {
+        anchors.fill: parent
+        rx: panel.x; ry: panel.y; rw: panel.width; rh: panel.height
+        reveal: wp.spReveal
+        variant: 0
+    }
+
     GlassPanel {
         id: panel
         anchors.top: parent.top
@@ -62,14 +73,15 @@ PanelWindow {
         glow: 0.4
 
         transformOrigin: Item.Top
-        scale: wp.open ? 1 : 0.88
-        opacity: wp.open ? 1 : 0
+        scale: Theme.steampunk ? 0.9 + 0.1 * Theme.easeOutBack(Math.min(1, wp.spReveal * 1.6), 1.5)
+                               : (wp.open ? 1 : 0.88)
+        opacity: Theme.steampunk ? Math.min(1, wp.spReveal * 3) : (wp.open ? 1 : 0)
         transform: Translate { y: wp.open ? 0 : -14
             Behavior on y { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutCubic } } }
         // springy pop on open, quick tuck on close
-        Behavior on scale { NumberAnimation { duration: wp.open ? Theme.animSlow : Theme.animMed
+        Behavior on scale { enabled: !Theme.steampunk; NumberAnimation { duration: wp.open ? Theme.animSlow : Theme.animMed
                                                 easing.type: wp.open ? Easing.OutBack : Easing.InCubic; easing.overshoot: 1.5 } }
-        Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
+        Behavior on opacity { enabled: !Theme.steampunk; NumberAnimation { duration: Theme.animFast } }
 
         MouseArea { anchors.fill: parent }   // swallow inside clicks
 
@@ -246,6 +258,19 @@ PanelWindow {
                     }
                 }
             }
+        }
+    
+        // steampunk: the frame assembles with the reveal
+        BrassFrame {
+            anchors.fill: parent
+            anchors.margins: 6
+            radius: Math.max(4, panel.radius - 6)
+            color: Theme.alpha(Theme.accent, 0.72)
+            corners: ["cog", "cog", "screw", "screw"]
+            plate: "bottom"
+            rail: false
+            build: wp.spReveal
+            spin: wp.spReveal * 160
         }
     }
 }

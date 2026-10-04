@@ -47,10 +47,10 @@ UI‑facing surface so components stay backend‑agnostic.
   `weatherUnit`/`pillYieldApps`/`launcherSearchFirst`). Import/export dumps the whole adapter to JSON.
 - `panels/ControlCenter.qml` — two glass **drawers** in one fullscreen window: the control center
   slides in from the **right** edge, the music wing (`components/MediaWing.qml`: a steampunk phonograph —
-  blurred‑art glass in a riveted brass frame, engraved nameplate + volume pressure gauge, cover
+  blurred‑art glass in a brass line‑art frame, a "Now Playing" name tab with a cog and a callout rail (the volume gauge was removed by request), cover
   "sleeve" with a vinyl that slides out and spins while playing, a tonearm that swings onto the record
-  and creeps inward with progress, a brass seek rail with a turning cog knob and counter plaques,
-  riveted brass transport buttons with a cog collar on play) from the **left**. Its "brass" is
+  and creeps inward with progress, a brass seek rail with a slim fine‑toothed cog knob and counter plaques,
+  a riveted play button in a translucent sunburst cog collar, flanked by small `MechWing`s as prev/next — pointing away from it, half‑spread at rest, flapping on hover, beating outward on click) from the **left**. Its "brass" is
   pure `Theme.accent` (`wing.brass`/`brassHi`/`brassLo`/`engraved`) — no gold tint, by request — and
   the panel sits under an always‑on dark scrim (heavier over album art). The wing always opens with the CC (idle "Nothing Playing" card without a player), or alone via
   `Ui.mediaOpen` (`menu toggle media` IPC). Keys: Space/←/→ = play‑pause/prev/next.
@@ -134,12 +134,40 @@ UI‑facing surface so components stay backend‑agnostic.
   table; mirror with `Scale { xScale: -1 }`), `spread` 0..1 unfolds it, `size` scales it, `hingeX/hingeY` are where to
   attach it. Wings flank the expanded pill (behind it, outside the input mask — `Bar.implicitWidth`
   reserves their width). `ChainDrive` is currently unused.
+- **Gear styles** (after the user's steampunk reference sheets): `Gear` takes `tooth`
+  (`trap`/`block`/`saw`/`round`/`fine`), `web` (`auto`/`holes`/`spokes`/`solid`/`rings`), `spokes`,
+  `twist` (sweeps spokes into a pinwheel) and `engrave`. Every profile keeps tooth 0 at angle 0 and the
+  same pitch/tip/root radii, so styles never break meshing. `web: "auto"` is the original look. A web
+  that's too small for spokes/holes falls back to `solid`. `GearTrain`/`ClockworkCluster` spec entries
+  carry the same keys per wheel.
+- **Steampunk line-art kit** (restrained by request: thin brass outlines, a few corner fittings) —
+  `Screw` (slot/cross head), `LinkPlate` (riveted pill plate), `BrassDivider` (rule + end fittings
+  `dot`/`screw`/`knurl` + centre `cog`/`plate` + dim offset rail), `BrassFrame` (overlay outline for a
+  panel: `corners: [tl,tr,br,bl]` of `screw`/`cross`/`cog`/`none`, optional edge `plate`, dim partial rails)
+  and `BrassRing` (circle + offset arc + seated screws). All pure `Theme.accent`, like the music wing.
+  Placed so far, deliberately **varied** per surface (the user asked for variety — don't make
+  panels twins): the CC drawer frame (screw/cross/screw/cog corners, top plate, cog winds with
+  `ccReveal`), the music wing frame (cross screws up top, cogs at the bottom turning with playback,
+  bottom plate — inset 11 because the wing `clip`s), and every CC/wing divider in a different
+  ends/centre combo. `ToggleTile` is a line‑art brass button (after the "Buttons" sheet): icon in a
+  porthole that fills with brass when on, and `fitting` picks one of four bodies — `gears` (Wi‑Fi:
+  spoked cogs behind the pill caps, near‑opaque backing so only teeth show), `rails` (BT: ticked
+  double rail + shoulder cog), `plate` (Audio: outer half‑shell, link plate, cap screw), `screws`
+  (DND: squared frame, corner screws, carry handle, side grip). Cogs/screw turn on toggle.
 - **Machinery behind the music wing** — `ControlCenter`'s `machinery` item (declared *before* `MediaWing`
   so it renders behind it) holds two `components/GearTrain.qml`s: big translucent cogs peeking out of
   the wing's right edge and from under its bottom edge (off the screen edge). `GearTrain` is the
   behaviour‑free version of the pill cluster's mesh maths (`spec[i].ang`, optional `spec[i].on` to mesh
-  with an earlier wheel; pin wheel 0 via `anchor0`). They ride the wing's slide, wind in with
+  with an earlier wheel; pin wheel 0 via `anchor0`). They ride the wing's slide (and show on a track‑change peek too), wind in with
   `mediaReveal`, and turn at 16°/s while playing, easing to a 2.5°/s idle crawl on pause.
+  The CC drawer has its own `ccMachinery` (declared before `ccPanel`): a different train peeking out
+  of its left edge and one under its bottom, riding the drawer's slide, winding in with `ccReveal`
+  and crawling at 5°/s. Both sides are dressed with line‑art plumbing from the "Decor elements"
+  sheet — `BrassArc` (arc rail hugging a wheel, optional `twin` inner rail, screw/dot ends) and
+  `BrassPipe` (polyline with rounded elbows, two walls = wide brass stroke under a dark core,
+  collars mid‑run, flange screws) — positioned off the trains via `cc.wheelAt(train, i)` /
+  `cc.tipOf(train, i)`. Their lines are 0.62 alpha (above the 0.2 blur threshold, which is fine)
+  so they stay legible over busy windows.
 - **Charging = powered clockwork.** `Bar.power` eases 0↔1 on `Battery.charging` and feeds `power` on
   both `ClockworkCluster`s (overdriven spin, brighter escapement flash) and both `MechWing`s (faster,
   wider flap). `components/LightningArcs.qml` (a `Canvas` over pill + wings, outside the input mask)
@@ -152,6 +180,19 @@ UI‑facing surface so components stay backend‑agnostic.
   weakens) and `strain` on the `ClockworkCluster`s (spin slowed ~90 %, a shudder on `drive`, laboured
   ticks with no overshoot, and ~half the ticks *fail*: `_failTick` heaves forward and slips back
   without advancing `ticks`). To preview, temporarily force `weak` to 1.
+- **Steampunk pill dressing** — `components/PillFrame.qml`, laid over the expanded pill, builds itself
+  from `bar.bloom` and unbuilds in exact reverse: rails draw outward from the centre (sparks riding
+  their tips), the end caps sweep round to meet, a screw drops into each cap tip and screws itself in
+  (where the wings hinge), the bottom vents open and puff steam, a link plate slides out, tick
+  groups click on. `BrassPost`s (inline in `Bar.qml`) extend between the clockwork and the clock.
+  The vents breathe a wisp on each escapement tick (`pulse` ← `clockworkLeft.tickP`). The opening
+  takes 1000 ms and the close 560 ms.
+  - **Visible close**: `Bar.winding` (`mode === "idle" && bloom > 0.02`) keeps the *expanded* layout
+    and pill on screen while bloom unwinds (`expLayout`, `shownHidden`); the input mask still drops
+    at once (it follows `pillHidden`). The retired idle view stays at opacity 0 so its clock can't
+    ghost through the wind‑down.
+  - To capture it, grab frames (`grim` in a tight loop) on a monitor where the pill actually shows —
+    if it's missing on the focused one, that monitor's active app is likely in `pillYieldApps`.
 - `services/Battery.qml` — thin wrapper over `Quickshell.Services.UPower`'s `displayDevice`
   (`present`/`percent`/`charging`). The expanded pill's top row shows a single battery pill (icon +
   `%`, no charging styling — the powered clockwork shows charging) instead of the old separate wifi/bt pills; `present` gates it off
@@ -177,6 +218,31 @@ UI‑facing surface so components stay backend‑agnostic.
   API key). Location auto‑detected once from IP (ipwho.is) into `Settings.weatherLoc` (no UI to set a
   city — the old unused `Weather.setLocation` geocoding helper was removed). Refetches every 15 min and on open when stale. WMO codes map to the new
   weather `IconGlyph`s (sun/moon/cloud/cloudSun/rain/snow/storm/fog).
+
+- **Steampunk mode** (`Settings.steampunk`, default **off**; toggle in Settings → Wallpaper & Style;
+  read as `Theme.steampunk`). Off = plain glass everywhere: no gears, wings, lightning, `PillFrame`,
+  machinery/plumbing or brass frames; `BrassDivider` falls back to a 1px `strokeGlass` hairline,
+  `ToggleTile` to its solid tile, and `MediaWing` (`wing.sp`) to a clean card — centred cover, no
+  vinyl/tonearm, plain label, round seek knob, round prev/play/next. The pill's bloom timing drops
+  back to the quick `animDrawer`/`animMed`. Anything new and clockwork‑flavoured must gate on
+  `Theme.steampunk` too.
+  - **Coverage**: pill (+OSD), CC, music wing, settings, launcher, power menu, polkit, weather,
+    notifications (CC cards, the list under the pill, the toast), sliders, the settings planets.
+  - **Self‑building frames**: `BrassFrame.build` and `BrassDivider.build` (0..1) assemble them —
+    edges draw from their middles, corner arcs sweep in to meet, screws drop and screw home, cogs
+    spin in, plate slides out — bound to each surface's master reveal so closing replays it
+    backwards. Overlays (`TunePanel`, `Launcher`, `PowerMenu`, `PolkitDialog`, `WeatherPanel`) gained
+    a linear `reveal`/`spReveal`; in steampunk mode their panel's scale/opacity **follow it** (their
+    `Behavior`s are disabled) so the teardown is visible before the fade. Each gets its own
+    `components/PanelMachinery.qml` (`variant` 0..3 = a different wheel/pipe set) declared before
+    the panel, and its own corner mix — keep them varied.
+  - OSD has `Bar.osdReveal` + `osdWinding` (mirrors `winding`) so `PillFrame` builds/unbuilds round
+    it too. Settings pages fade/slide in and draw a `BrassDivider` under the title on every switch.
+  - Music wing: no record player any more — the cover sits centred in a grand border (double
+    `BrassFrame`, cogs on every corner, a big half‑cog behind the top, side cogs, tooth rack,
+    rivets) built off `stage.build`.
+  - The pill's `MechWing`s take `tilt: 14` (new `MechWing.tilt`, added into `armSwing`) — the pill
+    hugs the top edge, and untilted the upstroke clipped off‑screen.
 
 ## Conventions & gotchas
 
@@ -206,7 +272,8 @@ UI‑facing surface so components stay backend‑agnostic.
   `WlrLayershell.namespace: "pastel-bar"` and `hyprland.lua` has a `pastel-bar-blur` layer rule
   (`blur = true, ignore_alpha = 0.2`). Anything that should stay *un*‑frosted on those fullscreen
   surfaces must stay under 20% alpha (e.g. the CC edge vignettes); the dim backdrops of the
-  launcher/power/polkit are deliberately above it, so they frost the whole screen. Glass below ~24%
+  power menu/polkit are deliberately above it, so they frost the whole screen; the **launcher's**
+  backdrop is 0.15 so it only dims, never frosts (by request). Glass below ~24%
   panel opacity drops under the threshold and loses its blur. The wallpaper uses `pastel-wallpaper`.
   Namespace is fixed at surface creation — restart the shell after changing it.
 - Single‑instance overlays open on the **focused monitor** via `Ui.focusedScreen` (from

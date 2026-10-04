@@ -6,6 +6,7 @@ import ".."
 // ratio and mesh phasing — but it carries no behaviour of its own: the owner sets
 // `drive`. `spec[i].ang` is the direction (deg) from wheel i-1 to wheel i, or
 // set `spec[i].on` to mesh with an earlier wheel than the previous one.
+// Each spec entry may also carry Gear styling: tooth, web, spokes, twist, engrave.
 // `anchor0` is wheel 0's centre in local coords, so the owner can pin it:
 // `x: targetX - train.anchor0.x`.
 Item {
@@ -48,10 +49,16 @@ Item {
         delegate: Item {
             required property int index
             readonly property var w: root.train.wheels[index]
+            readonly property var s: root.spec[index]
             x: w.x; y: w.y
             Gear {
                 anchors.centerIn: parent
                 teeth: parent.w.teeth
+                tooth: parent.s.tooth || "trap"
+                web: parent.s.web || "auto"
+                spokes: parent.s.spokes || 0
+                twist: parent.s.twist || 0
+                engrave: !!parent.s.engrave
                 module: root.module
                 color: root.colors[parent.index % root.colors.length]
                 rim: root.rim
