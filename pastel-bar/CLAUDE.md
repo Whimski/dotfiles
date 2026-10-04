@@ -219,6 +219,8 @@ UI‑facing surface so components stay backend‑agnostic.
   city — the old unused `Weather.setLocation` geocoding helper was removed). Refetches every 15 min and on open when stale. WMO codes map to the new
   weather `IconGlyph`s (sun/moon/cloud/cloudSun/rain/snow/storm/fog).
 
+- **Steampunk references**: the reference sheets the look is based on are in `docs/steampunk-refs/`
+  (see its README for which sheet fed which component). Look there before adding new brass pieces.
 - **Steampunk mode** (`Settings.steampunk`, default **off**; toggle in Settings → Wallpaper & Style;
   read as `Theme.steampunk`). Off = plain glass everywhere: no gears, wings, lightning, `PillFrame`,
   machinery/plumbing or brass frames; `BrassDivider` falls back to a 1px `strokeGlass` hairline,
