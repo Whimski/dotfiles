@@ -8,6 +8,9 @@ import ".."
 // flapping wings). Each bolt is a midpoint-displaced zig-zag with an occasional
 // side branch, drawn as a soft wide glow pass plus a thin bright core, and lives
 // a few ticks while fading. `struck` fires per strike (Bar pulses the pill glow).
+// `style: "circuit"` (cyberpunk) strikes stepped traces instead — runs of
+// horizontal/vertical/45° segments with a node square at each bend, square
+// joins, like a surge racing along a circuit board.
 Canvas {
     id: arcs
     property bool active: false
@@ -15,6 +18,7 @@ Canvas {
     property color core: Qt.lighter(Theme.accent, 1.55)
     property color glow: Theme.accent
     property real rate: 0.6          // strike chance per tick
+    property string style: "zig"     // "zig" | "circuit"
     signal struck()
 
     property var _bolts: []
@@ -35,10 +39,39 @@ Canvas {
         return pts
     }
 
+    // a stepped trace from (x1,y1) to (x2,y2): alternating straight runs and
+    // 45° jogs, with small sideways detours so no two strikes match
+    function _trace(x1, y1, x2, y2) {
+        var pts = [[x1, y1]], x = x1, y = y1
+        var steps = 3 + Math.floor(Math.random() * 3)
+        for (var i = 1; i <= steps; i++) {
+            var tx = x1 + (x2 - x1) * i / steps, ty = y1 + (y2 - y1) * i / steps
+            if (i < steps) { tx += (Math.random() - 0.5) * 10; ty += (Math.random() - 0.5) * 10 }
+            var dx = tx - x, dy = ty - y
+            // straight run along the dominant axis, then a 45° jog to the target
+            if (Math.abs(dx) > Math.abs(dy)) {
+                var run = dx - Math.sign(dx) * Math.abs(dy)
+                pts.push([x + run, y])
+            } else {
+                var runY = dy - Math.sign(dy) * Math.abs(dx)
+                pts.push([x, y + runY])
+            }
+            pts.push([tx, ty])
+            x = tx; y = ty
+        }
+        return pts
+    }
+
     function _strike() {
         var L = links()
         if (!L || !L.length) return
         var l = L[Math.floor(Math.random() * L.length)]
+        if (style === "circuit") {
+            var tl = 2 + Math.floor(Math.random() * 2)
+            _bolts.push({ paths: [_trace(l[0], l[1], l[2], l[3])], life: tl, max: tl })
+            struck()
+            return
+        }
         var main = _zig(l[0], l[1], l[2], l[3], 4, 0.55)
         var paths = [main]
         if (Math.random() < 0.55) {
@@ -70,7 +103,8 @@ Canvas {
     onPaint: {
         var ctx = getContext("2d")
         ctx.reset()
-        ctx.lineCap = "round"; ctx.lineJoin = "round"
+        var circ = style === "circuit"
+        ctx.lineCap = circ ? "square" : "round"; ctx.lineJoin = circ ? "miter" : "round"
         function stroke(pts) {
             ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1])
             for (var j = 1; j < pts.length; j++) ctx.lineTo(pts[j][0], pts[j][1])
@@ -87,6 +121,11 @@ Canvas {
                 ctx.lineWidth = 3.2 * thin; stroke(b.paths[p])
                 ctx.strokeStyle = Qt.rgba(c.r, c.g, c.b, 0.95 * f)
                 ctx.lineWidth = 1.5 * thin; stroke(b.paths[p])
+                if (circ) {    // a node square at every bend
+                    ctx.fillStyle = Qt.rgba(c.r, c.g, c.b, 0.95 * f)
+                    for (var q = 1; q < b.paths[p].length - 1; q += 2)
+                        ctx.fillRect(b.paths[p][q][0] - 2, b.paths[p][q][1] - 2, 4, 4)
+                }
             }
         }
     }

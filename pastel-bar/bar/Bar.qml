@@ -90,7 +90,33 @@ PanelWindow {
     property real cyPhase: 0
     FrameAnimation {
         running: bar.cyberLive && bar.visible
-        onTriggered: bar.cyPhase = (bar.cyPhase + frameTime / 3.2) % 1
+        // charging races it, low battery drags it
+        onTriggered: bar.cyPhase = (bar.cyPhase + frameTime / 3.2 * (1 + 1.5 * bar.power) * (1 - 0.6 * bar.weak)) % 1
+    }
+    // Low battery "brownout": the cyber dressing dips dark for a few frames at
+    // random (now and then twice in a row). 1 = steady. The clock text stays
+    // readable — it gets harder glitches instead (GlitchText.intensity).
+    property real cyDip: 1
+    Timer {
+        id: dipTimer
+        running: bar.cyberLive && bar.weak > 0.01 && bar.mode === "expanded"
+        interval: 900; repeat: true
+        onTriggered: {
+            interval = (500 + Math.random() * 2000) * (1.4 - bar.weak)
+            bar.cyDip = 0.2 + Math.random() * 0.4
+            dipEnd.interval = 50 + Math.random() * 90
+            dipEnd.again = Math.random() < 0.35
+            dipEnd.restart()
+        }
+        onRunningChanged: if (!running) bar.cyDip = 1
+    }
+    Timer {
+        id: dipEnd
+        property bool again: false
+        onTriggered: {
+            if (again) { again = false; bar.cyDip = 0.5; interval = 60; restart(); return }
+            bar.cyDip = 1
+        }
     }
 
     // ---- clock ----
@@ -233,8 +259,10 @@ PanelWindow {
         x: panel.x + panel.width - 10
         y: panel.y + panel.height / 2 - height / 2 + 4
         spread: bar._bloom(2)
+        power: bar.power
+        weak: bar.weak
         running: bar.mode === "expanded" && !bar.pillHidden
-        opacity: Math.min(1, spread * 3)
+        opacity: Math.min(1, spread * 3) * bar.cyDip
         visible: Theme.cyberpunk && opacity > 0.01
     }
     CyberFin {
@@ -242,8 +270,10 @@ PanelWindow {
         x: panel.x - width + 10
         y: panel.y + panel.height / 2 - height / 2 + 4
         spread: bar._bloom(2)
+        power: bar.power
+        weak: bar.weak
         running: bar.mode === "expanded" && !bar.pillHidden
-        opacity: Math.min(1, spread * 3)
+        opacity: Math.min(1, spread * 3) * bar.cyDip
         visible: Theme.cyberpunk && opacity > 0.01
         transform: Scale { origin.x: finL.width / 2; xScale: -1 }
     }
@@ -307,7 +337,8 @@ PanelWindow {
             corners: ["none", "none", "wedge", "wedge"]
             tab: bar.expLayout ? "bottom" : "none"
             rail: false
-            lap: 4.5
+            lap: 4.5 / (1 + 1.5 * bar.power) * (1 + bar.weak)
+            opacity: bar.cyDip
             build: bar.expLayout ? bar.bloom
                  : (bar.mode === "osd" || bar.osdWinding) ? bar.osdReveal : 0
         }
@@ -324,8 +355,8 @@ PanelWindow {
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
                     GradientStop { position: 0.0; color: "transparent" }
-                    GradientStop { position: 0.85; color: Theme.alpha(Theme.accent, 0.13) }
-                    GradientStop { position: 1.0; color: Theme.alpha(Qt.lighter(Theme.accent, 1.4), 0.45) }
+                    GradientStop { position: 0.85; color: Theme.alpha(Theme.accent, (0.13 + 0.12 * bar.power) * bar.cyDip) }
+                    GradientStop { position: 1.0; color: Theme.alpha(Qt.lighter(Theme.accent, 1.4), (0.45 + 0.4 * bar.power) * bar.cyDip) }
                 }
             }
         }
@@ -443,10 +474,13 @@ PanelWindow {
                 visible: Theme.cyberpunk
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 8
-                opacity: Math.min(1, bar._bloom(1) * 2)
+                opacity: Math.min(1, bar._bloom(1) * 2) * bar.cyDip
                 transform: Translate { x: (1 - bar._bloom(1)) * -28 }
                 HudRing {
+                    id: hudCpu
                     anchors.verticalCenter: parent.verticalCenter
+                    power: bar.power
+                    weak: bar.weak
                     value: SysLoad.cpu
                     build: bar._bloom(1)
                     running: bar.mode === "expanded" && !bar.pillHidden
@@ -460,7 +494,7 @@ PanelWindow {
                     running: bar.mode === "expanded" && !bar.pillHidden
                 }
             }
-            CyberPost { p: bar._seg(0.22, 0.55); phase: bar.cyPhase }
+            CyberPost { id: postL; p: bar._seg(0.22, 0.55); phase: bar.cyPhase; opacity: bar.cyDip }
 
             // ---- clock + date ----
             Column {
@@ -477,6 +511,7 @@ PanelWindow {
                     font.weight: Font.Bold
                     font.letterSpacing: Theme.cyberpunk ? 1.5 : 0
                     running: bar.mode === "expanded" && !bar.pillHidden && bar.bloom > 0.99
+                    intensity: bar.weak
                 }
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -488,7 +523,7 @@ PanelWindow {
                 // cyberpunk: a seconds ruler — 30 ticks, one per 2 s, the
                 // current one blinking
                 Row {
-                    visible: Theme.cyberpunk
+                    visible: Theme.cyberpunk && !cyStatus.visible
                     anchors.horizontalCenter: parent.horizontalCenter
                     topPadding: 3
                     spacing: 1
@@ -504,6 +539,54 @@ PanelWindow {
                             opacity: index < cur ? 0.85
                                    : index === cur ? (bar.secs % 2 ? 1 : 0.3)
                                    : 0.2
+                        }
+                    }
+                }
+                // cyberpunk status tag, in the ruler's place: "PWR+" with chevrons
+                // streaming inward while charging; a blinking hazard-striped
+                // "LOW PWR" when the battery is low
+                Row {
+                    id: cyStatus
+                    readonly property bool low: bar.weak > 0.01 && bar.power < 0.5
+                    visible: Theme.cyberpunk && (bar.power > 0.01 || low)
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    topPadding: 2
+                    spacing: 4
+                    readonly property color tint: low ? Theme.danger : Theme.accent
+                    opacity: low ? (Math.floor(bar.cyPhase * 8) % 2 ? 1 : 0.35) : 1
+                    // hazard stripes (low) / chevrons streaming in (charging)
+                    Repeater {
+                        model: 3
+                        Text {
+                            required property int index
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: cyStatus.low ? "/" : "›"
+                            color: cyStatus.tint
+                            font.pixelSize: Theme.fontSize - 4
+                            font.weight: Font.Black
+                            opacity: cyStatus.low ? 1
+                                   : 0.25 + 0.75 * (Math.floor(bar.cyPhase * 9) % 3 === index ? 1 : 0)
+                        }
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: cyStatus.low ? "LOW PWR" : "PWR+"
+                        color: cyStatus.tint
+                        font.pixelSize: Theme.fontSize - 5
+                        font.weight: Font.Bold
+                        font.letterSpacing: 2
+                    }
+                    Repeater {
+                        model: 3
+                        Text {
+                            required property int index
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: cyStatus.low ? "/" : "‹"
+                            color: cyStatus.tint
+                            font.pixelSize: Theme.fontSize - 4
+                            font.weight: Font.Black
+                            opacity: cyStatus.low ? 1
+                                   : 0.25 + 0.75 * (Math.floor(bar.cyPhase * 9) % 3 === 2 - index ? 1 : 0)
                         }
                     }
                 }
@@ -551,14 +634,14 @@ PanelWindow {
             }
 
             BrassPost { p: bar._seg(0.28, 0.61) }
-            CyberPost { p: bar._seg(0.28, 0.61); phase: (bar.cyPhase + 0.5) % 1 }
+            CyberPost { id: postR; p: bar._seg(0.28, 0.61); phase: (bar.cyPhase + 0.5) % 1; opacity: bar.cyDip }
 
             // ---- cyberpunk: memory readout + gauge ----
             Row {
                 visible: Theme.cyberpunk
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 8
-                opacity: Math.min(1, bar._bloom(1) * 2)
+                opacity: Math.min(1, bar._bloom(1) * 2) * bar.cyDip
                 transform: Translate { x: (1 - bar._bloom(1)) * 28 }
                 CyberReadout {
                     anchors.verticalCenter: parent.verticalCenter
@@ -570,7 +653,10 @@ PanelWindow {
                     running: bar.mode === "expanded" && !bar.pillHidden
                 }
                 HudRing {
+                    id: hudMem
                     anchors.verticalCenter: parent.verticalCenter
+                    power: bar.power
+                    weak: bar.weak
                     value: SysLoad.mem
                     segments: 3
                     speed: -16
@@ -746,6 +832,34 @@ PanelWindow {
 
     // ---------- charging lightning (over the pill, gears and wings) ----------
     // Decorative only: outside the input mask, so it never eats clicks.
+    // cyberpunk charging: surges racing along stepped circuit traces between
+    // the HUD gauges, the posts and the fins
+    LightningArcs {
+        id: circuitArcs
+        style: "circuit"
+        x: finL.x
+        y: 0
+        width: finR.x + finR.width - finL.x
+        height: panel.height + 30
+        rate: 0.5
+        active: Theme.cyberpunk && bar.power > 0.5 && bar.mode === "expanded" && !bar.pillHidden && bar.bloom > 0.9
+        visible: active
+        onStruck: zapAnim.restart()
+        links: function () {
+            var out = []
+            function m(item, p) { return item.mapToItem(circuitArcs, p.x, p.y) }
+            function c(item) { return m(item, Qt.point(item.width / 2, item.height / 2)) }
+            function link(a, b) { out.push([a.x, a.y, b.x, b.y]) }
+            link(c(hudCpu), m(finL, finL.rootPoint()))
+            link(m(finL, finL.rootPoint()), m(finL, finL.tipPoint()))
+            link(c(hudCpu), c(postL))
+            link(c(hudMem), m(finR, finR.rootPoint()))
+            link(m(finR, finR.rootPoint()), m(finR, finR.tipPoint()))
+            link(c(hudMem), c(postR))
+            return out
+        }
+    }
+
     LightningArcs {
         id: lightning
         x: wingL.x

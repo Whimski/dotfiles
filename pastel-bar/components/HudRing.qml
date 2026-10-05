@@ -10,6 +10,9 @@ import ".."
 //   - a crosshair reticle whose centre dot pulses
 // Idles (turns + pulses) while `running`. `build` (0..1) assembles it: the
 // arcs sweep in, the dashes and reticle glitch on — bind a reveal.
+// `power` (0..1, charging) overclocks it: up to 4× the turn, a pulsing halo
+// round the rim and a brighter value arc. `weak` (0..1, low battery) wears it
+// down: it turns slowly, stalls now and then, and a segment drops out.
 Item {
     id: hud
     property real value: 0
@@ -20,6 +23,8 @@ Item {
     property color color: Theme.accent
     // idle turn speed (deg/s); reversed for the inner ring
     property real speed: 22
+    property real power: 0
+    property real weak: 0
 
     width: size; height: size
     readonly property real r: size / 2
@@ -34,9 +39,24 @@ Item {
     FrameAnimation {
         running: hud.running && hud.visible
         onTriggered: {
-            hud.spin = (hud.spin + frameTime * hud.speed * (0.6 + hud.shown)) % 360
-            hud.pulse = (hud.pulse + frameTime * 1.4) % 1
+            if (!hud._stalled)
+                hud.spin = (hud.spin + frameTime * hud.speed * (0.6 + hud.shown)
+                            * (1 + 3 * hud.power) * (1 - 0.8 * hud.weak)) % 360
+            hud.pulse = (hud.pulse + frameTime * (1.4 + 2.6 * hud.power) * (1 - 0.6 * hud.weak)) % 1
         }
+    }
+    // low battery: stall for a moment now and then, and kill a segment
+    property bool _stalled: false
+    property int _dead: -1
+    Timer {
+        running: hud.running && hud.visible && hud.weak > 0.01
+        interval: 500 + Math.random() * 1600; repeat: true
+        onTriggered: {
+            interval = 500 + Math.random() * 1600
+            hud._stalled = Math.random() < 0.5 * hud.weak
+            hud._dead = Math.random() < 0.7 ? Math.floor(Math.random() * hud.segments) : -1
+        }
+        onRunningChanged: if (!running) { hud._stalled = false; hud._dead = -1 }
     }
 
     // ---- outer segmented ring ----
@@ -46,6 +66,7 @@ Item {
             required property int index
             anchors.fill: parent
             rotation: hud.spin + index * 360 / hud.segments
+            opacity: index === hud._dead ? 0.12 : 1
             preferredRendererType: Shape.CurveRenderer
             ShapePath {
                 fillColor: "transparent"
@@ -59,6 +80,21 @@ Item {
                     sweepAngle: (360 / hud.segments - 12) * Theme.easeOutCubic(hud.seg(0, 0.5))
                 }
             }
+        }
+    }
+
+    // ---- charging halo: a soft ring just inside the rim, pulsing ----
+    Shape {
+        anchors.fill: parent
+        visible: hud.power > 0.01
+        opacity: hud.power * (0.35 + 0.45 * Math.abs(Math.sin(hud.pulse * Math.PI)))
+        preferredRendererType: Shape.CurveRenderer
+        ShapePath {
+            fillColor: "transparent"
+            strokeColor: Qt.lighter(hud.color, 1.4)
+            strokeWidth: 4
+            PathAngleArc { centerX: hud.r; centerY: hud.r; radiusX: hud.r - 2; radiusY: hud.r - 2
+                           startAngle: 0; sweepAngle: 360 }
         }
     }
 
@@ -79,7 +115,7 @@ Item {
         }
         ShapePath {
             fillColor: "transparent"
-            strokeColor: hud.color
+            strokeColor: Qt.lighter(hud.color, 1 + 0.45 * hud.power)
             strokeWidth: 3
             capStyle: ShapePath.FlatCap
             PathAngleArc {

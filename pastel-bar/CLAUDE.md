@@ -265,6 +265,16 @@ UI‑facing surface so components stay backend‑agnostic.
     slot (chase lights); a `CyberFrame` over the pill and a scanline sweep (kept inside the
     chamfered ends) off `bar.cyPhase`. OSD: chamfered icon box + a 20‑cell segmented meter;
     `osdReveal`/`osdWinding` now run for either decor mode.
+  - **Charging / low battery** (cyber counterparts of the powered/worn clockwork, off the same
+    `bar.power` / `bar.weak`): charging overclocks `HudRing`s (4× turn, pulsing halo), races the
+    fins' chase with energy pulses along the leading edge, speeds and brightens the scanline/comet,
+    swaps the seconds ruler for a `PWR+` tag with streaming chevrons, and strikes a
+    `LightningArcs { style: "circuit" }` (stepped 90°/45° traces with node squares) between the
+    gauges, posts and fins. Low battery stalls the rings and drops a segment, sags the fins
+    (rotation on their inner item, so `Bar`'s mirroring transform doesn't replace it) and stutters
+    their chase, makes the clock glitch far more (`GlitchText.intensity`), shows a blinking
+    hazard‑striped `LOW PWR` in `Theme.danger`, and "browns out" the dressing (`bar.cyDip` dips).
+    The tag keys off `bar.power`/`bar.weak`, so forcing those (as for steampunk) previews it all.
   - **Idle effects**: `CyberFrame` (once built, while `idle`) runs a comet round its outline every
     `lap` s and blinks its rails' node lights. Every idle animation is a `FrameAnimation`/`Timer`
     gated on visibility + the pill/panel being open.

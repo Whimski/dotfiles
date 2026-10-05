@@ -15,6 +15,8 @@ Item {
     property color ghostA: Theme.accent
     property color ghostB: Theme.current.accent2
     property bool running: true
+    // 0..1: more frequent, harder glitches (low battery)
+    property real intensity: 0
 
     implicitWidth: main.implicitWidth
     implicitHeight: main.implicitHeight
@@ -32,7 +34,7 @@ Item {
         running: gt.running && Theme.cyberpunk && gt.visible
         interval: 3000 + Math.random() * 6000
         repeat: true
-        onTriggered: { interval = 3000 + Math.random() * 6000; gt.glitch() }
+        onTriggered: { interval = (3000 + Math.random() * 6000) / (1 + 5 * gt.intensity); gt.glitch() }
     }
     // a glitch is ~5 jittery frames 45 ms apart, then reset
     Timer {
@@ -40,9 +42,10 @@ Item {
         interval: 45; repeat: true
         onTriggered: {
             if (gt._step++ >= 5) { stop(); gt.split = 0; gt.sliceDx = 0; return }
-            gt.split = (Math.random() < 0.5 ? -1 : 1) * (1 + Math.random() * 2.5)
+            const k = 1 + 1.5 * gt.intensity
+            gt.split = (Math.random() < 0.5 ? -1 : 1) * (1 + Math.random() * 2.5) * k
             gt.sliceY = 0.15 + Math.random() * 0.6
-            gt.sliceDx = (Math.random() - 0.5) * 10
+            gt.sliceDx = (Math.random() - 0.5) * 10 * k
         }
     }
 
