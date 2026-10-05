@@ -65,7 +65,7 @@ Item {
                     spacing: 8
 
                     // up / parent
-                    Rectangle {
+                    CyberRect {
                         width: 34; height: 34; radius: Theme.radiusSm
                         color: upMa.containsMouse ? Theme.hover : Theme.alpha(Theme.current.panel, 0.5)
                         border.width: 1; border.color: Theme.strokeGlass
@@ -77,7 +77,7 @@ Item {
                         }
                     }
                     // home
-                    Rectangle {
+                    CyberRect {
                         width: 34; height: 34; radius: Theme.radiusSm
                         color: homeMa.containsMouse ? Theme.hover : Theme.alpha(Theme.current.panel, 0.5)
                         border.width: 1; border.color: Theme.strokeGlass
@@ -101,7 +101,7 @@ Item {
                 }
 
                 // grid / list view toggle (segmented)
-                Rectangle {
+                CyberRect {
                     id: viewToggle
                     anchors.right: hiddenToggle.left; anchors.rightMargin: 8
                     anchors.verticalCenter: parent.verticalCenter
@@ -114,7 +114,7 @@ Item {
                         anchors.margins: 3
                         Repeater {
                             model: [{ g: true, ic: "grid" }, { g: false, ic: "list" }]
-                            delegate: Rectangle {
+                            delegate: CyberRect {
                                 required property var modelData
                                 width: (viewToggle.width - 6) / 2
                                 height: parent.height
@@ -135,7 +135,7 @@ Item {
                 }
 
                 // show-hidden toggle
-                Rectangle {
+                CyberRect {
                     id: hiddenToggle
                     anchors.right: closeBtn.left; anchors.rightMargin: 8
                     anchors.verticalCenter: parent.verticalCenter
@@ -168,7 +168,7 @@ Item {
                     }
                 }
 
-                Rectangle {
+                CyberRect {
                     id: closeBtn
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
@@ -221,7 +221,7 @@ Item {
                         width: grid.cellWidth
                         height: grid.cellHeight
 
-                        Rectangle {
+                        CyberRect {
                             anchors.fill: parent
                             anchors.margins: 6
                             radius: Theme.radiusSm + 2
@@ -301,7 +301,7 @@ Item {
                     boundsBehavior: Flickable.StopAtBounds
                     model: folderModel
 
-                    delegate: Rectangle {
+                    delegate: CyberRect {
                         id: lrow
                         required property string fileName
                         required property string filePath
@@ -325,7 +325,7 @@ Item {
                                     visible: lrow.fileIsDir
                                     name: "folder"; size: 22; color: Theme.current.accent
                                 }
-                                Rectangle {
+                                CyberRect {
                                     anchors.fill: parent
                                     visible: !lrow.fileIsDir
                                     radius: Theme.radiusSm - 2

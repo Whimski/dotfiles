@@ -42,9 +42,9 @@ PanelWindow {
     readonly property bool winding: mode === "idle" && bloom > 0.02
     // same for the OSD in steampunk mode: its pill dressing unbuilds off osdReveal
     property real osdReveal: mode === "osd" ? 1 : 0
-    Behavior on osdReveal { NumberAnimation { duration: Theme.steampunk ? (bar.mode === "osd" ? 620 : 380) : Theme.animFast
+    Behavior on osdReveal { NumberAnimation { duration: Theme.decorated ? (bar.mode === "osd" ? 620 : 380) : Theme.animFast
                                               easing.type: Easing.Linear } }
-    readonly property bool osdWinding: Theme.steampunk && mode === "idle" && !winding && osdReveal > 0.02
+    readonly property bool osdWinding: Theme.decorated && mode === "idle" && !winding && osdReveal > 0.02
     readonly property bool shownHidden: pillHidden && !winding && !osdWinding
     readonly property bool expLayout: mode === "expanded" || winding
 
@@ -61,7 +61,8 @@ PanelWindow {
     // Opening is a long, staged build (PillFrame's rails → caps → screws → steam);
     // closing replays it backwards, quicker.
     Behavior on bloom { NumberAnimation { duration: Theme.steampunk ? (bar.bloom < 0.5 ? 1000 : 560)
-                                                                  : (bar.bloom < 0.5 ? Theme.animDrawer : Theme.animMed)
+                                                : Theme.cyberpunk ? (bar.bloom < 0.5 ? 850 : 480)
+                                                : (bar.bloom < 0.5 ? Theme.animDrawer : Theme.animMed)
                                           easing.type: Easing.Linear } }
     function _bloom(i) { return Theme.stagger(bar.bloom, i, 0.18, 0.6) }
     function _seg(a, b) { return Math.max(0, Math.min(1, (bar.bloom - a) / (b - a))) }
@@ -84,11 +85,21 @@ PanelWindow {
     onModeChanged: if (mode !== "idle") flareAnim.restart()
 
 
+    // ---- cyberpunk idle clock: 0..1 every 3.2 s, drives the scanline + post lights ----
+    readonly property bool cyberLive: Theme.cyberpunk && !bar.shownHidden
+    property real cyPhase: 0
+    FrameAnimation {
+        running: bar.cyberLive && bar.visible
+        onTriggered: bar.cyPhase = (bar.cyPhase + frameTime / 3.2) % 1
+    }
+
     // ---- clock ----
     property string timeStr: ""
     property string dateStr: ""
+    property int secs: 0
     function _tick() {
         var d = new Date()
+        secs = d.getSeconds()
         timeStr = Qt.formatTime(d, "HH:mm")
         dateStr = Qt.formatDate(d, "ddd, MMM d")
     }
@@ -216,6 +227,27 @@ PanelWindow {
         transform: Scale { origin.x: wingL.width / 2; xScale: -1 }
     }
 
+    // ---- cyberpunk fins (the wings' counterpart; same slot, same timing) ----
+    CyberFin {
+        id: finR
+        x: panel.x + panel.width - 10
+        y: panel.y + panel.height / 2 - height / 2 + 4
+        spread: bar._bloom(2)
+        running: bar.mode === "expanded" && !bar.pillHidden
+        opacity: Math.min(1, spread * 3)
+        visible: Theme.cyberpunk && opacity > 0.01
+    }
+    CyberFin {
+        id: finL
+        x: panel.x - width + 10
+        y: panel.y + panel.height / 2 - height / 2 + 4
+        spread: bar._bloom(2)
+        running: bar.mode === "expanded" && !bar.pillHidden
+        opacity: Math.min(1, spread * 3)
+        visible: Theme.cyberpunk && opacity > 0.01
+        transform: Scale { origin.x: finL.width / 2; xScale: -1 }
+    }
+
     GlassPanel {
         id: panel
         anchors.horizontalCenter: parent.horizontalCenter
@@ -264,6 +296,38 @@ PanelWindow {
             visible: (bar.expLayout || bar.mode === "osd" || bar.osdWinding) && Theme.steampunk
             t: bar.expLayout ? bar.bloom : bar.osdReveal
             pulse: bar.mode === "expanded" ? 1 - clockworkLeft.tickP : 0
+        }
+
+        // ---------- cyberpunk dressing (builds / unbuilds off bloom / osdReveal) ----------
+        CyberFrame {
+            anchors.fill: parent
+            anchors.margins: 4
+            cut: panel.cut - 1.7
+            color: Theme.alpha(Theme.accent, 0.8)
+            corners: ["none", "none", "wedge", "wedge"]
+            tab: bar.expLayout ? "bottom" : "none"
+            rail: false
+            lap: 4.5
+            build: bar.expLayout ? bar.bloom
+                 : (bar.mode === "osd" || bar.osdWinding) ? bar.osdReveal : 0
+        }
+        // scanline: a soft bright band sweeping left → right, kept clear of the
+        // chamfered ends so it never paints outside the glass
+        Item {
+            visible: bar.cyberLive && (bar.expLayout ? bar.bloom > 0.99 : bar.mode === "osd")
+            x: panel.cut; y: 3
+            width: panel.width - 2 * panel.cut; height: panel.height - 6
+            clip: true
+            Rectangle {
+                width: 46; height: parent.height
+                x: -width + (parent.width + width) * bar.cyPhase
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "transparent" }
+                    GradientStop { position: 0.85; color: Theme.alpha(Theme.accent, 0.13) }
+                    GradientStop { position: 1.0; color: Theme.alpha(Qt.lighter(Theme.accent, 1.4), 0.45) }
+                }
+            }
         }
 
         // ---------- idle ----------
@@ -326,6 +390,34 @@ PanelWindow {
               }
           }
 
+          // cyberpunk posts: a hairline rail that extends from its middle with
+          // three node lights on it that blink in turn
+          component CyberPost: Item {
+              id: cpost
+              property real p: 0
+              property real phase: 0
+              visible: Theme.cyberpunk
+              anchors.verticalCenter: parent.verticalCenter
+              width: 6; height: 34
+              readonly property real len: (height - 4) * Theme.easeOutCubic(p)
+              Rectangle {
+                  x: 2.5; y: (parent.height - height) / 2
+                  width: 1; height: cpost.len
+                  color: Theme.alpha(Theme.accent, 0.7)
+              }
+              Repeater {
+                  model: 3
+                  Rectangle {
+                      required property int index
+                      x: 1; width: 4; height: 4
+                      y: cpost.height / 2 + (index - 1) * cpost.len / 2.6 - 2
+                      color: Theme.accent
+                      opacity: cpost.p < 0.6 ? 0
+                             : (Math.floor(cpost.phase * 6) % 3 === index ? 1 : 0.3)
+                  }
+              }
+          }
+
           // top row: clockwork + clock + battery pill + mirrored clockwork
           Row {
             id: expandedTop
@@ -346,24 +438,74 @@ PanelWindow {
             }
             BrassPost { p: bar._seg(0.22, 0.55) }
 
+            // ---- cyberpunk: CPU gauge + readout ----
+            Row {
+                visible: Theme.cyberpunk
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 8
+                opacity: Math.min(1, bar._bloom(1) * 2)
+                transform: Translate { x: (1 - bar._bloom(1)) * -28 }
+                HudRing {
+                    anchors.verticalCenter: parent.verticalCenter
+                    value: SysLoad.cpu
+                    build: bar._bloom(1)
+                    running: bar.mode === "expanded" && !bar.pillHidden
+                }
+                CyberReadout {
+                    anchors.verticalCenter: parent.verticalCenter
+                    label: "CPU"
+                    value: SysLoad.cpu
+                    history: SysLoad.cpuHist
+                    build: bar._bloom(1)
+                    running: bar.mode === "expanded" && !bar.pillHidden
+                }
+            }
+            CyberPost { p: bar._seg(0.22, 0.55); phase: bar.cyPhase }
+
             // ---- clock + date ----
             Column {
                 anchors.verticalCenter: parent.verticalCenter
                 opacity: bar._bloom(0)
                 scale: 0.8 + 0.2 * bar._bloom(0)
                 transform: Translate { y: (1 - bar._bloom(0)) * -10 }
-                Text {
+                // (cyberpunk: glitches every few seconds while the pill is open)
+                GlitchText {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: bar.timeStr
                     color: Theme.text
                     font.pixelSize: Theme.fontSize + 6
                     font.weight: Font.Bold
+                    font.letterSpacing: Theme.cyberpunk ? 1.5 : 0
+                    running: bar.mode === "expanded" && !bar.pillHidden && bar.bloom > 0.99
                 }
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    text: bar.dateStr
-                    color: Theme.steampunk ? Theme.alpha(Qt.lighter(Theme.accent, 1.15), 0.9) : Theme.subtext
+                    text: Theme.cyberpunk ? bar.dateStr.toUpperCase() : bar.dateStr
+                    color: Theme.decorated ? Theme.alpha(Qt.lighter(Theme.accent, 1.15), 0.9) : Theme.subtext
                     font.pixelSize: Theme.fontSize - 3
+                    font.letterSpacing: Theme.cyberpunk ? 1.5 : 0
+                }
+                // cyberpunk: a seconds ruler — 30 ticks, one per 2 s, the
+                // current one blinking
+                Row {
+                    visible: Theme.cyberpunk
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    topPadding: 3
+                    spacing: 1
+                    Repeater {
+                        model: 30
+                        Rectangle {
+                            required property int index
+                            readonly property int cur: Math.floor(bar.secs / 2)
+                            width: 2
+                            height: index % 5 === 0 ? 4 : 2.5
+                            anchors.bottom: parent.bottom
+                            color: Theme.accent
+                            opacity: index < cur ? 0.85
+                                   : index === cur ? (bar.secs % 2 ? 1 : 0.3)
+                                   : 0.2
+                        }
+                    }
                 }
             }
 
@@ -375,7 +517,7 @@ PanelWindow {
                 opacity: bar._bloom(1)
                 transform: Translate { x: (1 - bar._bloom(1)) * 28 }
 
-                Rectangle {
+                CyberRect {
                     readonly property bool low: !Battery.charging && Battery.percent <= 20
                     anchors.verticalCenter: parent.verticalCenter
                     height: 26; radius: 13
@@ -409,6 +551,33 @@ PanelWindow {
             }
 
             BrassPost { p: bar._seg(0.28, 0.61) }
+            CyberPost { p: bar._seg(0.28, 0.61); phase: (bar.cyPhase + 0.5) % 1 }
+
+            // ---- cyberpunk: memory readout + gauge ----
+            Row {
+                visible: Theme.cyberpunk
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 8
+                opacity: Math.min(1, bar._bloom(1) * 2)
+                transform: Translate { x: (1 - bar._bloom(1)) * 28 }
+                CyberReadout {
+                    anchors.verticalCenter: parent.verticalCenter
+                    label: "MEM"
+                    value: SysLoad.mem
+                    history: SysLoad.memHist
+                    alignRight: true
+                    build: bar._bloom(1)
+                    running: bar.mode === "expanded" && !bar.pillHidden
+                }
+                HudRing {
+                    anchors.verticalCenter: parent.verticalCenter
+                    value: SysLoad.mem
+                    segments: 3
+                    speed: -16
+                    build: bar._bloom(1)
+                    running: bar.mode === "expanded" && !bar.pillHidden
+                }
+            }
 
             // ---- mirrored clockwork (right-hand twin; a mirror image still meshes) ----
             ClockworkCluster {
@@ -445,7 +614,17 @@ PanelWindow {
             // steampunk: the icon sits in a brass porthole that pops in
             Item {
                 anchors.verticalCenter: parent.verticalCenter
-                width: Theme.steampunk ? 28 : osdIcon.width; height: Theme.steampunk ? 28 : osdIcon.height
+                width: Theme.decorated ? 28 : osdIcon.width; height: Theme.decorated ? 28 : osdIcon.height
+                Chamfer {    // cyberpunk: a chamfered box that glitches in
+                    visible: Theme.cyberpunk
+                    anchors.fill: parent
+                    cut: 7
+                    cuts: [true, false, true, false]
+                    color: Theme.alpha("#000000", 0.3)
+                    strokeWidth: 1.5
+                    strokeColor: Theme.alpha(Theme.accent, 0.85)
+                    opacity: Math.floor(bar.osdReveal * 8) % 3 === 1 && bar.osdReveal < 1 ? 0.2 : 1
+                }
                 Rectangle {
                     visible: Theme.steampunk
                     anchors.fill: parent; radius: width / 2
@@ -475,7 +654,28 @@ PanelWindow {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 130; height: 12
                 readonly property real frac: Math.max(0, Math.min(1, osdView.val / osdView.maxVal))
+                // cyberpunk: a segmented meter — cells light up to the level, the
+                // leading one brightest; cells switch on left → right as it opens
+                Row {
+                    id: osdCells
+                    visible: Theme.cyberpunk
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 1.5
+                    readonly property int lit: Math.round(parent.frac * 20)
+                    Repeater {
+                        model: 20
+                        Rectangle {
+                            required property int index
+                            width: 5; height: 9
+                            color: index < osdCells.lit ? (index === osdCells.lit - 1 ? Qt.lighter(Theme.accent, 1.35) : Theme.accent)
+                                                        : Theme.alpha(Theme.accent, 0.18)
+                            opacity: bar.osdReveal * 22 > index ? 1 : 0
+                            Behavior on color { ColorAnimation { duration: 90 } }
+                        }
+                    }
+                }
                 Rectangle {
+                    visible: !Theme.cyberpunk
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width; height: 6; radius: 3
                     color: Theme.steampunk ? Theme.alpha("#000000", 0.3) : Theme.alpha(Theme.subtext, 0.3)
@@ -495,6 +695,7 @@ PanelWindow {
                 }
                 Rectangle {
                     id: osdFill
+                    visible: !Theme.cyberpunk
                     anchors.verticalCenter: parent.verticalCenter
                     height: 6; radius: 3
                     width: Math.max(height, parent.width * parent.frac)
@@ -520,7 +721,7 @@ PanelWindow {
                 }
                 // glowing knob riding the fill's leading edge
                 Rectangle {
-                    visible: !Theme.steampunk
+                    visible: !Theme.decorated
                     anchors.verticalCenter: parent.verticalCenter
                     x: osdFill.width - width / 2
                     width: 12; height: 12; radius: 6
@@ -533,8 +734,8 @@ PanelWindow {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: Math.round(osdView.val * 100) + "%"
-                color: Theme.steampunk ? Qt.lighter(Theme.accent, 1.2) : Theme.text
-                font.family: Theme.steampunk ? "monospace" : font.family
+                color: Theme.decorated ? Qt.lighter(Theme.accent, 1.2) : Theme.text
+                font.family: Theme.decorated ? "monospace" : font.family
                 font.pixelSize: Theme.fontSize - 1
                 font.weight: Font.Medium
                 font.features: { "tnum": 1 }
@@ -613,6 +814,16 @@ PanelWindow {
             rail: false
             build: expNotifPanel.shown ? Math.max(0, bar.bloom * 1.6 - 0.6) : 0
         }
+        CyberFrame {
+            anchors.fill: parent
+            anchors.margins: 4
+            cut: expNotifPanel.cut - 1.7
+            color: Theme.alpha(Theme.accent, 0.7)
+            corners: ["wedge", "none", "bracket", "none"]
+            bar: "top"
+            rail: false
+            build: expNotifPanel.shown ? Math.max(0, bar.bloom * 1.6 - 0.6) : 0
+        }
 
         Column {
             id: expNotifCol
@@ -621,7 +832,7 @@ PanelWindow {
 
             Repeater {
                 model: Math.min(3, Notifs.count)     // the 3 most recent
-                delegate: Rectangle {
+                delegate: CyberRect {
                     id: nCard
                     required property int index
                     readonly property var n: Notifs.list[Notifs.count - 1 - index]
@@ -705,6 +916,16 @@ PanelWindow {
             line: 1.2
             showPlate: false
             t: toastPill.drawP
+        }
+        CyberFrame {
+            anchors.fill: parent
+            anchors.margins: 3
+            cut: toastPill.cut - 1.3
+            color: Theme.alpha(Theme.accent, 0.8)
+            corners: ["none", "none", "wedge", "none"]
+            rail: false
+            lap: 3
+            build: toastPill.drawP
         }
 
         readonly property bool shown: bar.mode === "idle" && bar.toastActive && bar.latestNotif !== null && !bar.yieldToApp

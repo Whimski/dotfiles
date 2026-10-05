@@ -315,6 +315,13 @@ PanelWindow {
     function tipOf(t, i) { return t.module * (t.spec[i].teeth / 2 + 1) }
 
     // ---- left: music wing ----
+    // cyberpunk: HUD hardware behind the wing (ring on its inward side)
+    PanelHud {
+        anchors.fill: parent
+        rx: wing.x; ry: wing.y; rw: wing.width; rh: wing.height
+        reveal: cc.peekOnly ? 0 : cc.mediaReveal
+        variant: 3
+    }
     MediaWing {
         id: wing
         reveal: cc.mediaReveal
@@ -418,8 +425,16 @@ PanelWindow {
     }
 
     // ---- right: control center drawer ----
+    // cyberpunk: HUD hardware behind the CC drawer
+    PanelHud {
+        anchors.fill: parent
+        rx: ccPanel.x; ry: ccPanel.y; rw: ccPanel.width; rh: ccPanel.height
+        reveal: cc.ccReveal
+        variant: 0
+    }
     GlassPanel {
         id: ccPanel
+        cuts: [true, false, true, true]
         anchors.top: parent.top
         anchors.topMargin: cc._topMargin
         anchors.right: parent.right
@@ -454,6 +469,17 @@ PanelWindow {
             corners: ["screw", "cross", "screw", "cog"]
             plate: "top"
             spin: cc.ccReveal * 135
+            build: cc.ccReveal
+        }
+        // cyberpunk: the HUD frame traces itself round with the reveal
+        CyberFrame {
+            anchors.fill: parent
+            anchors.margins: 6
+            cut: Theme.cyberCut - 2.5
+            color: Theme.alpha(Theme.accent, 0.75)
+            cuts: [true, false, true, true]
+            corners: ["bracket", "none", "wedge", "none"]
+            bar: "top"; tab: "none"; rail: true
             build: cc.ccReveal
         }
 
@@ -519,9 +545,10 @@ PanelWindow {
                 }
 
                 BrassDivider {
-                    visible: Theme.steampunk
+                    visible: Theme.decorated
                     width: parent.width
                     build: cc._stage(0)
+                    cyber: "node"
                     color: Theme.alpha(Theme.accent, 0.8)
                     ends: "screw"; centre: "cog"
                     spin: cc.ccReveal * -180
@@ -622,6 +649,7 @@ PanelWindow {
                     width: parent.width
                     color: Theme.alpha(Theme.accent, 0.7)
                     ends: "dot"; centre: "plate"; rail: false
+                    cyber: "ticks"
                 }
                 Item {
                     width: parent.width
@@ -640,6 +668,7 @@ PanelWindow {
                     width: parent.width
                     color: Theme.alpha(Theme.accent, 0.7)
                     ends: "knurl"; centre: "none"; ticks: true
+                    cyber: "dash"
                 }
                 Item {
                     width: parent.width
@@ -658,6 +687,7 @@ PanelWindow {
                     build: cc._stage(4)
                     color: Theme.alpha(Theme.accent, 0.7)
                     ends: "knurl"; centre: "plate"
+                    cyber: "step"
                 }
                 NotificationList {
                     id: notifList

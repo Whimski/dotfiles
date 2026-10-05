@@ -61,9 +61,16 @@ PanelWindow {
         reveal: wp.spReveal
         variant: 0
     }
+    PanelHud {    // cyberpunk counterpart
+        anchors.fill: parent
+        rx: panel.x; ry: panel.y; rw: panel.width; rh: panel.height
+        reveal: wp.spReveal
+        variant: 0
+    }
 
     GlassPanel {
         id: panel
+        cuts: [false, true, false, true]
         anchors.top: parent.top
         anchors.topMargin: wp._topMargin
         anchors.horizontalCenter: parent.horizontalCenter
@@ -73,15 +80,15 @@ PanelWindow {
         glow: 0.4
 
         transformOrigin: Item.Top
-        scale: Theme.steampunk ? 0.9 + 0.1 * Theme.easeOutBack(Math.min(1, wp.spReveal * 1.6), 1.5)
+        scale: Theme.decorated ? 0.9 + 0.1 * Theme.easeOutBack(Math.min(1, wp.spReveal * 1.6), 1.5)
                                : (wp.open ? 1 : 0.88)
-        opacity: Theme.steampunk ? Math.min(1, wp.spReveal * 3) : (wp.open ? 1 : 0)
+        opacity: Theme.decorated ? Math.min(1, wp.spReveal * 3) : (wp.open ? 1 : 0)
         transform: Translate { y: wp.open ? 0 : -14
             Behavior on y { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutCubic } } }
         // springy pop on open, quick tuck on close
-        Behavior on scale { enabled: !Theme.steampunk; NumberAnimation { duration: wp.open ? Theme.animSlow : Theme.animMed
+        Behavior on scale { enabled: !Theme.decorated; NumberAnimation { duration: wp.open ? Theme.animSlow : Theme.animMed
                                                 easing.type: wp.open ? Easing.OutBack : Easing.InCubic; easing.overshoot: 1.5 } }
-        Behavior on opacity { enabled: !Theme.steampunk; NumberAnimation { duration: Theme.animFast } }
+        Behavior on opacity { enabled: !Theme.decorated; NumberAnimation { duration: Theme.animFast } }
 
         MouseArea { anchors.fill: parent }   // swallow inside clicks
 
@@ -183,7 +190,7 @@ PanelWindow {
                 width: parent.width
                 spacing: 8
 
-                component Stat: Rectangle {
+                component Stat: CyberRect {
                     id: st
                     property string label: ""
                     property string value: ""
@@ -271,6 +278,17 @@ PanelWindow {
             rail: false
             build: wp.spReveal
             spin: wp.spReveal * 160
+        }
+        // cyberpunk: the HUD frame traces itself round with the reveal
+        CyberFrame {
+            anchors.fill: parent
+            anchors.margins: 6
+            cut: Theme.cyberCut - 2.5
+            color: Theme.alpha(Theme.accent, 0.75)
+            cuts: [false, true, false, true]
+            corners: ["none", "bracket", "none", "slash"]
+            bar: "none"; tab: "bottom"; rail: false
+            build: wp.spReveal
         }
     }
 }

@@ -43,7 +43,7 @@ Column {
         implicitHeight: 22
         readonly property real _frac: Math.max(0, Math.min(1, value))
 
-        Rectangle {
+        CyberRect {
             id: track
             anchors.left: parent.left
             anchors.right: pct.left
@@ -51,12 +51,12 @@ Column {
             anchors.verticalCenter: parent.verticalCenter
             height: 6; radius: 3
             color: Theme.alpha(Theme.subtext, 0.3)
-            Rectangle {
+            CyberRect {
                 height: parent.height; radius: parent.radius
                 width: parent.width * ms._frac
                 color: ms.accent
             }
-            Rectangle {
+            CyberRect {
                 width: 14; height: 14; radius: 7
                 anchors.verticalCenter: parent.verticalCenter
                 x: (track.width - width) * ms._frac
@@ -92,7 +92,7 @@ Column {
     // A single selectable row ("Follow default output" / one sink) used by the
     // per-stream output picker below. Same radio-row + checkmark visual as
     // AudioSection.qml's output list, parameterized for reuse.
-    component OutputChoice: Rectangle {
+    component OutputChoice: CyberRect {
         id: choice
         required property string label
         required property bool active
@@ -152,7 +152,7 @@ Column {
         visible: root.tab !== "streams"
 
         // device-type tile
-        Rectangle {
+        CyberRect {
             width: 104; height: 104; radius: Theme.radius
             color: Theme.alpha(Theme.subtext, 0.8)
             border.width: 1; border.color: Theme.strokeGlass
@@ -211,7 +211,7 @@ Column {
     }
 
     // ------------------------------------------------------------ tabs
-    Rectangle {
+    CyberRect {
         width: parent.width; height: 40; radius: height / 2
         color: Theme.alpha(Theme.current.hover, 0.5)
         border.width: 1; border.color: Theme.strokeGlass
@@ -226,7 +226,7 @@ Column {
                     { id: "in", label: "Inputs" },
                     { id: "streams", label: "Streams" }
                 ]
-                delegate: Rectangle {
+                delegate: CyberRect {
                     required property var modelData
                     readonly property bool on: root.tab === modelData.id
                     width: (parent.width - 8) / 3
@@ -284,7 +284,7 @@ Column {
         Repeater {
             id: devicesRep
             model: root.list
-            delegate: Rectangle {
+            delegate: CyberRect {
                 id: card
                 required property var modelData
                 readonly property bool isDefault: root.tab === "out"
@@ -339,7 +339,7 @@ Column {
                     Row {
                         width: parent.width
                         spacing: 12
-                        Rectangle {
+                        CyberRect {
                             width: 34; height: 34; radius: 10
                             anchors.verticalCenter: parent.verticalCenter
                             color: card.isDefault ? Theme.alpha(Theme.current.onAccent, 0.18)

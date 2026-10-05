@@ -24,7 +24,7 @@ Column {
 
     Repeater {
         model: Audio.sinks
-        delegate: Rectangle {
+        delegate: CyberRect {
             required property var modelData
             readonly property bool current: Audio.sink && Audio.sink.id === modelData.id
             width: sec.width

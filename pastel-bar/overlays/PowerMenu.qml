@@ -45,7 +45,7 @@ PanelWindow {
     Rectangle {
         anchors.fill: parent
         color: Theme.alpha("#000000", 0.35)
-        opacity: Theme.steampunk ? win.spReveal : (win.open ? 1 : 0)
+        opacity: Theme.decorated ? win.spReveal : (win.open ? 1 : 0)
         Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
     }
 
@@ -61,22 +61,29 @@ PanelWindow {
         reveal: win.spReveal
         variant: 2
     }
+    PanelHud {    // cyberpunk counterpart
+        anchors.fill: parent
+        rx: pmPanel.x; ry: pmPanel.y; rw: pmPanel.width; rh: pmPanel.height
+        reveal: win.spReveal
+        variant: 2
+    }
 
     GlassPanel {
         id: pmPanel
+        cuts: [true, false, true, false]
         anchors.centerIn: parent
         width: row.implicitWidth + 40
         height: 132
         radius: Theme.radius
         glow: 0.5
         // quick scale + fade in/out from the centre
-        scale: Theme.steampunk ? 0.9 + 0.1 * Theme.easeOutBack(Math.min(1, win.spReveal * 1.6), 1.5)
+        scale: Theme.decorated ? 0.9 + 0.1 * Theme.easeOutBack(Math.min(1, win.spReveal * 1.6), 1.5)
                                : (win.open ? 1 : 0.88)
-        opacity: Theme.steampunk ? Math.min(1, win.spReveal * 3) : (win.open ? 1 : 0)
+        opacity: Theme.decorated ? Math.min(1, win.spReveal * 3) : (win.open ? 1 : 0)
         // springy pop on open, quick tuck on close
-        Behavior on scale { enabled: !Theme.steampunk; NumberAnimation { duration: win.open ? Theme.animSlow : Theme.animMed
+        Behavior on scale { enabled: !Theme.decorated; NumberAnimation { duration: win.open ? Theme.animSlow : Theme.animMed
                                                 easing.type: win.open ? Easing.OutBack : Easing.InCubic; easing.overshoot: 1.5 } }
-        Behavior on opacity { enabled: !Theme.steampunk; NumberAnimation { duration: Theme.animFast } }
+        Behavior on opacity { enabled: !Theme.decorated; NumberAnimation { duration: Theme.animFast } }
         MouseArea { anchors.fill: parent }   // swallow inside clicks
 
         Row {
@@ -84,7 +91,7 @@ PanelWindow {
             anchors.centerIn: parent
             spacing: 12
 
-            component Action: Rectangle {
+            component Action: CyberRect {
                 id: tile
                 property string icon: ""
                 property string label: ""
@@ -167,6 +174,17 @@ PanelWindow {
             rail: false
             build: win.spReveal
             spin: win.spReveal * 160
+        }
+        // cyberpunk: the HUD frame traces itself round with the reveal
+        CyberFrame {
+            anchors.fill: parent
+            anchors.margins: 6
+            cut: Theme.cyberCut - 2.5
+            color: Theme.alpha(Theme.accent, 0.75)
+            cuts: [true, false, true, false]
+            corners: ["bracket", "none", "bracket", "none"]
+            bar: "none"; tab: "bottom"; rail: false
+            build: win.spReveal
         }
     }
 }

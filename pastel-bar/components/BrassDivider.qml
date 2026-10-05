@@ -9,6 +9,7 @@ import ".."
 // `build` (0..1) assembles it: the centre ornament spins in, the rule runs out
 // both ways from it, the end fittings land (screws twisting home), then ticks
 // and the shadow rail — bind a reveal to it and closing plays it backwards.
+// Cyberpunk mode renders a CyberDivider instead; `cyber` picks its variant.
 Item {
     id: div
     property color color: Theme.accent
@@ -18,6 +19,7 @@ Item {
     property bool ticks: false
     property real line: 1.5
     property real spin: 0
+    property string cyber: "node"
 
     readonly property color _dim: Theme.alpha(color, 0.5)
     readonly property real _cy: height / 2
@@ -32,11 +34,19 @@ Item {
     readonly property real _endW: ends === "knurl" ? 12 : ends === "none" ? 0 : 10
 
     implicitWidth: 240
-    implicitHeight: !Theme.steampunk ? 1 : centre === "cog" ? 22 : 14
+    implicitHeight: Theme.cyberpunk ? cyberDiv.implicitHeight
+                  : !Theme.steampunk ? 1 : centre === "cog" ? 22 : 14
 
-    // steampunk mode off: just the plain glass hairline
+    CyberDivider {
+        id: cyberDiv
+        anchors.fill: parent
+        variant: div.cyber
+        color: div.color
+        build: div.build
+    }
+    // neither mode: just the plain glass hairline
     Rectangle {
-        visible: !Theme.steampunk
+        visible: !Theme.decorated
         width: parent.width; height: 1
         color: Theme.strokeGlass
     }

@@ -221,8 +221,55 @@ UI‑facing surface so components stay backend‑agnostic.
 
 - **Steampunk references**: the reference sheets the look is based on are in `docs/steampunk-refs/`
   (see its README for which sheet fed which component). Look there before adding new brass pieces.
-- **Steampunk mode** (`Settings.steampunk`, default **off**; toggle in Settings → Wallpaper & Style;
-  read as `Theme.steampunk`). Off = plain glass everywhere: no gears, wings, lightning, `PillFrame`,
+- **Decor styles** — `Settings.decor` is one string: `"none"`, `"steampunk"` or `"cyberpunk"`
+  (one write per switch, mutually exclusive; `""` = unset, falls back to the legacy
+  `Settings.steampunk` bool). Read it as `Theme.decor` / `Theme.steampunk` / `Theme.cyberpunk`; never
+  write `Settings.steampunk`.
+- **Cyberpunk mode** (`Theme.cyberpunk`, toggle in Settings → Wallpaper & Style). Checkpoint before
+  it: git tag `pastel-bar-pre-cyberpunk`. Refs in `docs/cyberpunk-refs/`. Colours are the palette's
+  **`Theme.accent`** only (by request — not the kit's cyan/magenta). Gate new HUD pieces on
+  `Theme.cyberpunk`; `Theme.decorated` (= either mode) gates the overlays' reveal‑driven
+  scale/opacity.
+  - **Kit**: `Chamfer` (filled chamfered rect — the stand‑in for a rounded `Rectangle`; `cuts`
+    `[tl,tr,br,bl]`, `cut`, optional `gradient`), `CyberFrame` (overlay frame: traced outline,
+    `corners` `wedge`/`bracket`/`slash`/`none`, `bar`, striped‑notch `tab`, node `rail`; `build` 0..1),
+    `CyberDivider` (`node`/`step`/`ticks`/`bar`/`dash`; scan‑in `build`). `BrassDivider` renders a
+    `CyberDivider` itself in cyberpunk mode (pick it with `cyber:`), so call sites need no twin.
+  - `GlassPanel` turns chamfered (`cuts`/`cut`, default `Theme.cyberCut` 14) — its fill moves into a
+    z:-1 `Shape`. A panel's `cuts` and its `CyberFrame`'s must match.
+  - **Covered so far**: every panel frame (CC, music wing, settings, launcher, power, polkit,
+    weather — each a different corner/bar/tab mix, keep them varied), all dividers, `ToggleTile`
+    (chamfered "ACTION" tile + `‖` marker), `Slider`, the music wing's cover/seek/buttons.
+    Plus everything inside the panels via `CyberRect` (below), the planets (a turning `HudRing`
+    round each disc), notifications (cards, the list under the pill and the toast get
+    `CyberFrame`s), and `PanelHud` behind every panel.
+  - **`CyberRect`** is a drop‑in for a plain filled `Rectangle` (`color`, `radius`, `border.width`/
+    `border.color`, children on top) that draws chamfered in cyberpunk mode and as the original
+    rounded rect otherwise. Settings rows/switches/cards/nav/chips/buttons/inputs, CC
+    Wi‑Fi/BT/audio rows, audio settings, wallpaper picker, launcher rows, power/polkit buttons and
+    weather stats all use it. It can't take `gradient`, `Behavior on border.*` or other
+    Rectangle‑only API — keep those as `Rectangle` (+ a `Chamfer` if needed). Colour swatches and
+    the planet discs stay round on purpose.
+  - **`PanelHud`** — same interface as `PanelMachinery` (`rx/ry/rw/rh`, `reveal`, `variant` 0..3;
+    odd variants mirror): big turning segmented rings half behind the side edges, a grid fragment
+    past a top corner, a `DataNoise` block under the bottom, a node rail off a side, blinking
+    triangle markers. Declared beside every `PanelMachinery`, and for the CC drawer/music wing in
+    `ControlCenter`.
+  - **Pill** (in `Bar.qml`, all gated on `Theme.cyberpunk`, building off `bloom` like steampunk):
+    `HudRing` gauges (segmented turning ring + 270° value arc + counter‑rotating dashes + pulsing
+    reticle) and `CyberReadout`s (label, % with blinking block cursor, history bars) for CPU (left)
+    and memory (right) from the `SysLoad` service (samples `/proc/stat` + `/proc/meminfo` at 1 Hz,
+    only while cyberpunk is on); `CyberPost`s (inline) in the `BrassPost` slots; the clock is a
+    `GlitchText` (RGB‑split ghosts in accent/accent2 + a sheared slice, every 3–9 s — plain text in
+    other modes); uppercase date over a 30‑tick seconds ruler (`bar.secs`); `CyberFin`s in the wings'
+    slot (chase lights); a `CyberFrame` over the pill and a scanline sweep (kept inside the
+    chamfered ends) off `bar.cyPhase`. OSD: chamfered icon box + a 20‑cell segmented meter;
+    `osdReveal`/`osdWinding` now run for either decor mode.
+  - **Idle effects**: `CyberFrame` (once built, while `idle`) runs a comet round its outline every
+    `lap` s and blinks its rails' node lights. Every idle animation is a `FrameAnimation`/`Timer`
+    gated on visibility + the pill/panel being open.
+  - Qt 6.11's `Item` has a FINAL `top` — don't declare a property named `top` (load fails).
+- **Steampunk mode** (`Theme.steampunk`, default **off**; toggle in Settings → Wallpaper & Style). Off = plain glass everywhere: no gears, wings, lightning, `PillFrame`,
   machinery/plumbing or brass frames; `BrassDivider` falls back to a 1px `strokeGlass` hairline,
   `ToggleTile` to its solid tile, and `MediaWing` (`wing.sp`) to a clean card — centred cover, no
   vinyl/tonearm, plain label, round seek knob, round prev/play/next. The pill's bloom timing drops
@@ -291,7 +338,8 @@ UI‑facing surface so components stay backend‑agnostic.
   written in a single assignment (see `weatherLoc`, `wallpapers`, `mediaBlacklist`), not N sequential
   scalar writes.
 - Editing the **`Settings` singleton** may not fully hot‑reload live — restart the shell (kill the
-  `qs -p …/pastel-bar` pid; `keep_alive_bar.sh` respawns it) to pick up `Settings.qml` schema changes.
+  `qs` pid with `pkill -x qs`; `keep_alive_bar.sh` respawns it. **Not** `pkill -f "qs -p …"`: that
+  also matches the keep‑alive loop's own command line and kills it, so nothing respawns) to pick up `Settings.qml` schema changes.
 - **Unqualified property lookup only sees the document root**, not arbitrary ancestors. A binding in a
   nested child that reads a property declared on some *middle* object (e.g. `opacity: discHovered ? …`
   where `discHovered` lives on `centerDisc`) fails at runtime with `ReferenceError: … is not defined`

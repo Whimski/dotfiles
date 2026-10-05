@@ -214,7 +214,7 @@ Item {
 
         // segmented mode toggle (Wi-Fi/Bluetooth on the Bluetooth page, Wi-Fi/Ethernet
         // on the Network page — see `toggleOptions`)
-        Rectangle {
+        CyberRect {
             id: seg
             anchors.centerIn: parent
             width: 260; height: 40; radius: height / 2
@@ -228,7 +228,7 @@ Item {
                 Repeater {
                     id: modeRepeater
                     model: root.toggleOptions
-                    delegate: Rectangle {
+                    delegate: CyberRect {
                         required property var modelData
                         readonly property bool on: root.mode === modelData.id
                         width: (seg.width - 8 - (root.toggleOptions.length - 1) * 4) / root.toggleOptions.length
@@ -267,7 +267,7 @@ Item {
 
         // round power button — toggles the active radio. Hidden on Bluetooth,
         // where each controller planet is its own power button.
-        Rectangle {
+        CyberRect {
             id: powerBtn
             visible: !root.isBt
             anchors.verticalCenter: parent.verticalCenter

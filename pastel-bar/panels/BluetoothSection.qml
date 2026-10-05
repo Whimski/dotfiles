@@ -35,7 +35,7 @@ Column {
 
     Repeater {
         model: BT.powered ? BT.devices : []
-        delegate: Rectangle {
+        delegate: CyberRect {
             required property var modelData
             width: sec.width
             radius: Theme.radiusSm

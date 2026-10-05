@@ -54,15 +54,37 @@ Item {
     Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
 
     // ---- steampunk mode off: the plain solid quick-toggle tile ----
+    // (cyberpunk: the same tile, chamfered like the kit's "ACTION" buttons)
     Rectangle {
+        id: plainTile
         anchors.fill: parent
         visible: !Theme.steampunk
         radius: Theme.radiusSm + 2
-        color: tile.active ? Theme.alpha(Theme.accent, 0.92)
+        readonly property color fill: tile.active ? Theme.alpha(Theme.accent, 0.92)
                            : Theme.alpha(Theme.current.hover, tile.hot ? 0.78 : 0.5)
-        border.width: 1
+        color: Theme.cyberpunk ? "transparent" : fill
+        border.width: Theme.cyberpunk ? 0 : 1
         border.color: tile.active ? "transparent" : Theme.strokeGlass
         Behavior on color { ColorAnimation { duration: Theme.animFast } }
+        Chamfer {
+            anchors.fill: parent
+            z: -1
+            visible: Theme.cyberpunk
+            cut: 10
+            cuts: [false, true, false, true]
+            color: plainTile.fill
+            strokeWidth: 1
+            strokeColor: tile.active ? "transparent" : Theme.alpha(Theme.accent, tile.hot ? 0.7 : 0.4)
+        }
+        // cyberpunk: a "‖" marker riding the top-left corner when on
+        Row {
+            visible: Theme.cyberpunk
+            opacity: tile.active ? 1 : 0
+            x: 4; y: -5
+            spacing: 2
+            Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
+            Repeater { model: 2; Rectangle { width: 2; height: 6; color: Theme.accent } }
+        }
         Row {
             anchors.fill: parent
             anchors.leftMargin: 12

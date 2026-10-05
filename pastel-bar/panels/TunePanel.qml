@@ -57,7 +57,7 @@ PanelWindow {
         { id: "bluetooth", label: "Bluetooth",         icon: "bluetooth", kw: "bt device pair headphones" },
         { id: "audio",     label: "Audio",             icon: "volume",    kw: "sound output volume sink speaker" },
         { id: "display",   label: "Display",           icon: "monitor",   kw: "brightness font size bar pill padding text yield apps cover on top layer window class" },
-        { id: "style",     label: "Wallpaper & Style", icon: "palette",   kw: "theme palette dark light auto wallpaper colour glass opacity accent steampunk clockwork brass gears" },
+        { id: "style",     label: "Wallpaper & Style", icon: "palette",   kw: "theme palette dark light auto wallpaper colour glass opacity accent steampunk clockwork brass gears cyberpunk neon hud glitch" },
         { id: "widgets",   label: "Widgets",           icon: "widgets",   kw: "launcher icons notification popup media player blacklist ignore firefox now playing search hide apps list" },
         { id: "about",     label: "About",             icon: "info",      kw: "version about pastelbar quickshell backup export import settings file restore" }
     ]
@@ -188,7 +188,8 @@ PanelWindow {
     function _kbStyleList() {
         var l = []
         l.push({ key: "style:dark", item: darkRow, activate: () => Settings.mode = (Settings.mode === "dark" ? "light" : "dark") })
-        l.push({ key: "style:steampunk", item: steampunkRow, activate: () => Settings.steampunk = !Settings.steampunk })
+        l.push({ key: "style:steampunk", item: steampunkRow, activate: () => Settings.decor = Theme.steampunk ? "none" : "steampunk" })
+        l.push({ key: "style:cyberpunk", item: cyberpunkRow, activate: () => Settings.decor = Theme.cyberpunk ? "none" : "cyberpunk" })
         l.push({ key: "style:auto", item: autoRow, activate: () => Settings.mode = (Settings.mode === "auto" ? (Theme.dark ? "dark" : "light") : "auto") })
         l.push({ key: "style:paletteCustom", item: customSw, activate: () => Settings.theme = "Custom" })
         for (var p = 0; p < paletteRepeater.count; p++) {
@@ -308,6 +309,12 @@ PanelWindow {
         reveal: win.reveal
         variant: 0
     }
+    PanelHud {    // cyberpunk counterpart
+        anchors.fill: parent
+        rx: root.x; ry: root.y; rw: root.width; rh: root.height
+        reveal: win.reveal
+        variant: 0
+    }
 
     GlassPanel {
         id: root
@@ -319,16 +326,16 @@ PanelWindow {
         // scale + fade + slide from center
         // steampunk: follows the master reveal so the frame's teardown is seen
         // before the panel fades; plain: the springy pop
-        scale: Theme.steampunk ? 0.9 + 0.1 * Theme.easeOutBack(Math.min(1, win.reveal * 1.6), 1.5)
+        scale: Theme.decorated ? 0.9 + 0.1 * Theme.easeOutBack(Math.min(1, win.reveal * 1.6), 1.5)
                                : (win.open ? 1 : 0.88)
-        opacity: Theme.steampunk ? Math.min(1, win.reveal * 3) : (win.open ? 1 : 0)
+        opacity: Theme.decorated ? Math.min(1, win.reveal * 3) : (win.open ? 1 : 0)
         transform: Translate { y: win.open ? 0 : 10
             Behavior on y { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutCubic } } }
         // springy pop on open, quick tuck on close
-        Behavior on scale { enabled: !Theme.steampunk
+        Behavior on scale { enabled: !Theme.decorated
                             NumberAnimation { duration: win.open ? Theme.animSlow : Theme.animMed
                                               easing.type: win.open ? Easing.OutBack : Easing.InCubic; easing.overshoot: 1.5 } }
-        Behavior on opacity { enabled: !Theme.steampunk; NumberAnimation { duration: Theme.animFast } }
+        Behavior on opacity { enabled: !Theme.decorated; NumberAnimation { duration: Theme.animFast } }
 
         // Absorb clicks on the panel background so they don't reach the dismiss catcher.
         MouseArea { anchors.fill: parent }
@@ -336,7 +343,7 @@ PanelWindow {
         // =========================== reusable pieces ===========================
 
         // A pill toggle switch (accent gradient when on).
-        component ToggleSwitch: Rectangle {
+        component ToggleSwitch: CyberRect {
             id: sw
             property bool checked: false
             signal toggled()
@@ -344,7 +351,7 @@ PanelWindow {
             color: Theme.steampunk ? Theme.alpha("#000000", 0.25) : Theme.alpha(Theme.current.hover, 0.6)
             border.width: Theme.steampunk ? 1.5 : 1
             border.color: Theme.steampunk ? Theme.alpha(Theme.accent, sw.checked ? 0.95 : 0.5) : Theme.strokeGlass
-            Rectangle {
+            CyberRect {
                 anchors.fill: parent; radius: parent.radius
                 opacity: sw.checked ? 1 : 0
                 Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
@@ -364,7 +371,7 @@ PanelWindow {
                 Behavior on x { NumberAnimation { duration: Theme.animMed + 80; easing.type: Easing.OutBack; easing.overshoot: 1.4 } }
                 rotation: x / (width / 2) * 180 / Math.PI
             }
-            Rectangle {
+            CyberRect {
                 visible: !Theme.steampunk
                 width: 20; height: 20; radius: 10
                 color: Theme.dark ? "#e9e9ef" : "#ffffff"
@@ -376,7 +383,7 @@ PanelWindow {
         }
 
         // A settings row: icon + label + sublabel on the left, a switch on the right.
-        component ToggleRow: Rectangle {
+        component ToggleRow: CyberRect {
             id: tr
             property string icon: ""
             property string label: ""
@@ -423,7 +430,7 @@ PanelWindow {
         // A grouped card that stacks arbitrary content (sliders / pickers) in a column.
         // The inner column is parented via a property (not a default child) so it
         // isn't captured by the `body` alias it backs.
-        component GroupCard: Rectangle {
+        component GroupCard: CyberRect {
             id: gcard
             default property alias body: gcCol.data
             property real ipad: 16
@@ -460,10 +467,20 @@ PanelWindow {
         // A small uppercase section label.
         component GroupLabel: Text {
             id: gl
-            color: Theme.steampunk ? Qt.lighter(Theme.accent, 1.15) : Theme.subtext
+            color: Theme.decorated ? Qt.lighter(Theme.accent, 1.15) : Theme.subtext
             font.pixelSize: Theme.fontSize - 4
             font.weight: Font.Bold
-            font.letterSpacing: Theme.steampunk ? 2 : 1
+            font.letterSpacing: Theme.decorated ? 2 : 1
+            // cyberpunk: "//" prefix glyphs and a trailing node rule
+            Row {
+                visible: Theme.cyberpunk
+                x: gl.implicitWidth + 10; anchors.verticalCenter: parent.verticalCenter
+                spacing: 3
+                Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 40; height: 1; color: Theme.alpha(Theme.accent, 0.55) }
+                Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 4; height: 4; color: Theme.alpha(Theme.accent, 0.8) }
+                Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 14; height: 1; color: Theme.alpha(Theme.accent, 0.4) }
+                Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 8; height: 4; color: "transparent"; border.width: 1; border.color: Theme.alpha(Theme.accent, 0.6) }
+            }
             // steampunk: a short brass rule trailing the label, ending in a ring
             Rectangle {
                 visible: Theme.steampunk
@@ -481,7 +498,7 @@ PanelWindow {
         }
 
         // A sidebar navigation entry (accent gradient when active).
-        component NavItem: Rectangle {
+        component NavItem: CyberRect {
             id: nav
             property string icon: ""
             property string label: ""
@@ -492,7 +509,7 @@ PanelWindow {
             radius: Theme.radiusSm + 2
             color: Theme.alpha(Theme.current.hover, active || Theme.steampunk ? 0 : (navMa.containsMouse ? 0.5 : 0))
             Behavior on color { ColorAnimation { duration: Theme.animFast } }
-            Rectangle {
+            CyberRect {
                 visible: !Theme.steampunk
                 anchors.fill: parent; radius: parent.radius
                 opacity: nav.active ? 1 : 0
@@ -513,6 +530,13 @@ PanelWindow {
                 color: Theme.alpha(Theme.accent, 0.16 * nav.tabP)
                 border.width: 1.4
                 border.color: Theme.alpha(Theme.accent, 0.4 + 0.5 * nav.tabP)
+            }
+            // cyberpunk: a solid bar on the left edge that grows in when selected
+            Rectangle {
+                visible: Theme.cyberpunk
+                x: -7; anchors.verticalCenter: parent.verticalCenter
+                width: 3; height: (parent.height - 8) * nav.tabP
+                color: Theme.accent
             }
             Gear {
                 visible: Theme.steampunk && nav.tabP > 0.02
@@ -564,7 +588,7 @@ PanelWindow {
                 parent: pg.contentItem
                 width: pg.width
                 spacing: 14
-                opacity: Theme.steampunk ? Math.min(1, pg.shown * 2.5) : 1
+                opacity: Theme.decorated ? Math.min(1, pg.shown * 2.5) : 1
                 transform: Translate { x: Theme.steampunk ? (1 - Theme.easeOutCubic(Math.min(1, pg.shown * 1.6))) * 28 : 0 }
                 Column {
                     width: parent.width
@@ -572,7 +596,8 @@ PanelWindow {
                     Text { text: pg.title; color: Theme.text; font.pixelSize: Theme.fontSize + 8; font.weight: Font.Bold }
                     Text { text: pg.subtitle; visible: text !== ""; color: Theme.subtext; font.pixelSize: Theme.fontSize - 2 }
                     BrassDivider {
-                        visible: Theme.steampunk
+                        visible: Theme.decorated
+                        cyber: "step"
                         width: Math.min(320, parent.width)
                         build: pg.shown * win.reveal
                         color: Theme.alpha(Theme.accent, 0.75)
@@ -601,7 +626,7 @@ PanelWindow {
             }
 
             // search field
-            Rectangle {
+            CyberRect {
                 id: search
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -624,7 +649,6 @@ PanelWindow {
                     rotation: searchInput.text.length * 36
                     Behavior on rotation { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutBack; easing.overshoot: 2 } }
                 }
-                Behavior on border.color { ColorAnimation { duration: Theme.animFast } }
                 Row {
                     anchors.fill: parent
                     anchors.leftMargin: 14
@@ -696,7 +720,7 @@ PanelWindow {
                 spacing: 8
 
                 // "Config file" — opens the JSON in the default editor.
-                Rectangle {
+                CyberRect {
                     id: cfgBtn
                     width: parent.width
                     height: 42
@@ -881,7 +905,7 @@ PanelWindow {
                         Repeater {
                             id: yieldChipsRepeater
                             model: Settings.pillYieldApps || []
-                            delegate: Rectangle {
+                            delegate: CyberRect {
                                 required property var modelData
                                 height: 26
                                 width: yChipRow.implicitWidth + 16
@@ -914,7 +938,7 @@ PanelWindow {
                     Row {
                         width: parent.width
                         spacing: 8
-                        Rectangle {
+                        CyberRect {
                             width: parent.width - yAddBtn.width - 8
                             height: 32
                             radius: Theme.radiusSm
@@ -942,7 +966,7 @@ PanelWindow {
                                 }
                             }
                         }
-                        Rectangle {
+                        CyberRect {
                             id: yAddBtn
                             width: 60; height: 32; radius: Theme.radiusSm
                             color: yAddMa.containsMouse ? Theme.alpha(Theme.accent, 0.9) : Theme.alpha(Theme.accent, 0.78)
@@ -959,7 +983,7 @@ PanelWindow {
                         readonly property var here: ActiveWindow.activeOn(win.screen ? win.screen.name : "")
                         visible: here !== null && here.cls
                         Text { text: "Focused here — tap to add:"; color: Theme.subtext; font.pixelSize: Theme.fontSize - 4 }
-                        Rectangle {
+                        CyberRect {
                             id: yieldHereChip
                             readonly property string cls: parent.here ? (parent.here.cls || "") : ""
                             visible: cls !== ""
@@ -1019,7 +1043,15 @@ PanelWindow {
                     label: "Steampunk mode"
                     sub: "Clockwork, brass fittings and pipes everywhere"
                     checked: Theme.steampunk
-                    onToggled: Settings.steampunk = !Settings.steampunk
+                    onToggled: Settings.decor = Theme.steampunk ? "none" : "steampunk"
+                }
+                ToggleRow {
+                    id: cyberpunkRow
+                    icon: "terminal"
+                    label: "Cyberpunk mode"
+                    sub: "Neon HUD frames, chamfered corners and glitch accents"
+                    checked: Theme.cyberpunk
+                    onToggled: Settings.decor = Theme.cyberpunk ? "none" : "cyberpunk"
                 }
                 ToggleRow {
                     id: autoRow
@@ -1099,7 +1131,7 @@ PanelWindow {
                                 width: parent.width - 44
                                 anchors.verticalCenter: parent.verticalCenter
                             }
-                            Rectangle {
+                            CyberRect {
                                 id: colorSwatch
                                 width: 38; height: 26; radius: 8
                                 anchors.verticalCenter: parent.verticalCenter
@@ -1136,7 +1168,7 @@ PanelWindow {
                             width: (wpFlow.width - 12) / 2
                             height: 150
 
-                            Rectangle {
+                            CyberRect {
                                 anchors.fill: parent
                                 radius: Theme.radiusSm + 2
                                 color: Theme.alpha(Theme.current.panel, 0.6)
@@ -1163,7 +1195,7 @@ PanelWindow {
                                 anchors.fill: parent
                                 layer.enabled: true
                                 visible: false
-                                Rectangle { anchors.fill: parent; radius: Theme.radiusSm + 2 }
+                                CyberRect { anchors.fill: parent; radius: Theme.radiusSm + 2 }
                             }
                             // bottom scrim for label legibility
                             Rectangle {
@@ -1273,7 +1305,7 @@ PanelWindow {
                         Repeater {
                             id: blacklistChipsRepeater
                             model: Settings.mediaBlacklist || []
-                            delegate: Rectangle {
+                            delegate: CyberRect {
                                 required property var modelData
                                 height: 26
                                 width: chipRow.implicitWidth + 16
@@ -1306,7 +1338,7 @@ PanelWindow {
                     Row {
                         width: parent.width
                         spacing: 8
-                        Rectangle {
+                        CyberRect {
                             width: parent.width - addBtn.width - 8
                             height: 32
                             radius: Theme.radiusSm
@@ -1334,7 +1366,7 @@ PanelWindow {
                                 }
                             }
                         }
-                        Rectangle {
+                        CyberRect {
                             id: addBtn
                             width: 60; height: 32; radius: Theme.radiusSm
                             color: addBlMa.containsMouse ? Theme.alpha(Theme.accent, 0.9) : Theme.alpha(Theme.accent, 0.78)
@@ -1356,7 +1388,7 @@ PanelWindow {
                             Repeater {
                                 id: blQuickRepeater
                                 model: Media.players
-                                delegate: Rectangle {
+                                delegate: CyberRect {
                                     required property var modelData
                                     readonly property string pid: (modelData && (modelData.identity || modelData.dbusName)) || ""
                                     visible: pid !== ""
@@ -1386,7 +1418,7 @@ PanelWindow {
                     Row {
                         width: parent.width
                         spacing: 12
-                        Rectangle {
+                        CyberRect {
                             width: 46; height: 46; radius: 14
                             anchors.verticalCenter: parent.verticalCenter
                             color: Theme.alpha(Theme.accent, 0.92)
@@ -1427,7 +1459,7 @@ PanelWindow {
                     }
 
                     // file path
-                    Rectangle {
+                    CyberRect {
                         width: parent.width
                         height: 32
                         radius: Theme.radiusSm
@@ -1453,7 +1485,7 @@ PanelWindow {
                     Row {
                         width: parent.width
                         spacing: 8
-                        Rectangle {
+                        CyberRect {
                             id: exportBtn
                             width: (parent.width - 8) / 2
                             height: 34; radius: Theme.radiusSm
@@ -1462,7 +1494,7 @@ PanelWindow {
                             MouseArea { id: expMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                                 onClicked: Settings.exportSettings(pathInput.text) }
                         }
-                        Rectangle {
+                        CyberRect {
                             id: importBtn
                             width: (parent.width - 8) / 2
                             height: 34; radius: Theme.radiusSm
@@ -1502,6 +1534,16 @@ PanelWindow {
             plate: "bottom"
             build: win.reveal
             spin: win.reveal * 160
+        }
+        // cyberpunk: the HUD frame traces itself round with the reveal
+        CyberFrame {
+            anchors.fill: parent
+            anchors.margins: 7
+            cut: Theme.cyberCut - 2.9
+            color: Theme.alpha(Theme.accent, 0.75)
+            corners: ["wedge", "none", "bracket", "none"]
+            bar: "none"; tab: "top"; rail: true
+            build: win.reveal
         }
 
         HintOverlay {

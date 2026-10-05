@@ -38,7 +38,7 @@ Column {
 
     Repeater {
         model: Notifs.list
-        delegate: Rectangle {
+        delegate: CyberRect {
             required property var modelData
             width: nl.width
             id: card

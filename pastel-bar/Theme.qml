@@ -134,7 +134,17 @@ QtObject {
     readonly property color accent: current.accent
     // Steampunk mode: gears, wings, brass frames, pipes, the phonograph wing and
     // the pill's build-up. Off = the plain glass look. Components branch on this.
-    readonly property bool steampunk: Settings.steampunk
+    readonly property string decor: Settings.decor !== "" ? Settings.decor
+                                  : (Settings.steampunk ? "steampunk" : "none")
+    readonly property bool steampunk: decor === "steampunk"
+    // Cyberpunk mode (refs in docs/cyberpunk-refs): chamfered HUD frames in the
+    // palette accent. Exclusive with steampunk.
+    readonly property bool cyberpunk: decor === "cyberpunk"
+    // Either dressing is on: overlays then drive their panel's scale/opacity off
+    // their linear reveal so the frame's build/teardown is seen.
+    readonly property bool decorated: steampunk || cyberpunk
+    // Cyberpunk corner chamfer (px) for GlassPanel and CyberFrame.
+    readonly property real cyberCut: 14
     readonly property color text: current.text
     readonly property color subtext: current.subtext
     readonly property color danger: current.danger

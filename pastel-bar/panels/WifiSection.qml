@@ -47,7 +47,7 @@ Column {
             readonly property bool secured: modelData.security !== undefined && modelData.security !== 0
             readonly property bool isActive: modelData.connected === true
 
-            Rectangle {
+            CyberRect {
                 width: parent.width
                 radius: Theme.radiusSm
                 height: 38
@@ -96,7 +96,7 @@ Column {
             }
 
             // inline password entry for the pending secured network
-            Rectangle {
+            CyberRect {
                 width: parent.width
                 visible: sec.pending === modelData
                 onVisibleChanged: if (visible) sec.pwInput = pw
@@ -132,7 +132,7 @@ Column {
                         }
                         Keys.onEscapePressed: if (sec.kbReturnTarget) sec.kbReturnTarget.forceActiveFocus()
                     }
-                    Rectangle {
+                    CyberRect {
                         anchors.verticalCenter: parent.verticalCenter
                         width: 64; height: 26; radius: 8
                         color: Theme.alpha(Theme.accent, 0.92)

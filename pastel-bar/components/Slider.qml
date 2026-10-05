@@ -35,8 +35,8 @@ Item {
             Text {
                 id: valLabel
                 text: s.value.toFixed(s.decimals) + s.suffix
-                color: Theme.steampunk ? Qt.lighter(Theme.accent, 1.2) : Theme.subtext
-                font.family: Theme.steampunk ? "monospace" : font.family
+                color: Theme.decorated ? Qt.lighter(Theme.accent, 1.2) : Theme.subtext
+                font.family: Theme.decorated ? "monospace" : font.family
                 font.pixelSize: Theme.fontSize - 1
                 font.weight: Font.DemiBold
             }
@@ -49,7 +49,7 @@ Item {
 
             // ---- plain ----
             Rectangle {
-                visible: !Theme.steampunk
+                visible: !Theme.decorated
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.width
                 height: 6
@@ -63,13 +63,54 @@ Item {
                 }
             }
             Rectangle {
-                visible: !Theme.steampunk
+                visible: !Theme.decorated
                 width: 16; height: 16; radius: 8
                 anchors.verticalCenter: parent.verticalCenter
                 x: (bar.width - width) * s._frac
                 color: Theme.accent
                 border.width: 2
                 border.color: Theme.current.onAccent
+            }
+
+            // ---- cyberpunk: hairline rail, a slanted-end fill bar, a tick ruler
+            // under it and a chamfered square knob ----
+            Item {
+                anchors.fill: parent
+                visible: Theme.cyberpunk
+                readonly property real cy: Math.round(height / 2)
+                Rectangle {    // rail
+                    y: parent.cy; width: parent.width; height: 1
+                    color: Theme.alpha(Theme.accent, 0.4)
+                }
+                Chamfer {      // fill, its leading end cut
+                    y: parent.cy - 2
+                    width: Math.max(0, bar.width * s._frac - 4); height: 5
+                    visible: width > 6
+                    cut: 4
+                    cuts: [false, true, false, false]
+                    color: Theme.accent
+                }
+                Repeater {
+                    model: 21
+                    Rectangle {
+                        required property int index
+                        x: (bar.width - 1) * index / 20
+                        y: bar.height - height
+                        width: 1; height: index % 5 === 0 ? 4 : 2
+                        color: Theme.alpha(Theme.accent, index / 20 <= s._frac ? 0.8 : 0.3)
+                    }
+                }
+                Chamfer {      // knob
+                    width: 12; height: 12
+                    y: parent.cy - height / 2 + 0.5
+                    x: (bar.width - width) * s._frac
+                    cut: 3
+                    color: dragArea.pressed ? Theme.accent : Theme.alpha("#000000", 0.5)
+                    strokeWidth: 1.5
+                    strokeColor: Theme.accent
+                    scale: dragArea.pressed ? 1.25 : (dragArea.containsMouse ? 1.12 : 1)
+                    Behavior on scale { NumberAnimation { duration: Theme.animFast } }
+                }
             }
 
             // ---- steampunk: a brass gauge rail with ticks and a turning cog knob ----

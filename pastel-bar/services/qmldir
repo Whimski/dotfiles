@@ -10,3 +10,4 @@ singleton Polkit 1.0 Polkit.qml
 singleton Weather 1.0 Weather.qml
 singleton ActiveWindow 1.0 ActiveWindow.qml
 singleton Battery 1.0 Battery.qml
+singleton SysLoad 1.0 SysLoad.qml

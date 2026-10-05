@@ -47,7 +47,7 @@ PanelWindow {
     Rectangle {
         anchors.fill: parent
         color: Theme.alpha("#000000", 0.45)
-        opacity: Theme.steampunk ? win.spReveal : (win.open ? 1 : 0)
+        opacity: Theme.decorated ? win.spReveal : (win.open ? 1 : 0)
         Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
     }
 
@@ -57,22 +57,29 @@ PanelWindow {
         reveal: win.spReveal
         variant: 3
     }
+    PanelHud {    // cyberpunk counterpart
+        anchors.fill: parent
+        rx: pkPanel.x; ry: pkPanel.y; rw: pkPanel.width; rh: pkPanel.height
+        reveal: win.spReveal
+        variant: 3
+    }
 
     GlassPanel {
         id: pkPanel
+        cuts: [true, false, true, false]
         anchors.centerIn: parent
         width: 440
         height: col.implicitHeight + 36
         radius: Theme.radius
         glow: 0.6
         // quick scale + fade in/out from the centre
-        scale: Theme.steampunk ? 0.9 + 0.1 * Theme.easeOutBack(Math.min(1, win.spReveal * 1.6), 1.5)
+        scale: Theme.decorated ? 0.9 + 0.1 * Theme.easeOutBack(Math.min(1, win.spReveal * 1.6), 1.5)
                                : (win.open ? 1 : 0.88)
-        opacity: Theme.steampunk ? Math.min(1, win.spReveal * 3) : (win.open ? 1 : 0)
+        opacity: Theme.decorated ? Math.min(1, win.spReveal * 3) : (win.open ? 1 : 0)
         // springy pop on open, quick tuck on close
-        Behavior on scale { enabled: !Theme.steampunk; NumberAnimation { duration: win.open ? Theme.animSlow : Theme.animMed
+        Behavior on scale { enabled: !Theme.decorated; NumberAnimation { duration: win.open ? Theme.animSlow : Theme.animMed
                                                 easing.type: win.open ? Easing.OutBack : Easing.InCubic; easing.overshoot: 1.5 } }
-        Behavior on opacity { enabled: !Theme.steampunk; NumberAnimation { duration: Theme.animFast } }
+        Behavior on opacity { enabled: !Theme.decorated; NumberAnimation { duration: Theme.animFast } }
         Behavior on height { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
         MouseArea { anchors.fill: parent }
 
@@ -111,7 +118,7 @@ PanelWindow {
             }
 
             // password / response field
-            Rectangle {
+            CyberRect {
                 width: parent.width
                 height: 38
                 radius: Theme.radiusSm
@@ -155,7 +162,7 @@ PanelWindow {
                 anchors.right: parent.right
                 spacing: 10
 
-                Rectangle {
+                CyberRect {
                     width: 92; height: 34; radius: Theme.steampunk ? 17 : 9
                     color: Theme.steampunk ? Theme.alpha("#000000", cancelMa.containsMouse ? 0.12 : 0.22)
                          : (cancelMa.containsMouse ? Theme.alpha(Theme.current.hover, 0.8) : Theme.alpha(Theme.current.hover, 0.5))
@@ -164,7 +171,7 @@ PanelWindow {
                     Text { anchors.centerIn: parent; text: "Cancel"; color: Theme.text; font.pixelSize: Theme.fontSize - 2 }
                     MouseArea { id: cancelMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Polkit.cancel() }
                 }
-                Rectangle {
+                CyberRect {
                     id: okBtn
                     width: 118; height: 34; radius: Theme.steampunk ? 17 : 9
                     color: Theme.steampunk ? Theme.alpha(Theme.accent, okMa.containsMouse ? 0.32 : 0.2)
@@ -200,6 +207,17 @@ PanelWindow {
             rail: false
             build: win.spReveal
             spin: win.spReveal * 160
+        }
+        // cyberpunk: the HUD frame traces itself round with the reveal
+        CyberFrame {
+            anchors.fill: parent
+            anchors.margins: 6
+            cut: Theme.cyberCut - 2.5
+            color: Theme.alpha(Theme.accent, 0.75)
+            cuts: [true, false, true, false]
+            corners: ["none", "wedge", "none", "wedge"]
+            bar: "top"; tab: "none"; rail: false
+            build: win.spReveal
         }
     }
 }

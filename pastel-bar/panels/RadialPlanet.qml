@@ -322,6 +322,19 @@ Item {
         rotation: planet.spin * 0.5
         Behavior on module { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutCubic } }
     }
+    // cyberpunk: the planet sits in a turning segmented HUD ring, its arc full
+    // when connected
+    HudRing {
+        visible: Theme.cyberpunk
+        size: planet.centerR * 2 + 22
+        x: planet.cx - width / 2
+        y: planet.cy - height / 2
+        segments: 6
+        speed: 10
+        value: planet.connected ? 1 : (planet.powered ? 0.25 : 0)
+        color: Theme.alpha(Theme.accent, planet.connected ? 0.9 : 0.55)
+        running: planet.visible
+    }
     Rectangle {
         id: centerDisc
         x: planet.cx - width / 2
@@ -402,7 +415,7 @@ Item {
     Repeater {
         id: chipsRepeater
         model: (planet.resultsActive || planet.codecSplit) ? [] : planet.chips
-        delegate: Rectangle {
+        delegate: CyberRect {
             id: chip
             required property var modelData
             required property int index
@@ -460,7 +473,7 @@ Item {
     Repeater {
         id: codecRepeater
         model: planet.codecOptions
-        delegate: Rectangle {
+        delegate: CyberRect {
             id: opt
             required property var modelData
             required property int index
@@ -519,7 +532,7 @@ Item {
     Repeater {
         id: resultsRepeater
         model: planet.resultsActive ? planet.filteredResults : []
-        delegate: Rectangle {
+        delegate: CyberRect {
             id: res
             required property var modelData
             readonly property int slot: modelData.slot

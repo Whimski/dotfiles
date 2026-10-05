@@ -24,7 +24,12 @@ Singleton {
     property alias launcherIcons: adapter.launcherIcons  // show app icons in the launcher list
     property alias launcherSearchFirst: adapter.launcherSearchFirst  // hide app list until a query is typed
     property alias notifToastContent: adapter.notifToastContent  // show body text in the idle toast
-    property alias steampunk: adapter.steampunk          // clockwork/brass dressing everywhere (off = plain glass)
+    property alias steampunk: adapter.steampunk          // legacy: only read while `decor` is unset (see Theme.decor)
+    // Shell-wide dressing: "none" (plain glass), "steampunk" or "cyberpunk". One
+    // string rather than a bool per style, so switching style is a single write
+    // (two scalar writes would hit the FileView reload race) and the styles stay
+    // mutually exclusive. "" = never set: falls back to the old `steampunk` bool.
+    property alias decor: adapter.decor
     // Apps the pill must not sit on top of: when one of these is the active window
     // on a monitor, that monitor's bar shows no pill at all — including a
     // hold-to-expand, which is otherwise allowed to override even fullscreen. The
@@ -179,6 +184,7 @@ Singleton {
             property bool launcherSearchFirst: false
             property bool notifToastContent: true
             property bool steampunk: false
+            property string decor: ""
             property var pillYieldApps: []
             property var mediaBlacklist: ["firefox"]
             property string wallpaper: ""

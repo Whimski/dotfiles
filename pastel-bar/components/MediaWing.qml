@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Shapes
 import QtQuick.Effects
 import ".."
 import "../services"
@@ -18,6 +19,7 @@ import "../services"
 // the wing's own rows stagger in off it via Theme.stagger.
 GlassPanel {
     id: wing
+    cuts: [false, true, false, true]
     property real reveal: 0
     readonly property bool live: reveal > 0.01
 
@@ -101,13 +103,25 @@ GlassPanel {
         anchors.fill: parent
         layer.enabled: true
         visible: false
-        Rectangle { anchors.fill: parent; radius: wing.radius }
+        Rectangle { anchors.fill: parent; radius: wing.radius; visible: !Theme.cyberpunk }
+        Chamfer { anchors.fill: parent; visible: Theme.cyberpunk; cuts: wing.cuts }
     }
     // darkening scrim — always on, heavier over album art
     Rectangle {
         anchors.fill: parent
         radius: wing.radius
+        visible: !Theme.cyberpunk
         gradient: Gradient {
+            GradientStop { position: 0.0; color: Theme.alpha("#000000", wing.hasArt ? 0.45 : 0.4) }
+            GradientStop { position: 1.0; color: Theme.alpha("#000000", wing.hasArt ? 0.75 : 0.6) }
+        }
+    }
+    Chamfer {    // cyberpunk: the same scrim, cut to the panel's chamfer
+        anchors.fill: parent
+        visible: Theme.cyberpunk
+        cuts: wing.cuts
+        gradient: LinearGradient {
+            x1: 0; y1: 0; x2: 0; y2: wing.height
             GradientStop { position: 0.0; color: Theme.alpha("#000000", wing.hasArt ? 0.45 : 0.4) }
             GradientStop { position: 1.0; color: Theme.alpha("#000000", wing.hasArt ? 0.75 : 0.6) }
         }
@@ -129,6 +143,17 @@ GlassPanel {
         corners: ["cross", "cross", "cog", "cog"]
         plate: "bottom"
         spin: wing.cogSpin + wing.reveal * 120
+        build: wing.reveal
+    }
+    // cyberpunk: the HUD frame traces itself round with the reveal
+    CyberFrame {
+        anchors.fill: parent
+        anchors.margins: 11
+        cut: Theme.cyberCut - 4.6
+        color: Theme.alpha(Theme.accent, 0.75)
+        cuts: [false, true, false, true]
+        corners: ["none", "slash", "none", "wedge"]
+        bar: "none"; tab: "bottom"; rail: false
         build: wing.reveal
     }
 
@@ -329,6 +354,7 @@ GlassPanel {
                 Rectangle {
                     id: sleeveFill
                     anchors.fill: parent
+                    visible: !Theme.cyberpunk
                     radius: wing.sp ? 8 : Theme.radius
                     gradient: Gradient {
                         GradientStop { position: 0.0; color: Theme.accent }
@@ -344,13 +370,37 @@ GlassPanel {
                     }
                     IconGlyph { anchors.centerIn: parent; name: "headphones"; size: 54; color: Theme.alpha("#ffffff", 0.85); visible: !wing.hasArt }
                 }
+                Chamfer {    // cyberpunk: the same sleeve, chamfered and flat
+                    anchors.fill: parent
+                    visible: Theme.cyberpunk
+                    cut: 18
+                    cuts: [true, false, true, false]
+                    gradient: LinearGradient {
+                        x1: 0; y1: 0; x2: 0; y2: sleeve.height
+                        GradientStop { position: 0.0; color: Theme.accent }
+                        GradientStop { position: 1.0; color: Qt.darker(Theme.accent, 1.5) }
+                    }
+                    IconGlyph { anchors.centerIn: parent; name: "headphones"; size: 54; color: Theme.alpha("#ffffff", 0.85); visible: !wing.hasArt }
+                }
                 Image { id: coverArt; anchors.fill: parent; source: Media.artUrl; fillMode: Image.PreserveAspectCrop; visible: false }
                 MultiEffect { anchors.fill: parent; source: coverArt; visible: wing.hasArt; maskEnabled: true; maskSource: coverMask }
                 Item { id: coverMask; anchors.fill: parent; layer.enabled: true; visible: false
-                    Rectangle { anchors.fill: parent; radius: wing.sp ? 8 : Theme.radius } }
+                    Rectangle { anchors.fill: parent; radius: wing.sp ? 8 : Theme.radius; visible: !Theme.cyberpunk }
+                    Chamfer { anchors.fill: parent; visible: Theme.cyberpunk; cut: 18; cuts: [true, false, true, false] } }
+                CyberFrame {
+                    anchors.fill: parent
+                    anchors.margins: -7
+                    cut: 21
+                    cuts: [true, false, true, false]
+                    color: Theme.alpha(Theme.accent, 0.6)
+                    corners: ["bracket", "none", "bracket", "none"]
+                    rail: false
+                    build: wing._stage(2)
+                }
                 // glossy edge
                 Rectangle {
                     anchors.fill: parent
+                    visible: !Theme.cyberpunk
                     radius: wing.sp ? 8 : Theme.radius
                     color: "transparent"
                     border.width: 1
@@ -360,7 +410,8 @@ GlassPanel {
         }
 
         BrassDivider {
-            visible: wing.sp
+            visible: wing.sp || Theme.cyberpunk
+            cyber: "bar"
             width: parent.width
             build: wing._stage(3)
             color: Theme.alpha(wing.brass, 0.75)
@@ -410,13 +461,13 @@ GlassPanel {
                     id: track
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width
-                    height: 6
-                    radius: 3
+                    height: Theme.cyberpunk ? 4 : 6
+                    radius: Theme.cyberpunk ? 0 : 3
                     color: Theme.alpha("#000000", 0.35)
                     border.width: 1; border.color: Theme.alpha(wing.brass, 0.55)
                     Rectangle {
                         x: 1; y: 1
-                        height: parent.height - 2; radius: height / 2
+                        height: parent.height - 2; radius: Theme.cyberpunk ? 0 : height / 2
                         width: Math.max(0, (parent.width - 2) * seek.frac)
                         gradient: Gradient {
                             GradientStop { position: 0.0; color: wing.brassHi }
@@ -440,7 +491,8 @@ GlassPanel {
                     visible: !wing.sp
                     anchors.verticalCenter: parent.verticalCenter
                     x: seek.width * seek.frac - width / 2
-                    width: 12; height: 12; radius: 6
+                    width: 12; height: 12; radius: Theme.cyberpunk ? 1 : 6
+                    rotation: Theme.cyberpunk ? 45 : 0    // cyberpunk: a diamond
                     color: wing.brassHi
                     scale: seek.hot ? 1.25 : 1
                     Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutBack } }
@@ -529,8 +581,20 @@ GlassPanel {
                         onTriggered: collar.spin = (collar.spin + frameTime * 30) % 360
                     }
                 }
+                Chamfer {    // cyberpunk: chamfered instead of round
+                    anchors.fill: parent
+                    visible: Theme.cyberpunk
+                    cut: b.size * 0.26
+                    cuts: [true, false, true, false]
+                    gradient: LinearGradient {
+                        x1: 0; y1: 0; x2: 0; y2: b.size
+                        GradientStop { position: 0.0; color: b.primary ? wing.brassHi : Theme.alpha(wing.brass, bma.containsMouse ? 0.3 : 0.12) }
+                        GradientStop { position: 1.0; color: b.primary ? wing.brass : Theme.alpha(wing.brassLo, bma.containsMouse ? 0.3 : 0.12) }
+                    }
+                }
                 Rectangle {
                     anchors.fill: parent
+                    visible: !Theme.cyberpunk
                     radius: width / 2
                     border.width: 0
                     border.color: Theme.alpha(wing.brass, bma.containsMouse ? 0.95 : 0.65)
@@ -582,11 +646,21 @@ GlassPanel {
                     visible: !wing.sp
                     anchors.centerIn: parent
                     width: 40; height: 40; radius: 20
-                    color: Theme.alpha(wing.brass, wma.containsMouse ? 0.3 : 0.12)
-                    border.width: 1.5
+                    color: Theme.cyberpunk ? "transparent" : Theme.alpha(wing.brass, wma.containsMouse ? 0.3 : 0.12)
+                    border.width: Theme.cyberpunk ? 0 : 1.5
                     border.color: Theme.alpha(wing.brass, wma.containsMouse ? 0.95 : 0.65)
                     scale: wma.pressed ? 0.86 : (wma.containsMouse ? 1.1 : 1)
                     Behavior on scale { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutBack; easing.overshoot: 2 } }
+                    Chamfer {
+                        anchors.fill: parent
+                        z: -1
+                        visible: Theme.cyberpunk
+                        cut: 11
+                        cuts: wb.pointLeft ? [true, false, false, true] : [false, true, true, false]
+                        color: Theme.alpha(wing.brass, wma.containsMouse ? 0.3 : 0.12)
+                        strokeWidth: 1.5
+                        strokeColor: Theme.alpha(wing.brass, wma.containsMouse ? 0.95 : 0.65)
+                    }
                     IconGlyph { anchors.centerIn: parent; name: wb.icon; size: 17; color: wing.fg }
                 }
                 anchors.verticalCenter: parent.verticalCenter
