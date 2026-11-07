@@ -56,6 +56,7 @@ hl.on("hyprland.start", function ()
   hl.exec_cmd("ie-r")
   hl.exec_cmd("/usr/lib/xdg-desktop-portal")
   hl.exec_cmd("/usr/lib/xdg-desktop-portal-hyprland")
+  hl.exec_cmd("~/.local/bin/pleamar --autostart")   -- ~/.config/pleamar/autostart (Whiskey)
 end)
 
 -- hl.monitor({ output = "DP-1",     mode = "1680x1050",  refresh = 60,  position = "0x0",    scale = 1 })
@@ -233,6 +234,43 @@ hl.window_rule({
     opacity = "1.0 1.0",
 })
 
+-- Kanata (MapleStory) black helper overlay: kanata-overlay-killer tags it and parks it on
+-- special:kanatahidden. The game pulls it back for a moment on every resize / fullscreen
+-- change, which flashed black; the tag keeps it invisible wherever it lands.
+-- hl.window_rule({
+--     name      = "kanata-overlay-invisible",
+--     match     = { tag = "kanataoverlay" },
+--     opacity   = "0.0 override 0.0 override",
+--     no_focus  = true,
+--     -- Wine copies the game's fullscreen state onto the overlay when it remaps (channel change); one
+--     -- fullscreen per workspace, so that unfullscreened MapleStory.
+--     suppress_event = "fullscreen maximize",
+--     no_blur   = true,
+--     no_shadow = true,
+-- })
+
+-- Kanata: the HD mod re-applies its saved 806x632 windowed layout on every stage change
+-- (Cash Shop / ITC / some maps), which made Wine drop fullscreen. Ignore the game's own
+-- fullscreen requests; SUPER+F is the only toggle. Only applies when the window opens.
+hl.window_rule({
+    name           = "kanata-keep-fullscreen",
+    match          = { class = "^steam_app_default$", initial_title = "^MapleStory$" },
+    suppress_event = "fullscreen",
+})
+
+-- Native Linux Kanata test client (~/KanLin/KanataLinux64/run.sh): its own fullscreen mode fails at
+-- startup (fullscreen-sync), so it runs windowed and Hyprland fullscreens it; the client scales.
+-- On map changes it re-requests its window state; if that lands as maximized (1918x1078 with the
+-- border) its resize-extent check aborts, so ignore its requests and drop the border.
+-- In-game resolution must be 1920x1080 (= the monitor) or that check fails anyway.
+hl.window_rule({
+    name           = "kanata-native-fullscreen",
+    match          = { class = "^Kanata$" },
+    fullscreen     = true,
+    suppress_event = "fullscreen maximize",
+    border_size    = 0,
+})
+
 -- ─────────────────────────────────────────────
 -- Notification
 -- ─────────────────────────────────────────────
@@ -292,11 +330,13 @@ hl.bind("XF86AudioNext",         hl.dsp.exec_cmd(ipc .. " media next"))
 -- nonConsuming: still pass Left Alt through to the focused app (games etc.) — a
 -- normal bind swallows the key. Needed on BOTH press and release, or the app sees
 -- Alt pressed but never released (stuck).
-hl.bind("ALT_L",                 hl.dsp.exec_cmd(ipc .. " bar expand"), { non_consuming = true })                    -- hold Left Alt to expand…
+-- The same Left Alt also calls Whiskey (the pleamar cat) to the mouse while held.
+local neko = "~/.local/bin/pleamar --say whiskey"
+hl.bind("ALT_L",                 hl.dsp.exec_cmd(ipc .. " bar expand & " .. neko .. " 'fact calling true'"), { non_consuming = true })                    -- hold Left Alt to expand…
 -- Collapse on Alt release. Bind it both with and without the ALT modmask: after an
 -- Alt+<key> combo the modmask state at release can differ, and a single variant misses it.
-hl.bind("ALT + ALT_L",           hl.dsp.exec_cmd(ipc .. " bar collapse"), { release = true, non_consuming = true })
-hl.bind("ALT_L",                 hl.dsp.exec_cmd(ipc .. " bar collapse"), { release = true, non_consuming = true })
+hl.bind("ALT + ALT_L",           hl.dsp.exec_cmd(ipc .. " bar collapse & " .. neko .. " 'fact calling false'"), { release = true, non_consuming = true })
+hl.bind("ALT_L",                 hl.dsp.exec_cmd(ipc .. " bar collapse & " .. neko .. " 'fact calling false'"), { release = true, non_consuming = true })
 hl.bind(mainMod .. " + C",       hl.dsp.exec_cmd(ipc .. " menu toggle cc"))                   -- control center
 hl.bind(mainMod .. " + O",       hl.dsp.exec_cmd(ipc .. " menu toggle settings"))             -- settings
 hl.bind(mainMod .. " + E",       hl.dsp.exec_cmd(ipc .. " menu toggle weather"))              -- weather
@@ -367,3 +407,6 @@ hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
 hl.bind(mainMod .. " + W", hl.dsp.layout("togglesplit"))
+
+-- Toggle the on-screen keyboard (wvkbd, trimmed layout built from ~/.local/src/wvkbd)
+hl.bind(mainMod .. " + G", hl.dsp.exec_cmd("~/.local/bin/osk-toggle"))

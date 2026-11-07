@@ -1,0 +1,13 @@
+//  A mint theme (#aaf0d1) on pastel-bar's dark neutrals.
+//  A scene `let` with the same name overrides any of these.
+library Palette {
+    let surface = #1f1f24
+    let panel   = #26262c
+    let hover   = #2c2c33
+    let ink     = #e8f7f0
+    let subtext = #97bfb0
+    let accent  = #aaf0d1
+    let accent2 = #3e7a65
+    let danger  = #f090b3
+    let mint    = #71d6ac
+}

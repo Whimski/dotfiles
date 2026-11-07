@@ -1,0 +1,4 @@
+# The sprites are from Last Tick's "catz" kittens pack: their license allows
+# using them here but not redistributing them, and this repo is public.
+# Copy a sheet into catz.png on each machine (see whiskey.plm).
+*.png

@@ -1,0 +1,267 @@
+language 0.9
+import "palette.plm"
+
+//  Whiskey: a small cat that lives on the screen. It wanders, naps, watches the
+//  mouse, and clicking it opens a bubble to chat with it (through Claude Code).
+//
+//  The surface is the whole monitor, but only the zones catch the mouse: the
+//  empty parts let clicks through to the windows below.
+scene Whiskey {
+    surface {
+        size: full, full; anchor: top; reserve: 0; level: top; screens: each max 3
+        keyboard: exclusive while menu
+    }
+
+    //  The chat is Claude Code (`claude -p`, signed in as the user: no API key),
+    //  one session per conversation, kept in this scene's folder (chat.json).
+    //  Hyprland says where the monitors and the mouse are, to walk across them.
+    permissions { run: "hyprctl monitors", "hyprctl cursorpos", "claude -p"; services: "files", "files.write" }
+
+    fact menu = false
+    fact thinking = false                  //  waiting for Claude's answer
+    fact calling = false                   //  Alt held: the cat comes to the mouse (Hyprland says)
+    text draft = ""                        //  what is being typed to the cat
+    model said max 64 { text: text; mine: bool }
+    fact asleep = false
+    //  The cat lives on the whole desktop, in the compositor's coordinates (the
+    //  monitors side by side). Each monitor has a copy of this surface, which
+    //  draws the cat moved by where its monitor is: the copy it is over shows it.
+    model mon max 4 { ox: number = -100000; oy: number = -100000; w: number = 0; h: number = 0 }   //  per copy, from the logic
+    fact ready = false      //  the monitors are known
+    fact gx = 2640          //  where the cat is heading, on the desktop (from the logic)
+    fact gy = 900
+
+    event send ->
+    event new_chat ->
+
+    let wash   = mix(surface, accent, 0.14)
+    measure title           //  the chat's name, so "thinking…" goes after it
+
+    //  ── The cat ────────────────────────────────────────────────────────────
+    //  Its pictures are catz.png, a sheet of the "catz" pack (Last Tick's
+    //  Premium Kittens, cat 11, a pastel calico): 32 × 32 frames,
+    //  11 a row, frame n at row n / 11 (the pack's "Frame indexes.png"). Every
+    //  sheet of the pack —colours, bows, hats— has this layout, so another one
+    //  copied over catz.png is another cat. Drawn 4×, its feet at 16, 25.
+    image cat = pixels "catz.png", 1408, 6784
+    let k = 4
+
+    fact facing = 0         //  0 left, 1 right: which way it last walked (from the logic)
+    fact mood = 0           //  stopped: 0 sit, 1 wash, 2 yawn, 3 lie, 4 meow (from the logic)
+    fact tick = 0           //  the clock of its little animations, only while one plays
+    fact held = false       //  picked up by the mouse
+    fact dragged = false    //  …and moved, so letting go is a drop, not a click
+    fact sx = 0             //  where it was when picked up
+    fact sy = 0
+    //  Where it is being carried to. On the monitor it was picked up on, the drag
+    //  says; past it, that monitor's copy hears no more of the mouse (only the
+    //  release), so the logic asks Hyprland where the mouse is instead.
+    fact hold_x = 0
+    fact hold_y = 0
+    prop carry.x = 0 ~70ms
+    prop carry.y = 0 ~70ms
+    follow carry.x = hold_x
+    follow carry.y = hold_y
+
+    //  Walking is a slow spring towards the goal; the steps come from the
+    //  distance travelled, so a cat standing still costs nothing.
+    prop cat.x = 2640 ~3200ms
+    prop cat.y = 900 ~3200ms
+    follow cat.x = gx
+    follow cat.y = gy
+
+    pose hop = 0
+
+    let walking = clamp((abs(vel(cat.x)) + abs(vel(cat.y))) / 30, 0, 1)
+    let napping = asleep and not menu
+    //  Eight ways to walk. The angle is in degrees, y down: 0 right, 90 down.
+    let heading = atan2(vel(cat.y), vel(cat.x))
+    let way     = mod(round(heading / 45), 8)
+    let stride  = cat.x * cos(heading) + cat.y * sin(heading)
+    //  right, right-down, down, left-down, left, left-up, up, right-up
+    let walk_row   = pick(way, 6, 9, 4, 8, 7, 11, 5, 10)
+    let walk_count = pick(way, 8, 6, 4, 6, 8, 6, 4, 6)
+    let frame = if(held, 575,
+                if(hop > 1, 574,
+                if(walking > 0.15, walk_row * 11 + mod(floor(stride / 14), walk_count),
+                if(napping, 176 + facing * 11 + mod(floor(tick / 8), 2),
+                pick(mood, 0, 396 + mod(tick, 9), 352 + mod(tick, 8), 33 + facing, 308 + mod(tick, 3))))))
+    //  The monitor the cat is heading to (from the logic): used for the bubble
+    //  only while the cat is over no monitor at all (carried over a gap).
+    fact gox = 0
+    fact goy = 0
+    fact gow = 1920
+    fact goh = 1080
+    //  The whole desktop's box (from the logic): how far the cat can be carried.
+    fact bx0 = 0
+    fact by0 = 0
+    fact bx1 = 4680
+    fact by1 = 1920
+    let X = if(held, carry.x, cat.x)
+    let FY = if(held, carry.y, cat.y)      //  its feet
+    let Y = FY - hop - 10 * held
+
+    //  The monitor its feet are on right now, so the bubble goes with it while
+    //  it walks or is carried. Monitor 0..3 by place (the same for every copy).
+    let on0 = X >= mon[0].ox and X < mon[0].ox + mon[0].w and FY >= mon[0].oy and FY < mon[0].oy + mon[0].h
+    let on1 = X >= mon[1].ox and X < mon[1].ox + mon[1].w and FY >= mon[1].oy and FY < mon[1].oy + mon[1].h
+    let on2 = X >= mon[2].ox and X < mon[2].ox + mon[2].w and FY >= mon[2].oy and FY < mon[2].oy + mon[2].h
+    let on3 = X >= mon[3].ox and X < mon[3].ox + mon[3].w and FY >= mon[3].oy and FY < mon[3].oy + mon[3].h
+    let hx = if(on0, mon[0].ox, if(on1, mon[1].ox, if(on2, mon[2].ox, if(on3, mon[3].ox, gox))))
+    let hy = if(on0, mon[0].oy, if(on1, mon[1].oy, if(on2, mon[2].oy, if(on3, mon[3].oy, goy))))
+    let hw = if(on0, mon[0].w, if(on1, mon[1].w, if(on2, mon[2].w, if(on3, mon[3].w, gow))))
+    let hh = if(on0, mon[0].h, if(on1, mon[1].h, if(on2, mon[2].h, if(on3, mon[3].h, goh))))
+
+    every 125ms while walking < 0.15 and (napping or mood == 1 or mood == 2 or mood == 4) { tick = mod(tick + 1, 72) }
+
+    gesture joy asked {
+        170ms out_quad hold 200ms { hop: 16 }
+        150ms in_quad             { hop: 0 }
+        110ms out_back            { hop: 3 }
+        90ms
+    }
+
+    //  While the menu is open, a click anywhere else closes it. Declared before
+    //  everything else, so the cat and the menu still get their own clicks.
+    zone box away { from: 0, 0; size: screen.width, screen.height; show: menu; label: "Close" }
+
+    //  Each copy draws the cat less where its own monitor is (`mon[screen.index]`,
+    //  read per copy in what is drawn), so it shows on the monitor it is over and
+    //  on both while it crosses from one to the next.
+    image cat {
+        at: X - 16 * k - mon.$screen.ox, Y - 25 * k - mon.$screen.oy
+        size: 32 * k, 32 * k; cell: frame, 11, 53
+        show: ready and X > mon.$screen.ox - 70 and X < mon.$screen.ox + screen.width + 70 and Y > mon.$screen.oy - 20 and Y < mon.$screen.oy + screen.height + 120
+    }
+
+    zone box catzone {
+        from: X - 40 - mon.$screen.ox, Y - 76 - mon.$screen.oy; size: 80, 80; corner: 24; cursor: pointer
+        label: "Whiskey: chat"; role: button
+        show: ready and X > mon.$screen.ox - 40 and X < mon.$screen.ox + screen.width + 40 and Y > mon.$screen.oy and Y < mon.$screen.oy + screen.height + 76
+    }
+
+    //  ── The bubble ─────────────────────────────────────────────────────────
+    //  `top` is the most it goes to: 2 is 200 %, with a mark where 100 % is.
+    //  The bubble is drawn on the cat's monitor only, so in that monitor's own
+    //  coordinates: the cat less where the monitor is.
+    let lx = X - hx
+    let ly = Y - hy
+    //  It opens on the side of the cat with more room.
+    let side = if(lx > hw / 2, -1, 1)
+    let mw = 312
+    //  Its height, worked out from what it holds: a layout's measured height is
+    //  one copy's, and with a copy per monitor that may be a hidden one.
+    let mh = 32 + 30 + 10 + 300 + 10 + 40
+    let mx = clamp(if(side < 0, lx - 74 - mw, lx + 74), 16, hw - mw - 16)
+    let my = clamp(ly - 50 - mh / 2, 24, hh - mh - 52)   //  room for the shadow below
+
+    prop pop = 0 ~lively
+    follow pop = if(menu, 1, 0)
+
+    group {
+        //  only on the copy of the monitor the cat is on
+        show: abs(mon.$screen.ox - hx) < 1 and abs(mon.$screen.oy - hy) < 1
+
+    group {
+        pivot: if(side < 0, mx + mw, mx), ly - 50
+        scale: 0.85 + 0.15 * pop
+        opacity: clamp(pop, 0, 1)
+        show: pop > 0.02
+
+        //  a thought-bubble trail from the cat to the card
+        ellipse { at: lx + side * 34, ly - 64; radius: 4; color: accent2; opacity: 90% }
+        ellipse { at: lx + side * 50, ly - 72; radius: 6; color: accent2; opacity: 90% }
+
+        body {
+            gradient: mx, my to mx + mw, my + mh, wash, surface
+            rim: 7%
+            shadow: 0, 14, 34, 40%
+            box { from: mx, my; size: mw, mh; corner: 24 }
+        }
+
+        column items {
+            at: mx + 16, my + 16; gap: 12
+
+            column { gap: 10
+                group {
+                    size: 280, 30
+                    text "Whiskey" { at: 2, 15; anchor: left center; size: 17; weight: 600; color: ink; measure: title }
+                    text "thinking…" { at: 2 + title.width + 10, 16; anchor: left center; size: 11; color: subtext; show: thinking }
+                    zone box newchat { at: 266, 15; size: 30, 30; corner: 15; cursor: pointer; label: "New chat" }
+                    box { at: 266, 15; size: 30, 30; corner: 15; color: hover; opacity: newchat.hover }
+                    text "󰐕" { at: 266, 15; anchor: center; size: 17; family: "JetBrainsMono Nerd Font Mono"; color: subtext }
+                }
+                column log { view: 280, 300; stick: end; gap: 8
+                    text "Mrrp? Say something." { size: 13; color: subtext; show: said.count == 0 }
+                    for m in said {
+                        row { padding: 10; corner: 14; fill: if(m.mine, accent2, panel); place: if(m.mine, 1, 0)
+                            text m.text { width: 214; tight: true; size: 13; color: ink; markdown: true; lines: 0; selectable: true }
+                        }
+                    }
+                }
+                group {
+                    size: 280, 40
+                    box { from: 0, 0; size: 280, 40; corner: 14; color: panel }
+                    input draft { at: 14, 11; width: 252; size: 13; color: ink; placeholder: "Talk to Whiskey… (Enter sends)"; selection: accent2 }
+                }
+            }
+
+        }
+    }
+    }
+
+    //  ── Rules ──────────────────────────────────────────────────────────────
+    on change ready { cat.x: gx ~0ms; cat.y: gy ~0ms }
+    on press away       { menu = false; blur }
+    on press right away { menu = false; blur }
+    on key Escape       { menu = false; blur }
+
+    on press newchat    { emit new_chat; focus draft }
+    on submit draft     { emit send }
+
+    //  Pressing picks it up (and wakes it); dragging carries it, with the mouse
+    //  holding it where it was grabbed; letting go puts it down there.
+    on press catzone {
+        held = true
+        dragged = false
+        sx = cat.x
+        sy = cat.y
+        gx = cat.x
+        gy = cat.y
+        hold_x = cat.x
+        hold_y = cat.y
+        carry.x: cat.x ~0ms
+        carry.y: cat.y ~0ms
+        asleep = false
+    }
+    on drag catzone {
+        dragged = dragged or abs(drag.dx) + abs(drag.dy) > 6
+        hold_x = clamp(sx + drag.dx, bx0 + 40, bx1 - 40)
+        hold_y = clamp(sy + drag.dy, by0 + 110, by1 - 20)
+    }
+    //  Let go without moving it: a click, which opens the chat or closes the bubble.
+    on release catzone while not dragged and not menu {
+        held = false
+        menu = true
+        play joy
+        focus draft
+    }
+    on release catzone while not dragged and menu {
+        held = false
+        menu = false
+        blur
+    }
+    //  Let go after carrying it: it is put down there. Dropped where no monitor
+    //  is, the logic walks it back onto the nearest one.
+    on release catzone while dragged {
+        cat.x: hold_x ~0ms
+        cat.y: hold_y ~0ms
+        gx = hold_x
+        gy = hold_y
+        held = false
+        dragged = false
+    }
+    //  Right click opens and closes the chat too (a panel that never uses the
+    //  right button is closed by it, pleamar's emergency exit).
+    on press right catzone { toggle menu }
+}

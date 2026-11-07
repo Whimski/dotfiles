@@ -1,0 +1,7 @@
+# What starts with the desktop, one command a line, run with `sh -c`:
+# `pleamar --autostart` starts it all (on Hyprland it is in hyprland.lua's start).
+# Your scenes (bars, widgets, apps) go in ~/.config/pleamar/shells.
+
+# Whiskey, the desktop cat. It starts in its data folder, which is where its
+# Claude Code chats are kept (claude --resume works from there).
+cd ~/.local/share/pleamar/whiskey && exec ~/.local/bin/pleamar --scene ~/.config/pleamar/shells/whiskey/whiskey.plm --no-hud

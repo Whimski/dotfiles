@@ -118,3 +118,8 @@ source = ".zshrc"
 dest = "~/.zshrc"
 source2 = ".zsh"
 dest2 = "~/.zsh"
+
+[[config]]
+name = "pleamar"
+source = ".config/pleamar"
+dest = "~/.config/pleamar"
