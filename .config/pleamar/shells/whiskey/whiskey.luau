@@ -228,7 +228,16 @@ local PERSONA = "You are Whiskey, a small pixel-art calico cat who lives on Tobi
 local MODEL, EFFORT = "claude-opus-5-5", "medium"
 
 --  Her own notes, read before every message so an edit to the file counts at once.
+--  Claude Code keeps a session's first instructions when it is resumed (tested:
+--  --append-system-prompt on --resume is ignored), so a chat that started before
+--  the notes existed, or before they changed, is given them once inside the next
+--  message instead. `chat.seen` is the fingerprint of what it was last given.
 local PREFS_FILE = "preferences.md"
+local function fingerprint(t)
+    local h = 5381
+    for i = 1, #t do h = (h * 33 + string.byte(t, i)) % 4294967296 end
+    return #t .. ":" .. h
+end
 local function instructions()
     local prefs = sys.ask("files.read", PREFS_FILE)
     if type(prefs) == "string" and prefs ~= "" then
@@ -276,7 +285,7 @@ end
 local function load_chat(tries)
     local saved = sys.ask("files.read", CHAT_FILE, "json")
     if type(saved) == "table" and saved.session then
-        chat = { session = saved.session, started = saved.started == true, said = saved.said or {} }
+        chat = { session = saved.session, started = saved.started == true, said = saved.said or {}, seen = saved.seen }
         show_chat()
     elseif not sys.ask("files.exists", CHAT_FILE) then
         chat = { session = uuid(), started = false, said = {} }
@@ -309,8 +318,17 @@ on("send", function()
     save_chat()
     fact.thinking = true
     local session = chat.session
+    local now = instructions()
+    local seen = fingerprint(now)
+    local input = msg
+    if chat.started and chat.seen ~= seen then
+        -- a resumed chat ignores new instructions: hand them over once, with this message
+        input = "[Whiskey's instructions, new or updated since this chat began. They replace "
+            .. "any earlier ones; follow them from now on. This part was not typed by Tobi.]\n\n"
+            .. now .. "\n\n[End of instructions. Tobi says:]\n\n" .. msg
+    end
     local args = { "-p", "--output-format", "json", "--tools", "", "--model", MODEL, "--effort", EFFORT,
-                   "--append-system-prompt", instructions(),
+                   "--append-system-prompt", now,
                    chat.started and "--resume" or "--session-id", session }
     run("claude", args, function(out, code)
         fact.thinking = false
@@ -320,6 +338,7 @@ on("send", function()
         if ok and type(reply) == "table" and reply.result and not reply.is_error then
             answer = reply.result
             chat.started = true
+            chat.seen = seen
         else
             answer = "*(Whiskey couldn't reach Claude"
                 .. ((ok and type(reply) == "table" and reply.result) and (": " .. tostring(reply.result)) or ("; exit " .. tostring(code)))
@@ -329,7 +348,7 @@ on("send", function()
         table.insert(chat.said, { text = answer, mine = false })
         show_chat()
         save_chat()
-    end, { input = msg, errors = false })
+    end, { input = input, errors = false })
 end)
 
 --  ── Called with Alt ─────────────────────────────────────────────────────────
