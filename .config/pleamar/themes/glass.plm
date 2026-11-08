@@ -1,0 +1,51 @@
+// Glass — the floating liquid-glass look (pastel-bar's), Mint dark.
+// Every shell imports ~/.config/pleamar/theme.plm, which is a copy of the
+// theme in use; Settings → Wallpaper & Style → Style copies one of these over it.
+library Theme {
+    // colours (pastel-bar's Mint, dark)
+    let panel     = #26262c
+    let edge      = #2a3d34
+    let accent    = #71d6ac
+    let accent_lo = #4f9a7b    // where accent gradients start
+    let onacc     = #14261e    // text on an accent fill
+    let ink       = #e2f4ec
+    let subink    = #93bcab
+    let danger    = #f094aa
+    let hover     = #2c2c33
+    let ground    = #1f2029    // behind a screen with no wallpaper
+    let field     = #1f1f24    // inputs, inner cards
+    let knob      = #f4fbf8    // the ring round a slider's knob
+
+    // colours for things of their own (each page, each tile)
+    let col_blue   = #71d6ac
+    let col_pink   = #71d6ac
+    let col_green  = #71d6ac
+    let col_yellow = #71d6ac
+    let col_violet = #71d6ac
+
+    // shape
+    let rk      = 1        // how round corners are (1 = as drawn, 0 = square)
+    let glassy  = 1        // frosted glass (1) or solid panels (0)
+    let line    = 1        // outline thickness
+    let sh_x    = 0        // shadows: sideways offset
+    let sh_k    = 1        // shadows: soft (1) …
+    let sh_color = #000000   // shadow colour
+    let sh_a    = 1        // shadow strength (times what each one asks)
+    let sh_min  = 0        // shadow blur at least this (a hard one still needs 1)
+    let sh_hard = 0        // … or a hard block this far down (with sh_k 0)
+
+
+    // glows behind cards (themes/glow.wgsl)
+    shader glowblob = file "themes/glow.wgsl"
+    let glow_k    = 0        // how strong (0: none)
+    let glow_a    = #ff7eb3  // top-right blob
+    let glow_b    = #6ea8ff  // bottom-left blob
+
+    // a soft light drifting inside the big cards (themes/aurora.wgsl)
+    shader aurora = file "themes/aurora.wgsl"
+    let aur_k     = 0        // how strong (0: none)
+
+    // type
+    text face = ""             // the system's sans
+    text mono = "monospace"
+}

@@ -119,12 +119,75 @@ on("open_settings", function(p)
     else sys.call("say", "settings", "emit open_page " .. p) end
 end)
 
--- music: the position is carried on here, once a second, while it plays
+-- music: only music players — a browser (a video, a tab) is left out
+local BROWSERS = { "firefox", "chromium", "chrome", "brave", "zen", "vivaldi",
+                   "edge", "opera", "librewolf", "floorp", "plasma-browser" }
+local function is_browser(s)
+    s = string.lower(s or "")
+    for _, b in ipairs(BROWSERS) do
+        if string.find(s, b, 1, true) then return true end
+    end
+    return false
+end
+
+-- the cover: downloaded when it is a web link, and its two main colours read
+local art_for = nil
+local function cover(url)
+    if url == art_for then return end
+    art_for = url
+    local function colours(path)
+        text.m_art = path
+        run("magick", { path, "-resize", "1x2!", "-modulate", "115,190",
+                        "-format", "%[hex:p{0,0}] %[hex:p{0,1}]", "info:" }, function(out, code)
+            if code ~= 0 or not out then return end
+            local k = 0
+            for hexc in out:gmatch("(%x%x%x%x%x%x)") do
+                if k > 1 then break end
+                fact["art_r." .. k] = tonumber(hexc:sub(1, 2), 16) / 255
+                fact["art_g." .. k] = tonumber(hexc:sub(3, 4), 16) / 255
+                fact["art_b." .. k] = tonumber(hexc:sub(5, 6), 16) / 255
+                k = k + 1
+            end
+        end)
+    end
+    if url == nil or url == "" then text.m_art = ""; return end
+    if url:match("^https?://") then
+        local file = "/tmp/pleamar-art/" .. (url:match("([%w_%-]+)[^/]*$") or "cover") .. ".jpg"
+        run("curl", { "-sL", "--create-dirs", "-o", file, url }, function(_, code)
+            if code == 0 and art_for == url then colours(file) end
+        end)
+    else
+        colours((url:gsub("^file://", "")))
+    end
+end
+
 local song = {}
+local pinned = nil
 sys.watch("media", function(m)
     song = m or {}
-    fact.has_media = (song.player or "") ~= ""
-    fact.elapsed = tonumber(song.position) or 0
+    -- what is reported is a browser: pin a music player instead, if there is one
+    if song.player ~= "" and is_browser(song.player) then
+        local pick = nil
+        for _, p in ipairs(song.players or {}) do
+            if not is_browser(p.id) and not is_browser(p.name) then
+                if pick == nil or (p.playing and not pick.playing) then pick = p end
+            end
+        end
+        if pick and pick.id ~= pinned then
+            pinned = pick.id
+            sys.call("media.choose", pick.id)
+            return
+        end
+    end
+    local music = (song.player or "") ~= "" and not is_browser(song.player)
+    fact.has_media = music
+    fact.m_playing = music and song.playing == true
+    fact.m_len = music and (tonumber(song.length) or 0) or 0
+    fact.m_seek = music and song.can_seek == true
+    text.m_title = music and (song.title or "") or ""
+    text.m_artist = music and (song.artist or "") or ""
+    fact.elapsed = music and (tonumber(song.position) or 0) or 0
+    cover(music and song.art or "")
 end)
 every(1000, function()
     if song.playing and fact.cc_open then
@@ -134,9 +197,14 @@ every(1000, function()
         fact.elapsed = e
     end
 end)
-on("media_prev", function() sys.call("media.previous") end)
-on("media_play", function() sys.call("media.toggle") end)
-on("media_next", function() sys.call("media.next") end)
+-- play/pause, next, previous: only ever a music player, never a browser
+-- (the media keys come here too: `pleamar --say pastel "emit media_play"`)
+local function music_call(what)
+    if fact.has_media then sys.call(what) end
+end
+on("media_prev", function() music_call("media.previous") end)
+on("media_play", function() music_call("media.toggle") end)
+on("media_next", function() music_call("media.next") end)
 on("seek_to", function(f)
     local len = tonumber(song.length) or 0
     if len > 0 and song.can_seek then

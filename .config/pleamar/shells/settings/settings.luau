@@ -332,8 +332,21 @@ end)
 local snd = {}
 local dev_list = {}     -- what each device row is
 local app_list = {}     -- what each app row is
+local routes = {}       -- app (sink-input) id → the output (sink) id it plays on
+local show_audio        -- (below)
 
-local function show_audio()
+local function read_routes()
+    run("pactl", { "-f", "json", "list", "sink-inputs" }, function(out, code)
+        if code ~= 0 or not out then return end
+        local ok, list = pcall(json.decode, out)
+        if not ok or type(list) ~= "table" then return end
+        routes = {}
+        for _, si in ipairs(list) do routes[si.index] = si.sink end
+        if show_audio then show_audio() end
+    end)
+end
+
+show_audio = function()
     fact.out_vol = tonumber(snd.volume) or 0
     fact.out_muted = snd.muted == true
     fact.in_vol = tonumber(snd.input) or 0
@@ -359,18 +372,64 @@ local function show_audio()
     local arows = {}
     for i, a in ipairs(app_list) do
         if i > 16 then break end
+        local out_name = "Default output"
+        for _, d in ipairs(snd.outputs or {}) do
+            if d.id == routes[a.id] then out_name = d.name or out_name end
+        end
         arows[i] = { name = a.name or a.binary or "App", title = a.title or "",
                      icon = a.icon or "application-x-executable-symbolic",
-                     volume = tonumber(a.volume) or 0, muted = a.muted == true }
+                     volume = tonumber(a.volume) or 0, muted = a.muted == true,
+                     out = out_name }
     end
     model.apps = arows
 end
 
+local seen_apps = ""
 sys.watch("audio", function(a)
     snd = a or {}
+    -- a new app or one gone: ask again where each plays
+    local ids = {}
+    for _, x in ipairs(snd.apps or {}) do table.insert(ids, tostring(x.id)) end
+    local key = table.concat(ids, ",")
+    if key ~= seen_apps then seen_apps = key; read_routes() end
     show_audio()
 end)
-on("fact:atab", show_audio)
+-- and now and then while the Apps tab is open (another program may move one)
+every(3000, function()
+    if fact.open and fact.page == "audio" and fact.atab == "apps" then read_routes() end
+end)
+
+-- an app's output menu
+local menu_sinks = {}
+on("out_menu", function(i)
+    if fact.menu_app == i then fact.menu_app = -1; return end
+    local a = app_list[i + 1]
+    if not a then return end
+    menu_sinks = snd.outputs or {}
+    local rows = {}
+    for k, d in ipairs(menu_sinks) do
+        if k > 8 then break end
+        rows[k] = { name = d.name or "?", here = d.id == routes[a.id] }
+    end
+    model.sinks = rows
+    fact.menu_app = i
+end)
+on("pick_sink", function(k)
+    local a = app_list[fact.menu_app + 1]
+    local d = menu_sinks[k + 1]
+    fact.menu_app = -1
+    if not a or not d then return end
+    run("pactl", { "move-sink-input", tostring(a.id), tostring(d.id) }, function()
+        read_routes()
+        -- and again a moment later: another program (Easy Effects, when it
+        -- processes every app) may take it straight back
+        after(700, read_routes)
+    end)
+end)
+on("fact:atab", function()
+    fact.menu_app = -1
+    show_audio()
+end)
 
 on("set_vol", function(v)
     if fact.atab == "ins" then sys.call("audio.input", v) else sys.call("audio.volume", v) end
@@ -481,4 +540,23 @@ on("submit:pair_in", function()
 end)
 on("pair_no", function()
     if bt.pairing_id ~= nil then sys.call("bluetooth.cancel", bt.pairing_id) end
+end)
+
+-- ---------------- Style: Glass or Midnight ----------------
+-- Every shell imports ~/.config/pleamar/theme.plm; choosing a style copies
+-- themes/<style>.plm over it, and each shell reloads itself with the new look.
+local PLEAMAR = "/home/tobi/.config/pleamar"
+local STYLES = { [0] = "glass", "midnight" }
+
+fact.style = (settings.style == "midnight") and "midnight" or "glass"
+
+on("set_style", function(k)
+    local name = STYLES[k]
+    if not name or name == fact.style then return end
+    run("cp", { PLEAMAR .. "/themes/" .. name .. ".plm", PLEAMAR .. "/theme.plm" }, function(_, code)
+        if code ~= 0 then return end
+        fact.style = name
+        settings.style = name
+        save()
+    end)
 end)
