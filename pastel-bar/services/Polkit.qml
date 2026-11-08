@@ -8,14 +8,16 @@ import Quickshell.Services.Polkit
 Singleton {
     id: root
 
-    readonly property var flow: agent.flow
-    readonly property bool active: agent.isActive
+    // The polkit agent moved to pleamar (~/.config/pleamar/shells/password):
+    // only one may run, so this one is switched off.
+    readonly property var flow: null
+    readonly property bool active: false
 
-    PolkitAgent {
-        id: agent
-        path: "/org/pastelbar/PolkitAgent"
-    }
+    // PolkitAgent {
+    //     id: agent
+    //     path: "/org/pastelbar/PolkitAgent"
+    // }
 
-    function submit(response) { if (agent.flow) agent.flow.submit(response) }
-    function cancel() { if (agent.flow) agent.flow.cancelAuthenticationRequest() }
+    function submit(response) { }
+    function cancel() { }
 }

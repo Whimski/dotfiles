@@ -18,7 +18,8 @@ require("windowrules")
 local mainMod     = "SUPER"
 local terminal    = "kitty"
 local fileManager = "pastel-fm"
-local menu        = "~/dotfiles/pastel-bar/bin/pastel-bar launcher toggle"
+local menu        = "~/.local/bin/pleamar --say launcher 'emit toggle'"   -- pleamar launcher (~/.config/pleamar/shells/launcher)
+-- local menu        = "~/dotfiles/pastel-bar/bin/pastel-bar launcher toggle"
 -- local menu        = "rofi -show drun"
 local ipc         = "~/dotfiles/pastel-bar/bin/pastel-bar"
 -- local ipc         = "qs -c noctalia-shell ipc call"
@@ -49,8 +50,9 @@ hl.on("hyprland.start", function ()
   hl.exec_cmd('sleep 1 && hyprctl setcursor "Catppuccin Mocha Lavender" 24')
   hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
   hl.exec_cmd("easyeffects --gapplication-service")
-  hl.exec_cmd("qs -p ~/dotfiles/pastel-bar")
-  hl.exec_cmd('bash ~/dotfiles/bin/keep_alive_bar.sh qs -p ~/dotfiles/pastel-bar')
+  -- pastel-bar is retired: its pieces now run in pleamar (~/.config/pleamar/autostart).
+  -- hl.exec_cmd("qs -p ~/dotfiles/pastel-bar")
+  -- hl.exec_cmd('bash ~/dotfiles/bin/keep_alive_bar.sh qs -p ~/dotfiles/pastel-bar')
   -- hl.exec_cmd("qs -c noctalia-shell")
   -- hl.exec_cmd('bash ~/dotfiles/bin/keep_alive_bar.sh qs -c noctalia-shell')
   hl.exec_cmd("ie-r")
@@ -315,13 +317,14 @@ hl.bind(mainMod .. " + R", hl.dsp.submap("resize"))
 end)
 
 -- Media / volume / brightness
-hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd(ipc .. " volume increase"))
-hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd(ipc .. " volume decrease"))
-hl.bind("XF86AudioMute",         hl.dsp.exec_cmd(ipc .. " volume mute"))
-hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd(ipc .. " brightness increase"))
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(ipc .. " brightness decrease"))
-hl.bind("XF86AudioPlay",         hl.dsp.exec_cmd(ipc .. " media playpause"))
-hl.bind("XF86AudioNext",         hl.dsp.exec_cmd(ipc .. " media next"))
+-- (straight to the system tools; the pleamar pill shows the OSD when they change)
+hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd("wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+"))
+hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"))
+hl.bind("XF86AudioMute",         hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"))
+hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl set 5%+"))
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl set 5%-"))
+hl.bind("XF86AudioPlay",         hl.dsp.exec_cmd("playerctl play-pause"))
+hl.bind("XF86AudioNext",         hl.dsp.exec_cmd("playerctl next"))
 
 -- pastelbar menus
 -- Holding LEFT ALT expands the pill; releasing it collapses. Bind the physical
@@ -332,18 +335,20 @@ hl.bind("XF86AudioNext",         hl.dsp.exec_cmd(ipc .. " media next"))
 -- Alt pressed but never released (stuck).
 -- The same Left Alt also calls Whiskey (the pleamar cat) to the mouse while held.
 local neko = "~/.local/bin/pleamar --say whiskey"
-hl.bind("ALT_L",                 hl.dsp.exec_cmd(ipc .. " bar expand & " .. neko .. " 'fact calling true'"), { non_consuming = true })                    -- hold Left Alt to expand…
+-- …and the pleamar copy of the pill (~/.config/pleamar/shells/pastel).
+local pill = "~/.local/bin/pleamar --say pastel"
+hl.bind("ALT_L",                 hl.dsp.exec_cmd(neko .. " 'fact calling true' & " .. pill .. " 'fact expanded true'"), { non_consuming = true })                    -- hold Left Alt to expand…
 -- Collapse on Alt release. Bind it both with and without the ALT modmask: after an
 -- Alt+<key> combo the modmask state at release can differ, and a single variant misses it.
-hl.bind("ALT + ALT_L",           hl.dsp.exec_cmd(ipc .. " bar collapse & " .. neko .. " 'fact calling false'"), { release = true, non_consuming = true })
-hl.bind("ALT_L",                 hl.dsp.exec_cmd(ipc .. " bar collapse & " .. neko .. " 'fact calling false'"), { release = true, non_consuming = true })
-hl.bind(mainMod .. " + C",       hl.dsp.exec_cmd(ipc .. " menu toggle cc"))                   -- control center
-hl.bind(mainMod .. " + O",       hl.dsp.exec_cmd(ipc .. " menu toggle settings"))             -- settings
-hl.bind(mainMod .. " + E",       hl.dsp.exec_cmd(ipc .. " menu toggle weather"))              -- weather
+hl.bind("ALT + ALT_L",           hl.dsp.exec_cmd(neko .. " 'fact calling false' & " .. pill .. " 'fact expanded false'"), { release = true, non_consuming = true })
+hl.bind("ALT_L",                 hl.dsp.exec_cmd(neko .. " 'fact calling false' & " .. pill .. " 'fact expanded false'"), { release = true, non_consuming = true })
+hl.bind(mainMod .. " + C",       hl.dsp.exec_cmd(pill .. " 'emit cc_toggle'"))  -- control center (pleamar)
+hl.bind(mainMod .. " + O",       hl.dsp.exec_cmd("~/.local/bin/pleamar --say settings 'emit toggle'"))  -- settings (pleamar)
+-- hl.bind(mainMod .. " + E",       hl.dsp.exec_cmd(ipc .. " menu toggle weather"))           -- weather (pastel-bar, retired)
 -- Clear all notifications: Left Alt + Left Shift. Key is the Shift_L keysym under the
 -- ALT modmask; non_consuming so Left Alt still reaches apps (and the hold-to-expand /
 -- collapse logic on ALT_L keeps working).
-hl.bind("ALT + SHIFT_L",         hl.dsp.exec_cmd(ipc .. " notif clear"), { non_consuming = true })  -- clear all notifications
+hl.bind("ALT + SHIFT_L",         hl.dsp.exec_cmd(pill .. " 'emit clear_notes'"), { non_consuming = true })  -- clear all notifications
 
 -- Media / volume / brightness
 -- hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd(ipc .. " volume increase"))

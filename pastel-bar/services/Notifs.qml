@@ -11,12 +11,15 @@ Singleton {
     id: root
 
     property bool dnd: false
-    readonly property var list: server.trackedNotifications ? server.trackedNotifications.values : []
+    readonly property var list: []    // was server.trackedNotifications (server moved to pleamar)
     readonly property int count: list.length
 
     // Emitted when a fresh notification arrives (drives the bar's idle toast).
     signal notified(var n)
 
+    // The notification server moved to pleamar (~/.config/pleamar/shells/pastel):
+    // only one may run. Kept here, switched off, until the control center moves too.
+    /*
     NotificationServer {
         id: server
         keepOnReload: false
@@ -31,6 +34,7 @@ Singleton {
             root.notified(n)
         }
     }
+    */
 
     // Invoke a notification's default action (what clicking the popup does), then
     // dismiss it. Falls back to the first action if there's no explicit "default".

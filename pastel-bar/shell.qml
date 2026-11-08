@@ -9,14 +9,14 @@ import "services"
 // pastelbar entry point. Wallpaper + Bar per screen; single-instance overlays;
 // and the IPC surface that the `pastelbar` CLI / Hyprland binds drive.
 ShellRoot {
-    // background wallpaper, one per screen
-    Variants { model: Quickshell.screens; delegate: Wallpaper {} }
+    // background wallpaper: moved to pleamar (~/.config/pleamar/shells/settings)
+    // Variants { model: Quickshell.screens; delegate: Wallpaper {} }
 
     // bar pill, one per screen
     Variants { model: Quickshell.screens; delegate: Bar {} }
 
     // shared overlays
-    ControlCenter {}
+    // ControlCenter {}    // moved to pleamar (~/.config/pleamar/shells/pastel, Super+C)
     TunePanel {}
     WeatherPanel {}
     Launcher {}
@@ -52,7 +52,7 @@ ShellRoot {
     // Hyprland (bind + bindr) for hold-to-expand; `toggle` for a sticky variant.
     IpcHandler {
         target: "bar"
-        function expand() { Ui.barExpanded = true }
+        function expand() { }    // the pill moved to pleamar (~/.config/pleamar/shells/pastel)
         function collapse() { Ui.barExpanded = false }
         function toggle() { Ui.barExpanded = !Ui.barExpanded }
     }

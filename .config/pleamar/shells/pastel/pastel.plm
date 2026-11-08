@@ -1,0 +1,530 @@
+language 0.6
+
+// pastel — pastel-bar's floating pill (~/dotfiles/pastel-bar/bar/Bar.qml),
+// plain glass look, Mint dark. Hidden at rest; it drops out of the top edge
+// while Left Alt is held (`fact expanded`) with the clock, date and battery,
+// and as a volume / brightness OSD when those change. It is also the
+// notification server: a toast drops in when one arrives, and the three newest
+// hang under the pill while it is open.
+//
+//   pleamar --say pastel "fact expanded true"    // show
+//   pleamar --say pastel "fact expanded false"   // hide
+
+scene Pastel {
+    surface {
+        size: 380, 280
+        anchor: top
+        margin: 0
+        screens: all
+        level: top, overlay while shown > 0.01 or toast_in > 0.01
+    }
+    permissions {
+        services: "clock", "audio", "audio.*", "battery", "brightness", "brightness.*", "notifications", "notifications.*", "network", "network.*", "bluetooth", "bluetooth.*", "media", "media.*", "say:settings"
+        run: "hyprctl monitors -j"
+    }
+
+    service clock as now { time: text = "--:--"; date: text }
+    service audio as vol { volume: number; muted: bool }
+    service battery as bat { present: bool; percent: number; charging: bool }
+    service brightness as lit { present: bool; level: number }
+    service network as net { wifi: bool; online: bool; kind: text; name: text }
+    service media as song { playing: bool; title: text; artist: text; length: number; can_seek: bool; art: text }
+
+    // ---- Mint dark (pastel-bar Theme.qml) ----
+    let panel   = #26262c
+    let edge    = #2a3d34
+    let accent  = #71d6ac
+    let ink     = #e2f4ec
+    let subink  = #93bcab
+    let danger  = #f094aa
+    let hover   = #2c2c33
+
+    // ---- state ----
+    fact expanded = false                          // held Left Alt (from Hyprland)
+    fact osd: none | volume | brightness = none
+    fact osd_n = 0                                 // bumped on each key press
+    fact ready = false                             // ignore the first reports
+    event nudge ->                                 // wheel over the pill → volume
+
+    // ---- notifications (the logic fills these) ----
+    model notes max 20 { title: text; body: text; app: text }  // newest first (the pill shows 3)
+    fact toast = false                             // the toast is out
+    fact toast_n = 0                               // bumped by each new one
+    fact toast_hover = false
+    text t_title = ""
+    text t_body = ""
+    event note_open ->                             // a card: its index (-1: the toast)
+    event note_close ->
+    event clear_notes ->                           // Left Alt + Left Shift
+    prop toast_in = 0 ~spring(300, 22)
+    prop list_in = 0 ~spring(300, 24)
+    follow toast_in = if(toast and not expanded, 1, 0)
+    follow list_in = if(expanded and osd == none and notes.count > 0, 1, 0)
+    image ic_bell = icon "notifications-symbolic", 13, 13
+    image ic_x = icon "window-close-symbolic", 12, 12
+
+    spring pop = 300, 20                           // ≈ OutBack: a little overshoot
+    spring drop = 260, 17
+
+    prop shown = 0 ~drop                           // the pill is on screen
+    prop bloom = 0 ~520ms                          // expanded content, staggered
+    prop osdin = 0 ~quick                          // OSD content
+    prop flare = 0 ~420ms                          // accent glow on the edge
+    prop kick = 0 ~spring(420, 12)                 // the OSD icon's pop
+    prop pw = 120 ~pop
+    prop ph = 30 ~pop
+    prop meter = 0 ~pop
+
+    follow shown = if(expanded or osd != none, 1, 0)
+    follow bloom = if(expanded and osd == none, 1, 0)
+    follow osdin = if(osd != none, 1, 0)
+
+    // ---- sizes (pastel-bar: expPad 18, expVPad 6, idlePad 14, fontSize 14) ----
+    measure tm
+    measure dm
+    measure pm
+    measure om
+    let has_bat = bat.present and bat.percent > 0
+    let low = has_bat and not bat.charging and bat.percent <= 20
+    let batw = 16 + 14 + 5 + pm.width
+    let expw = 36 + max(tm.width, dm.width) + if(has_bat, 12 + batw, 0)
+    let exph = 12 + tm.height + dm.height
+    let osdw = 28 + 17 + 10 + 130 + 10 + max(38, om.width)
+    let osdh = 12 + 22
+    follow pw = if(osd != none, osdw, expw)
+    follow ph = if(osd != none, osdh, exph)
+
+    let val = if(osd == brightness, lit.level, if(vol.muted, 0, vol.volume))
+    follow meter = 130 * clamp(val, 0, 1)
+
+    // ---- geometry ----
+    let cx = 190
+    let top = 8
+    let cy = top + ph / 2
+    let left = cx - pw / 2
+
+    // ---- the pill ----
+    group {
+        pivot: cx, top
+        scale: 0.55 + 0.45 * shown
+        opacity: clamp(shown * 1.6, 0, 1)
+
+        body {
+            color: panel
+            glass: 100%
+            lens: false
+            tint: 72%
+            border: 1, mix(edge, accent, 0.35 * flare)
+            shadow: 0, 8, 22, 34%
+            box { at: cx, cy; size: pw, ph; corner: ph / 2 }
+        }
+        // soft outer glow ring while it flares
+        box { at: cx, cy; size: pw + 2, ph + 2; corner: ph / 2 + 1; stroke: 2; color: accent; opacity: 18% * flare }
+
+        zone box pill { at: cx, cy; size: pw, ph; corner: ph / 2; label: "Pastel bar" }
+
+        // ---------- expanded: clock + date, battery ----------
+        group {
+            opacity: osd == none
+            // clock + date drop in first
+            group {
+                opacity: smooth(0, 0.6, bloom)
+                move: 0, (1 - smooth(0, 0.6, bloom)) * -10
+                let colx = left + 18 + max(tm.width, dm.width) / 2
+                text now.time { at: colx, top + 6 + tm.height / 2; anchor: center; size: 20; weight: 700; color: ink; measure: tm }
+                text now.date { at: colx, top + 6 + tm.height + dm.height / 2; anchor: center; size: 11; color: subink; measure: dm }
+            }
+            // battery pill unfurls from the right
+            group {
+                show: has_bat
+                opacity: smooth(0.3, 1, bloom)
+                move: (1 - smooth(0.3, 1, bloom)) * 28, 0
+                let bx = left + 18 + max(tm.width, dm.width) + 12
+                box { from: bx, cy - 13; size: batw, 26; corner: 13; color: if(low, danger, hover); opacity: if(low, 18%, 50%) }
+                box { from: bx, cy - 13; size: batw, 26; corner: 13; stroke: 1.4; color: danger; opacity: if(low, 80%, 0) }
+                // battery glyph
+                box { from: bx + 8, cy - 4.5; size: 12, 9; corner: 2; stroke: 1.4; color: if(low, danger, subink) }
+                box { from: bx + 20.5, cy - 2; size: 1.5, 4; corner: 0.75; color: if(low, danger, subink) }
+                box { from: bx + 9.8, cy - 2.7; size: max(0.5, 8.4 * bat.percent / 100), 5.4; corner: 1; color: if(low, danger, subink) }
+                text "{bat.percent}%" { at: bx + 27, cy; anchor: left center; size: 11; weight: 700; color: if(low, danger, ink); measure: pm }
+            }
+        }
+
+        // ---------- OSD: icon, meter, percent ----------
+        group {
+            opacity: osdin
+            let ix = left + 14 + 8.5
+            group {
+                pivot: ix, cy
+                scale: 1 + 0.3 * kick
+                rotate: if(osd == brightness, val * 180deg, 0)
+                image ico_vol { at: ix - 8.5, cy - 8.5; size: 17, 17; tint: ink; show: osd == volume and not vol.muted }
+                image ico_mute { at: ix - 8.5, cy - 8.5; size: 17, 17; tint: ink; show: osd == volume and vol.muted }
+                image ico_sun { at: ix - 8.5, cy - 8.5; size: 17, 17; tint: ink; show: osd == brightness }
+            }
+            let mx = left + 14 + 17 + 10
+            box { from: mx, cy - 3; size: 130, 6; corner: 3; color: subink; opacity: 30% }
+            body {
+                gradient: mx, 0 to mx + 130, 0, #4f9a7b, accent
+                box { from: mx, cy - 3; size: max(6, meter), 6; corner: 3 }
+            }
+            // glowing knob riding the fill's edge
+            body {
+                color: accent
+                border: 2, #f4fbf8
+                ellipse { at: mx + max(6, meter) - 3, cy; radius: 6 * (1 + 0.3 * kick) }
+            }
+            text "{round(val * 100)}%" { at: mx + 130 + 10, cy; anchor: left center; size: 13; weight: 500; color: ink; measure: om }
+        }
+    }
+
+    // ---------- the toast: peeks in when a notification arrives ----------
+    measure ttm
+    measure tbm
+    let tw = min(320, 22 + 13 + 8 + max(ttm.width, tbm.width))
+    let thh = 12 + 18 + if(tbm.width > 0, 15, 0)
+    group {
+        show: toast_in > 0.01
+        opacity: clamp(toast_in * 1.5, 0, 1)
+        move: 0, (1 - toast_in) * -(thh + 6)
+        body {
+            color: panel
+            glass: 100%
+            lens: false
+            tint: 72%
+            border: 1, mix(edge, accent, 0.3)
+            shadow: 0, 8, 22, 30%
+            box { at: cx, top + thh / 2; size: tw, thh; corner: thh / 2 }
+        }
+        zone box toast_hit { at: cx, top + thh / 2; size: tw, thh; corner: thh / 2; cursor: pointer; label: "Open notification" }
+        image ic_bell { at: cx - tw / 2 + 11, top + thh / 2 - 6.5; size: 13, 13; tint: accent }
+        let tx = cx - tw / 2 + 32
+        text t_title { at: tx, top + 6 + 9; anchor: left center; size: 12; weight: 600; width: 270; tight: true; lines: 1; color: ink; measure: ttm }
+        text t_body { at: tx, top + 6 + 18 + 7; anchor: left center; size: 10; width: 270; tight: true; lines: 1; color: subink; measure: tbm }
+    }
+    on enter toast_hit { toast_hover = true }
+    on leave toast_hit { toast_hover = false; toast_n = toast_n + 1 }
+    on press toast_hit { emit note_open(-1); toast = false }
+    on still toast_n for 3400ms while not toast_hover { toast = false }
+
+    // ---------- the three newest, under the open pill ----------
+    let ly = top + ph + 6
+    let nshow = min(3, notes.count)
+    let lh = 16 + nshow * 42 + max(0, nshow - 1) * 5
+    group {
+        show: list_in > 0.01
+        opacity: list_in
+        move: 0, (1 - list_in) * -18
+        body {
+            color: panel
+            glass: 100%
+            lens: false
+            tint: 72%
+            border: 1, mix(edge, accent, 0.4)
+            shadow: 0, 10, 24, 30%
+            box { from: cx - 160, ly; size: 320, lh; corner: 16 }
+        }
+        column {
+            at: cx - 152, ly + 8
+            gap: 5
+            for nt in notes {
+                group {
+                    show: nt.index < 3
+                    size: 304, 42
+                    zone box card { from: 0, 0; size: 304, 42; corner: 10; cursor: pointer; label: "{nt.title}" }
+                    box { from: 0, 0; size: 304, 42; corner: 10; color: hover; opacity: 50% }
+                    box { from: 0, 0; size: 304, 42; corner: 10; stroke: 1; color: edge }
+                    image ic_bell { at: 9, 14.5; size: 13, 13; tint: subink }
+                    text nt.title { at: 29, 14; anchor: left center; size: 11; weight: 600; width: 245; lines: 1; color: ink }
+                    text nt.body { at: 29, 29; anchor: left center; size: 10; width: 245; lines: 1; color: subink }
+                    on press card { emit note_open(nt.index) }
+                    // dismiss (after the card, so it wins its corner)
+                    zone box nx { at: 287, 21; size: 24, 24; corner: 12; cursor: pointer; label: "Dismiss {nt.title}" }
+                    image ic_x { at: 281, 15; size: 12, 12; tint: subink }
+                    on press nx { emit note_close(nt.index) }
+                }
+            }
+        }
+    }
+    on change toast_n while toast { flare: 1 }
+
+    image ico_vol = icon "audio-volume-high-symbolic", 17, 17
+    image ico_mute = icon "audio-volume-muted-symbolic", 17, 17
+    image ico_sun = icon "display-brightness-symbolic", 17, 17
+
+    // ---- rules ----
+    every 1500ms while not ready { ready = true }
+
+    on change vol.volume while ready { osd = volume; osd_n = osd_n + 1; flare: 1; impulse kick 9 }
+    on change vol.muted while ready { osd = volume; osd_n = osd_n + 1; flare: 1; impulse kick 9 }
+    on change lit.level while ready { osd = brightness; osd_n = osd_n + 1; flare: 1; impulse kick 9 }
+    on still osd_n for 1600ms { osd = none }
+
+    on change expanded while expanded { flare: 1 }
+    on still flare for 300ms while flare > 0.5 { flare: 0 }
+
+    // safety: never stay stuck open if the Alt release is missed
+    on still expanded for 6s while expanded { expanded = false }
+
+    on scroll pill { emit nudge(wheel) }
+
+    // ======================= the control center (Super+C) =======================
+    // pastel-bar's two drawers: the control center slides in from the right,
+    // the music player from the left. Click outside or Esc to close.
+    //   pleamar --say pastel "emit cc_toggle"
+    fact cc_open = false
+    fact dnd = false                       // Do Not Disturb: no toasts
+    fact bt_on = false                     // (the logic fills these)
+    fact bt_n = 0
+    fact elapsed = 0                       // seconds into the song
+    text cc_here = ""
+    text out_name = ""
+    text wifi_sub = ""
+    text bt_sub = ""
+    text dnd_sub = "Off"
+    fact has_media = false
+    event cc_toggle ->
+    event wifi_flip ->
+    event bt_flip ->
+    event mute_flip ->
+    event set_vol ->
+    event set_lit ->
+    event seek_to ->
+    event media_prev ->
+    event media_play ->
+    event media_next ->
+    event open_settings ->                 // a page number, or -1 for just the window
+    prop cc_in = 0 ~spring(220, 19)        // ≈ OutBack(1.1): a gentle overshoot
+    follow cc_in = if(cc_open, 1, 0)
+    image ic_gear = icon "emblem-system-symbolic", 18, 18
+    image ic_close = icon "window-close-symbolic", 16, 16
+    image ic_wifi = icon "network-wireless-symbolic", 20, 20
+    image ic_wifi_off = icon "network-wireless-disabled-symbolic", 20, 20
+    image ic_bt = icon "bluetooth-active-symbolic", 20, 20
+    image ic_bt_off = icon "bluetooth-disabled-symbolic", 20, 20
+    image ic_moon = icon "weather-clear-night-symbolic", 20, 20
+    image ic_sun2 = icon "display-brightness-symbolic", 16, 16
+    image ic_spk = icon "audio-volume-high-symbolic", 16, 16
+    image ic_spk_mute = icon "audio-volume-muted-symbolic", 20, 20
+    image ic_prev = icon "media-skip-backward-symbolic", 18, 18
+    image ic_next = icon "media-skip-forward-symbolic", 18, 18
+    image ic_play = icon "media-playback-start-symbolic", 22, 22
+    image ic_pause = icon "media-playback-pause-symbolic", 22, 22
+    image ic_music = icon "folder-music-symbolic", 48, 48
+    image cover = from song.art, 0, 0
+
+    // a slider, 0..1 (pastel-bar's: a label and value above the track)
+    component CcSlider(label: text, value: number, moved: event, icon: image) {
+        size: 340, 44
+        prop v = 0 ~spring(400, 30)
+        follow v = clamp(value, 0, 1)
+        image icon { at: 0, 2; size: 16, 16; tint: subink }
+        text label { at: 24, 10; anchor: left center; size: 12; weight: 600; color: ink }
+        text "{round(value * 100)}%" { at: 340, 10; anchor: right center; size: 11; color: subink; family: "monospace" }
+        zone box hit { from: 0, 22; size: 340, 22; cursor: pointer; label: label; role: slider }
+        box { from: 0, 30; size: 340, 6; corner: 3; color: subink; opacity: 30% }
+        body { gradient: 0, 0 to 340, 0, #4f9a7b, accent
+            box { from: 0, 30; size: max(6, 340 * v), 6; corner: 3 } }
+        body { color: accent; border: 2, #f4fbf8
+            ellipse { at: max(6, 340 * v) - 3, 33; radius: 7 } }
+        on press hit { emit moved(clamp(local.x / 340, 0, 1)) }
+        on drag hit { emit moved(clamp(local.x / 340, 0, 1)) }
+    }
+
+    // a quick toggle tile: accent when on; right-click opens its settings page
+    component Tile(label: text, sub: text, on: number, icon: image, icon_off: image, flip: event, more: event, page: number) {
+        size: 165, 58
+        prop k = 0 ~quick
+        follow k = on
+        zone box hit { from: 0, 0; size: 165, 58; corner: 12; cursor: pointer; label: label; role: toggle }
+        box { from: 0, 0; size: 165, 58; corner: 12; color: mix(hover, accent, k); opacity: 50% + 42% * k }
+        box { from: 0, 0; size: 165, 58; corner: 12; stroke: 1; color: edge; opacity: 1 - k }
+        image icon { at: 12, 19; size: 20, 20; tint: mix(ink, #14261e, k); show: on }
+        image icon_off { at: 12, 19; size: 20, 20; tint: ink; show: not on }
+        text label { at: 42, 21; anchor: left center; size: 13; weight: 600; color: mix(ink, #14261e, k) }
+        text sub { at: 42, 38; anchor: left center; size: 10; width: 115; lines: 1; color: mix(subink, #14261e, k); opacity: 85% + 15% * (1 - k) }
+        on press hit { emit flip }
+        on press right hit { emit more(page) }
+    }
+
+    surface cc {
+        size: full, full
+        anchor: top
+        level: overlay
+        screens: cc_here
+        keyboard: on_demand while cc_open
+        open: cc_in > 0.01
+
+        let W = cc.width
+        let H = cc.height
+        let ty = 44                            // below where the pill sits
+
+        // a click anywhere else closes it
+        zone box cc_out { from: 0, 0; size: W, H; label: "Close control center" }
+        on press cc_out { cc_open = false }
+        on key Escape while cc_open { cc_open = false }
+
+        // ---------------- right: the control center ----------------
+        let rx = W - 14 - 380
+        let rh = min(H - ty - 24, 20 + 30 + 14 + 126 + 14 + if(lit.present, 102, 50) + 14 + 30 + max(60, min(notes.count, 5) * 68) + 14)
+        group {
+            opacity: clamp(cc_in * 2.5, 0, 1)
+            move: (1 - cc_in) * 420, 0
+            zone box cc_sheet { from: rx, ty; size: 380, rh; corner: 22 }
+            body {
+                color: panel
+                glass: 100%
+                lens: false
+                tint: 78%
+                border: 1, mix(edge, accent, 0.35)
+                shadow: 0, 18, 44, 40%
+                box { from: rx, ty; size: 380, rh; corner: 22 }
+            }
+            let ix = rx + 20
+            let iy = ty + 20
+
+            // header
+            text "Control Center" { at: ix, iy + 12; anchor: left center; size: 17; weight: 700; color: ink }
+            zone box gear { at: ix + 340 - 44, iy + 12; size: 30, 30; corner: 15; cursor: pointer; label: "Settings" }
+            image ic_gear { at: ix + 340 - 53, iy + 3; size: 18, 18; tint: subink }
+            zone box cc_x { at: ix + 340 - 9, iy + 12; size: 30, 30; corner: 15; cursor: pointer; label: "Close" }
+            image ic_close { at: ix + 340 - 17, iy + 4; size: 16, 16; tint: subink }
+            on press gear { emit open_settings(-1) }
+            on press cc_x { cc_open = false }
+
+            // quick toggles
+            group {
+                opacity: smooth(0.1, 0.6, cc_in)
+                move: (1 - smooth(0.1, 0.6, cc_in)) * 48, 0
+                grid {
+                    at: ix, iy + 44
+                    columns: 2
+                    gap: 10
+                    width: 340
+                    row: 58
+                    Tile("Wi-Fi", wifi_sub, net.wifi, ic_wifi, ic_wifi_off, wifi_flip, open_settings, 1)
+                    Tile("Bluetooth", bt_sub, bt_on, ic_bt, ic_bt_off, bt_flip, open_settings, 3)
+                    Tile("Audio", out_name, not vol.muted, ic_spk, ic_spk_mute, mute_flip, open_settings, 2)
+                    Tile("DND", dnd_sub, dnd, ic_moon, ic_moon, dnd_flip, open_settings, -2)
+                }
+            }
+
+            // sliders
+            group {
+                opacity: smooth(0.2, 0.7, cc_in)
+                move: (1 - smooth(0.2, 0.7, cc_in)) * 48, 0
+                column {
+                    at: ix, iy + 44 + 126 + 14
+                    gap: 14
+                    CcSlider("Volume", if(vol.muted, 0, vol.volume), set_vol, ic_spk)
+                    group { show: lit.present; size: 340, 44
+                        CcSlider("Brightness", lit.level, set_lit, ic_sun2) }
+                }
+            }
+
+            // notifications
+            let ny = iy + 44 + 126 + 14 + if(lit.present, 102, 44) + 14
+            group {
+                opacity: smooth(0.3, 0.8, cc_in)
+                move: (1 - smooth(0.3, 0.8, cc_in)) * 48, 0
+                text "Notifications" { at: ix, ny + 10; anchor: left center; size: 13; weight: 700; color: ink }
+                zone box clear_all { from: ix + 340 - 70, ny - 2; size: 70, 24; corner: 12; cursor: pointer; show: notes.count > 0 }
+                box { from: ix + 340 - 70, ny - 2; size: 70, 24; corner: 12; color: hover; opacity: 80%; show: notes.count > 0 }
+                text "Clear all" { at: ix + 340 - 35, ny + 10; anchor: center; size: 11; color: ink; show: notes.count > 0 }
+                on press clear_all { emit clear_notes }
+                text "No notifications" { at: ix + 170, ny + 50; anchor: center; size: 12; color: subink; show: notes.count == 0 }
+                column {
+                    at: ix, ny + 30
+                    view: 340, max(10, ty + rh - 14 - (ny + 30))
+                    gap: 6
+                    step: 68
+                    for cn in notes {
+                        group {
+                            size: 340, 62
+                            zone box ncard { from: 0, 0; size: 340, 62; corner: 10; cursor: pointer; label: "{cn.title}" }
+                            box { from: 0, 0; size: 340, 62; corner: 10; color: hover; opacity: 42% }
+                            box { from: 0, 0; size: 340, 62; corner: 10; stroke: 1; color: edge }
+                            box { from: 0, 8; size: 2, 46; corner: 1; color: accent; opacity: 80% }
+                            text cn.app { at: 12, 13; anchor: left center; size: 9.5; weight: 700; width: 290; lines: 1; color: accent }
+                            text cn.title { at: 12, 29; anchor: left center; size: 12; weight: 600; width: 290; lines: 1; color: ink }
+                            text cn.body { at: 12, 46; anchor: left center; size: 10.5; width: 300; lines: 1; color: subink }
+                            on press ncard { emit note_open(cn.index) }
+                            zone box ncx { at: 322, 16; size: 24, 24; corner: 12; cursor: pointer; label: "Dismiss {cn.title}" }
+                            image ic_x { at: 316, 10; size: 12, 12; tint: subink }
+                            on press ncx { emit note_close(cn.index) }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ---------------- left: the music player ----------------
+        let mx = 14
+        let mh = 440
+        let has = has_media
+        group {
+            opacity: clamp(cc_in * 2.5, 0, 1)
+            move: (1 - cc_in) * -380, 0
+            zone box media_sheet { from: mx, ty; size: 340, mh; corner: 22 }
+            body {
+                color: panel
+                glass: 100%
+                lens: false
+                tint: 78%
+                border: 1, mix(edge, accent, 0.35)
+                shadow: 0, 18, 44, 40%
+                box { from: mx, ty; size: 340, mh; corner: 22 }
+            }
+            // "Now Playing" tab
+            box { at: mx + 170, ty + 26; size: 116, 22; corner: 11; color: accent; opacity: 18% }
+            text if(has, "Now Playing", "Nothing Playing") { at: mx + 170, ty + 26; anchor: center; size: 10; weight: 600; color: accent }
+
+            // the cover (or a gradient with a note when there is none)
+            group {
+                opacity: smooth(0.1, 0.6, cc_in)
+                body { gradient: mx + 76, ty + 50 to mx + 264, ty + 238, accent, #3f6b58
+                    box { from: mx + 76, ty + 50; size: 188, 188; corner: 16 } }
+                image ic_music { at: mx + 146, ty + 120; size: 48, 48; tint: #14261e; opacity: 60% }
+                group {
+                    clip box { from: mx + 76, ty + 50; size: 188, 188; corner: 16 }
+                    image cover { at: mx + 76, ty + 50; size: 188, 188; fit: cover; show: has }
+                }
+                box { from: mx + 76, ty + 50; size: 188, 188; corner: 16; stroke: 1; color: edge }
+            }
+
+            // title, artist
+            text song.title { at: mx + 170, ty + 266; anchor: center; size: 19; weight: 700; width: 300; lines: 1; align: center; color: ink }
+            text song.artist { at: mx + 170, ty + 290; anchor: center; size: 13; width: 300; lines: 1; align: center; color: subink }
+
+            // seek bar + times
+            let sx = mx + 20
+            let sw = 300
+            prop done = 0 ~120ms
+            follow done = clamp(elapsed / max(song.length, 1), 0, 1)
+            zone box seek { from: sx, ty + 310; size: sw, 20; cursor: if(song.can_seek, pointer, default); label: "Seek"; role: slider }
+            box { from: sx, ty + 317; size: sw, 6; corner: 3; color: subink; opacity: 30% }
+            box { from: sx, ty + 318; size: max(4, sw * done), 4; corner: 2; color: accent }
+            ellipse { at: sx + sw * done, ty + 320; radius: 6; color: accent }
+            on press seek while song.can_seek { emit seek_to(clamp(local.x - sx, 0, sw) / sw) }
+            text "{elapsed, time}" { at: sx, ty + 342; anchor: left center; size: 10; color: subink; family: "monospace" }
+            text "{song.length, time}" { at: sx + sw, ty + 342; anchor: right center; size: 10; color: subink; family: "monospace" }
+
+            // transport
+            zone box prev { at: mx + 100, ty + 392; size: 40, 40; corner: 20; cursor: pointer; label: "Previous" }
+            box { at: mx + 100, ty + 392; size: 40, 40; corner: 20; color: hover; opacity: 80% }
+            image ic_prev { at: mx + 91, ty + 383; size: 18, 18; tint: ink }
+            zone box play { at: mx + 170, ty + 392; size: 52, 52; corner: 26; cursor: pointer; label: if(song.playing, "Pause", "Play") }
+            box { at: mx + 170, ty + 392; size: 52, 52; corner: 26; color: accent }
+            image ic_play { at: mx + 159, ty + 381; size: 22, 22; tint: #14261e; show: not song.playing }
+            image ic_pause { at: mx + 159, ty + 381; size: 22, 22; tint: #14261e; show: song.playing }
+            zone box next { at: mx + 240, ty + 392; size: 40, 40; corner: 20; cursor: pointer; label: "Next" }
+            box { at: mx + 240, ty + 392; size: 40, 40; corner: 20; color: hover; opacity: 80% }
+            image ic_next { at: mx + 231, ty + 383; size: 18, 18; tint: ink }
+            on press prev { emit media_prev }
+            on press play { emit media_play }
+            on press next { emit media_next }
+        }
+    }
+    event dnd_flip
+    on dnd_flip { toggle dnd }
+}

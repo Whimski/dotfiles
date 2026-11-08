@@ -1,0 +1,152 @@
+language 0.6
+
+// launcher — pastel-bar's app launcher (~/dotfiles/pastel-bar/overlays/Launcher.qml),
+// Mint dark. A glass box near the top of the focused monitor: type to search the
+// apps, ↑/↓ to move, Enter to open, Esc to close. Tab turns it into "run a
+// command" (in the background, no output), and Tab again completes like zsh;
+// Shift+Tab goes back to the apps.
+//
+//   pleamar --say launcher "emit toggle"
+
+scene Launcher {
+    permissions {
+        services: "apps", "apps.*"
+        run: "hyprctl monitors -j", "setsid -f sh -c", "bash -c"
+    }
+
+    // ---- Mint dark (pastel-bar Theme.qml) ----
+    let panel   = #26262c
+    let edge    = #2a3d34
+    let accent  = #71d6ac
+    let ink     = #e2f4ec
+    let subink  = #93bcab
+    let hover   = #2c2c33
+
+    // ---- state ----
+    fact open = false
+    fact cmd = false                 // run-a-command mode
+    fact sel = 0                     // the highlighted app
+    fact typed = false               // something is in the field
+    text here = ""                   // which monitor it opens on
+    text query = ""                  // what is typed
+    model results max 128 { name: text; comment: text; has_comment: bool; icon: image 28, 28 }
+    model comps max 60 { name: text }  // completions, in command mode
+    fact comp_sel = -1
+    event toggle ->
+    event launch ->                  // an app row: its index
+    event run_cmd ->
+    event complete ->
+    event pick_comp ->               // a completion chip: its index
+
+    prop shown = 0 ~spring(300, 20)
+    follow shown = if(open, 1, 0)
+
+    image ic_search = icon "system-search-symbolic", 18, 18
+    image ic_term = icon "utilities-terminal-symbolic", 18, 18
+
+    surface win {
+        size: full, full
+        anchor: top
+        level: overlay
+        screens: here
+        keyboard: exclusive while open
+        open: shown > 0.01
+
+        let W = win.width
+        let bw = 540
+        let bx = W / 2 - bw / 2
+        let by = win.height * 0.16
+        let rowh = 48
+        let listh = min(results.count * rowh, win.height * 0.6 - 90)
+        let compsh = min(150, ceil(comps.count / 4) * 32 - 6)
+        let bh = if(cmd, 74 + if(comps.count > 0, compsh + 14, 30), 74 + listh + 16)
+        prop bhh = 120 ~spring(400, 34)
+        follow bhh = bh
+
+        // dim the screen (kept light, like pastel-bar's: it only dims)
+        zone box backdrop { from: 0, 0; size: W, win.height; label: "Close launcher" }
+        box { from: 0, 0; size: W, win.height; color: #000000; opacity: 15% * shown }
+        on press backdrop { open = false }
+
+        group {
+            pivot: W / 2, by
+            scale: 0.88 + 0.12 * shown
+            opacity: clamp(shown * 1.5, 0, 1)
+            move: 0, (1 - shown) * -12
+
+            zone box sheet { from: bx, by; size: bw, bhh; corner: 16 }
+            body {
+                color: panel
+                glass: 100%
+                lens: false
+                tint: 78%
+                border: 1, mix(edge, accent, 0.45)
+                shadow: 0, 18, 44, 40%
+                box { from: bx, by; size: bw, bhh; corner: 16 }
+            }
+
+            // ---- search / command field ----
+            image ic_search { at: bx + 14, by + 18; size: 18, 18; tint: subink; show: not cmd }
+            image ic_term { at: bx + 14, by + 18; size: 18, 18; tint: accent; show: cmd }
+            text if(cmd, "Run command…", "Search…") { at: bx + 42, by + 27; anchor: left center; size: 16; color: subink; show: not typed }
+            input query { at: bx + 42, by + 16; width: bw - 56; size: 16; color: ink; label: "Search apps" }
+            box { from: bx + 14, by + 50; size: bw - 28, 1; color: edge }
+
+            // ---- the apps ----
+            column applist {
+                show: not cmd
+                at: bx + 14, by + 60
+                view: bw - 28, listh
+                step: rowh
+                for r in results {
+                    group {
+                        size: bw - 28, rowh
+                        zone box row { from: 0, 1; size: bw - 28, 46; corner: 10; cursor: pointer; label: "{r.name}" }
+                        box { from: 0, 1; size: bw - 28, 46; corner: 10; color: accent; opacity: if(sel == r.index, 20%, 0) }
+                        image r.icon { at: 8, 10; size: 28, 28 }
+                        text r.name { at: 46, if(r.has_comment, 16, 24); anchor: left center; size: 14; weight: 600; width: bw - 90; lines: 1; color: ink }
+                        text r.comment { at: 46, 33; anchor: left center; size: 11; width: bw - 90; lines: 1; color: subink; show: r.has_comment }
+                        on enter row { sel = r.index }
+                        on press row { emit launch(r.index) }
+                    }
+                }
+            }
+            // keep the highlighted row in view
+            on change sel { applist.scroll: clamp(applist.scroll, (sel + 1) * rowh - listh, sel * rowh) }
+
+            // ---- command mode: a hint, or the completions to choose from ----
+            text "↵ run in background · Tab complete · ⇧Tab search" { at: bx + 14, by + 72; anchor: left center; size: 11; color: subink; show: cmd and comps.count == 0 }
+            // (a wrapped row inside a scrolling column: a row with both draws one line)
+            column {
+              show: cmd and comps.count > 0
+              at: bx + 14, by + 62
+              view: bw - 28, compsh
+              step: 32
+              row {
+                gap: 6
+                wrap: 4
+                for c in comps {
+                    group {
+                        size: 122, 26
+                        zone box chip { from: 0, 0; size: 122, 26; corner: 8; cursor: pointer; label: "{c.name}" }
+                        box { from: 0, 0; size: 122, 26; corner: 8; color: if(comp_sel == c.index, accent, hover); opacity: if(comp_sel == c.index, 92%, 70%) }
+                        text c.name { at: 9, 13; anchor: left center; size: 11; width: 106; lines: 1; color: if(comp_sel == c.index, #14261e, ink); family: "monospace" }
+                        on press chip { emit pick_comp(c.index) }
+                    }
+                }
+              }
+            }
+        }
+
+        // ---- keys ----
+        on key Escape while open { open = false }
+        on key Down while open and not cmd { sel = min(sel + 1, max(0, results.count - 1)) }
+        on key Up while open and not cmd { sel = max(sel - 1, 0) }
+        on submit query while not cmd { emit launch(sel) }
+        on submit query while cmd { emit run_cmd }
+        on key Tab while open and cmd { emit complete }
+        on key Tab while open and not cmd { cmd = true }
+        on key Shift+Tab while open { cmd = false }
+        on change open while open { focus query }
+    }
+}

@@ -135,6 +135,7 @@ PanelWindow {
 
     // ---- OSD triggers ----
     function _showOsd(kind) {
+        return    // the OSD moved to pleamar (~/.config/pleamar/shells/pastel)
         if (!bar.ready) return
         bar.osd = kind
         osdTimer.restart()

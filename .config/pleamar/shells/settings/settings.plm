@@ -1,0 +1,675 @@
+language 0.6
+
+// settings — pastel-bar's settings window (~/dotfiles/pastel-bar/panels/TunePanel.qml)
+// and its wallpaper (Wallpaper.qml), Mint dark.
+//
+// It paints each monitor's wallpaper on the background layer, and opens a
+// glass window with a sidebar: Wallpaper (done), Wi-Fi, Audio, Bluetooth (next).
+//
+//   pleamar --say settings "emit toggle"        // open / close the window
+//   pleamar --say settings "emit open_page 1"   // open it on Wi-Fi (0 wallpaper, 2 audio, 3 bluetooth)
+//
+// What it saves (settings.json) lives in pleamar's own folder for this scene.
+
+scene Settings {
+    permissions {
+        services: "files", "files.write", "network", "network.*", "audio", "audio.*", "bluetooth", "bluetooth.*"
+        run: "hyprctl monitors -j", "find", "nmcli"
+    }
+
+    // ---- Mint dark (pastel-bar Theme.qml) ----
+    let panel   = #26262c
+    let edge    = #2a3d34
+    let accent  = #71d6ac
+    let onacc   = #14261e
+    let ink     = #e2f4ec
+    let subink  = #93bcab
+    let hover   = #2c2c33
+    let ground  = #1f2029
+
+    // ---- state ----
+    fact open = false
+    fact page: wallpaper | wifi | audio | bluetooth = wallpaper
+    event toggle ->                  // the logic opens it on the focused monitor
+    event open_page ->               // open it on a page: 0 wallpaper, 1 wifi, 2 audio, 3 bluetooth
+    text here = ""                   // which monitor the window is on
+
+    // one record a monitor (the logic fills them from hyprctl)
+    repeat k in 0..4 {
+        fact has.$k = false          // there is a monitor here
+        fact set.$k = false          // it has a wallpaper
+        text mon.$k = ""             // its name, "DP-1"
+        text path.$k = ""            // the picture
+        text file.$k = ""            // the picture's file name
+        image pic.$k = from path.$k, 0, 0
+    }
+    event choose ->                  // a wallpaper card was pressed: which monitor
+    event clear ->                   // its × was pressed
+
+    // the picker: a folder of pictures
+    fact picking = false
+    fact target = 0                  // which monitor it chooses for
+    text folder = ""
+    model entries max 160 { name: text; dir: bool; pic: image 192, 108 }
+    event enter_entry ->             // a folder or a picture was pressed: its index
+    event go_up ->
+    event go_home ->
+
+    prop shown = 0 ~spring(260, 22)
+    prop pick_in = 0 ~spring(300, 26)
+    follow shown = if(open, 1, 0)
+    follow pick_in = if(picking, 1, 0)
+
+    image ic_wall = icon "preferences-desktop-wallpaper-symbolic", 18, 18
+    image ic_wifi = icon "network-wireless-symbolic", 18, 18
+    image ic_audio = icon "audio-volume-high-symbolic", 18, 18
+    image ic_bt = icon "bluetooth-active-symbolic", 18, 18
+    image ic_close = icon "window-close-symbolic", 14, 14
+    image ic_up = icon "go-up-symbolic", 18, 18
+    image ic_home = icon "go-home-symbolic", 18, 18
+    image ic_folder = icon "folder", 48, 48
+    image ic_image = icon "image-x-generic-symbolic", 26, 26
+    image ic_lock = icon "changes-prevent-symbolic", 16, 16
+    image ic_wifi_s = icon "network-wireless-symbolic", 16, 16
+    image ic_wifi_big = icon "network-wireless-symbolic", 22, 22
+    image ic_wifi_off = icon "network-wireless-disabled-symbolic", 22, 22
+    image ic_refresh = icon "view-refresh-symbolic", 14, 14
+
+    // ---- Wi-Fi (the logic fills these from the network service and nmcli) ----
+    fact wifi_on = false
+    fact connected = false
+    fact connecting = false
+    fact scanning = false
+    fact strength = 0
+    fact autoconn = false
+    text net_name = ""
+    text net_status = ""
+    text net_dev = ""
+    text net_freq = ""
+    text net_ip = ""
+    text net_sec = ""
+    model nets max 30 { ssid: text; strength: number; secure: bool; known: bool; active: bool }
+    fact asking = false              // a password is wanted
+    text pw = ""                     // what is typed in the password field
+    text ask_ssid = ""
+    event wifi_flip ->
+    event scan ->
+    event join ->                    // a network row was pressed: its index
+    event leave_net ->
+    event autoconn_flip ->
+
+    // ---- Audio (the logic fills these from the audio service) ----
+    image ic_spk = icon "audio-volume-high-symbolic", 20, 20
+    image ic_spk_mute = icon "audio-volume-muted-symbolic", 20, 20
+    image ic_mic = icon "audio-input-microphone-symbolic", 20, 20
+    image ic_mic_mute = icon "microphone-sensitivity-muted-symbolic", 20, 20
+    fact atab: outs | ins | apps = outs
+    fact out_vol = 0
+    fact out_muted = false
+    fact in_vol = 0
+    fact in_muted = false
+    text out_name = ""
+    text in_name = ""
+    model devs max 16 { name: text; default: bool }        // the tab's outputs or inputs
+    model apps max 16 { name: text; title: text; icon: image 20, 20; volume: number; muted: bool }
+    fact app_sel = 0                 // which app a slider or mute was for
+    event set_vol ->                 // the header slider: 0..1
+    event mute_flip ->
+    event make_default ->            // a device row: its index
+    event app_vol ->                 // an app's slider: 0..1, for app_sel
+    event app_mute ->
+
+    // ---- Bluetooth (the logic fills these from the bluetooth service) ----
+    // Declaring `pairing` makes this scene the one asked for pairing codes.
+    service bluetooth as bts { pairing: text }
+    image ic_bt_big = icon "bluetooth-active-symbolic", 22, 22
+    image ic_bt_off = icon "bluetooth-disabled-symbolic", 22, 22
+    image ic_trash = icon "user-trash-symbolic", 16, 16
+    fact bt_present = false
+    fact bt_on = false
+    fact bt_scan = false
+    text bt_status = ""
+    model bdevs max 30 { name: text; paired: bool; connected: bool; busy: bool; battery: number = -1; icon: image 20, 20 }
+    fact pair_kind: none | code | confirm | display | authorize = none
+    text pair_name = ""
+    text pair_code = ""
+    text pair_in = ""                // a PIN / passkey typed in
+    fact bt_sel = 0                  // which row the trash was for
+    event bt_flip ->
+    event bt_scan_flip ->
+    event bt_tap ->                  // a device row: its index
+    event bt_forget ->
+    event pair_yes ->
+    event pair_no ->
+    event pw_ok ->
+    event pw_cancel ->
+
+    // ======================= the wallpaper, one surface a monitor =======================
+    surface bg0 {
+        size: full, full;  anchor: top;  level: background;  screens: mon.0
+        box { from: 0, 0; size: bg0.width, bg0.height; color: ground }
+        image pic.0 { at: 0, 0; size: bg0.width, bg0.height; fit: cover; show: set.0 }
+    }
+    surface bg1 {
+        size: full, full;  anchor: top;  level: background;  screens: mon.1
+        box { from: 0, 0; size: bg1.width, bg1.height; color: ground }
+        image pic.1 { at: 0, 0; size: bg1.width, bg1.height; fit: cover; show: set.1 }
+    }
+    surface bg2 {
+        size: full, full;  anchor: top;  level: background;  screens: mon.2
+        box { from: 0, 0; size: bg2.width, bg2.height; color: ground }
+        image pic.2 { at: 0, 0; size: bg2.width, bg2.height; fit: cover; show: set.2 }
+    }
+    surface bg3 {
+        size: full, full;  anchor: top;  level: background;  screens: mon.3
+        box { from: 0, 0; size: bg3.width, bg3.height; color: ground }
+        image pic.3 { at: 0, 0; size: bg3.width, bg3.height; fit: cover; show: set.3 }
+    }
+
+    // ======================= the settings window =======================
+    // A sidebar entry (accent fill when it is the page shown).
+    component NavItem(label: text, icon: image, here: number, go: event) {
+        size: 196, 42
+        prop hot = 0 ~quick
+        prop on = 0 ~quick
+        follow on = here
+        zone box hit { from: 0, 0; size: 196, 42; corner: 12; cursor: pointer }
+        box { from: 0, 0; size: 196, 42; corner: 12; color: hover; opacity: 50% * hot * (1 - on) }
+        box { from: 0, 0; size: 196, 42; corner: 12; color: accent; opacity: 92% * on }
+        image icon { at: 14, 12; size: 18, 18; tint: mix(ink, onacc, on) }
+        text label { at: 44, 21; anchor: left center; size: 13; weight: 400 + 200 * on; color: mix(ink, onacc, on) }
+        on enter hit { hot: 1 }
+        on leave hit { hot: 0 }
+        on press hit { emit go }
+    }
+    // pastel-bar's ToggleSwitch: a pill with a knob, accent when on
+    component Switch(on: number, flip: event, what: text) {
+        size: 46, 26
+        prop k = 0 ~spring(320, 22)
+        follow k = on
+        zone box hit { from: 0, 0; size: 46, 26; corner: 13; cursor: pointer; label: what; role: toggle }
+        box { from: 0, 0; size: 46, 26; corner: 13; color: mix(hover, accent, k) }
+        box { from: 0, 0; size: 46, 26; corner: 13; stroke: 1; color: mix(edge, accent, k) }
+        ellipse { at: 13 + 20 * k, 13; radius: 10; color: mix(subink, onacc, k) }
+        on press hit { emit flip }
+    }
+
+    // a volume slider, 0..1: drag or press anywhere along it
+    component Slider(value: number, moved: event, what: text, w: number) {
+        size: w, 24
+        prop v = 0 ~spring(400, 30)
+        follow v = clamp(value, 0, 1)
+        zone box hit { from: 0, 0; size: w, 24; cursor: pointer; label: what; role: slider }
+        box { from: 0, 9; size: w, 6; corner: 3; color: subink; opacity: 30% }
+        body {
+            gradient: 0, 0 to w, 0, #4f9a7b, accent
+            box { from: 0, 9; size: max(6, w * v), 6; corner: 3 }
+        }
+        body { color: accent; border: 2, #f4fbf8
+            ellipse { at: max(6, w * v) - 3, 12; radius: 7 } }
+        on press hit { emit moved(clamp(local.x / w, 0, 1)) }
+        on drag hit { emit moved(clamp(local.x / w, 0, 1)) }
+    }
+
+    event go_wall
+    event go_wifi
+    event go_audio
+    event go_bt
+    on go_wall { page = wallpaper }
+    on go_wifi { page = wifi }
+    on go_audio { page = audio }
+    on go_bt { page = bluetooth }
+
+    surface panel {
+        size: 1000, 730
+        anchor: center
+        level: overlay
+        screens: here
+        keyboard: on_demand while open
+        open: shown > 0.01
+
+        let W = 940
+        let H = 660
+        let ox = 30
+        let oy = 24
+        let side = 224
+        let cx0 = ox + side + 1 + 24          // where page content starts
+        let cw = W - side - 1 - 48            // and how wide it is
+        let top = oy + 62 + 1                 // below the header rule
+
+        group {
+            pivot: ox + W / 2, oy + H / 2
+            scale: 0.94 + 0.06 * shown
+            opacity: clamp(shown * 1.4, 0, 1)
+
+            body {
+                color: panel
+                glass: 100%
+                lens: false
+                tint: 78%
+                border: 1, edge
+                shadow: 0, 18, 44, 40%
+                box { from: ox, oy; size: W, H; corner: 20 }
+            }
+
+            // ---- header ----
+            text "Settings" { at: ox + 24, oy + 31; anchor: left center; size: 22; weight: 700; color: ink }
+            zone box close { at: ox + W - 34, oy + 31; size: 32, 32; corner: 16; cursor: pointer; label: "Close settings" }
+            box { at: ox + W - 34, oy + 31; size: 32, 32; corner: 16; color: hover; opacity: 60% }
+            image ic_close { at: ox + W - 41, oy + 24; size: 14, 14; tint: ink }
+            on press close { open = false }
+            box { from: ox, oy + 62; size: W, 1; color: edge }
+
+            // ---- sidebar ----
+            column {
+                at: ox + 14, top + 14
+                gap: 8
+                NavItem("Wallpaper", ic_wall, page == wallpaper, go: go_wall)
+                NavItem("Wi-Fi", ic_wifi, page == wifi, go: go_wifi)
+                NavItem("Audio", ic_audio, page == audio, go: go_audio)
+                NavItem("Bluetooth", ic_bt, page == bluetooth, go: go_bt)
+            }
+            box { from: ox + side, top; size: 1, H - 63; color: edge }
+
+            // ---- page: Wallpaper ----
+            group {
+                show: page == wallpaper
+                text "Wallpaper" { at: cx0, top + 34; anchor: left center; size: 20; weight: 700; color: ink }
+                text "A picture for each screen" { at: cx0, top + 58; anchor: left center; size: 12; color: subink }
+                text "WALLPAPER" { at: cx0, top + 92; anchor: left center; size: 10.5; weight: 700; color: accent }
+
+                let cardw = (cw - 12) / 2
+                repeat k in 0..4 {
+                    group {
+                        show: has.$k
+                        let x = cx0 + mod(k, 2) * (cardw + 12)
+                        let y = top + 108 + floor(k / 2) * 162
+                        prop hot = 0 ~quick
+                        zone box card { from: x, y; size: cardw, 150; corner: 12; cursor: pointer; label: "Choose wallpaper for {mon.$k}" }
+                        box { from: x, y; size: cardw, 150; corner: 12; color: panel; opacity: 60% }
+                        group {
+                            clip box { from: x, y; size: cardw, 150; corner: 12 }
+                            image pic.$k { at: x, y; size: cardw, 150; fit: cover; show: set.$k }
+                            // a dark band so the label reads over any picture
+                            box { from: x, y + 100; size: cardw, 50; color: #000000; opacity: 45%; show: set.$k }
+                        }
+                        image ic_image { at: x + cardw / 2 - 13, y + 62; size: 26, 26; tint: subink; show: not set.$k }
+                        box { from: x, y; size: cardw, 150; corner: 12; stroke: if(hot, 1.6, 1); color: mix(edge, accent, hot) }
+                        text mon.$k { at: x + 12, y + 118; anchor: left center; size: 12; weight: 700; color: if(set.$k, #ffffff, ink) }
+                        text if(set.$k, file.$k, "Click to choose") { at: x + 12, y + 135; anchor: left center; size: 10; width: cardw - 24; lines: 1; color: if(set.$k, #ffffff, subink); opacity: if(set.$k, 85%, 100%) }
+                        on enter card { hot: 1 }
+                        on leave card { hot: 0 }
+                        on press card { emit choose(k) }
+
+                        // clear (×), declared after the card so it wins its corner
+                        zone box clear_btn { at: x + cardw - 18, y + 18; size: 24, 24; corner: 12; cursor: pointer; show: set.$k; label: "Clear wallpaper for {mon.$k}" }
+                        box { at: x + cardw - 18, y + 18; size: 24, 24; corner: 12; color: #000000; opacity: 35%; show: set.$k }
+                        image ic_close { at: x + cardw - 25, y + 11; size: 14, 14; tint: #ffffff; show: set.$k }
+                        on press clear_btn { emit clear(k) }
+                    }
+                }
+            }
+
+            // ---- page: Wi-Fi ----
+            group {
+                show: page == wifi
+                text "Wi-Fi" { at: cx0, top + 34; anchor: left center; size: 20; weight: 700; color: ink }
+                text "Networks around you" { at: cx0, top + 58; anchor: left center; size: 12; color: subink }
+
+                // the connection in use, and the radio's switch
+                let sy = top + 80
+                box { from: cx0, sy; size: cw, 68; corner: 14; color: panel; opacity: 60% }
+                box { from: cx0, sy; size: cw, 68; corner: 14; stroke: 1; color: edge }
+                ellipse { at: cx0 + 36, sy + 34; radius: 20; color: accent; opacity: if(connected, 90%, 22%) }
+                image ic_wifi_big { at: cx0 + 25, sy + 23; size: 22, 22; tint: if(connected, onacc, ink); show: wifi_on }
+                image ic_wifi_off { at: cx0 + 25, sy + 23; size: 22, 22; tint: subink; show: not wifi_on }
+                text net_name { at: cx0 + 68, sy + 25; anchor: left center; size: 14; weight: 700; width: cw - 160; lines: 1; color: ink }
+                text net_status { at: cx0 + 68, sy + 45; anchor: left center; size: 11; width: cw - 160; lines: 1; color: subink }
+                group {
+                    move: cx0 + cw - 62, sy + 21
+                    Switch(wifi_on, wifi_flip, "Wi-Fi")
+                }
+
+                // details of the connection (pastel-bar's chips)
+                row {
+                    at: cx0, top + 160
+                    gap: 8
+                    show: connected
+                    row { padding: 7; fill: hover 70%; corner: 13; gap: 6
+                        text net_dev { size: 11; color: ink; family: "monospace" } }
+                    row { padding: 7; fill: hover 70%; corner: 13; gap: 6
+                        text net_freq { size: 11; color: ink; family: "monospace" } }
+                    row { padding: 7; fill: hover 70%; corner: 13; gap: 6
+                        text net_ip { size: 11; color: ink; family: "monospace" } }
+                    row { padding: 7; fill: hover 70%; corner: 13; gap: 6
+                        text net_sec { size: 11; color: ink; family: "monospace" } }
+                    row autoc { padding: 7; fill: if(autoconn, accent, hover) 80%; corner: 13; gap: 6; cursor: pointer
+                        text "Auto-connect" { size: 11; color: if(autoconn, onacc, ink); family: "monospace" } }
+                    row disc { padding: 7; fill: hover 70%; corner: 13; gap: 6; cursor: pointer
+                        text "Disconnect" { size: 11; color: #f094aa; family: "monospace" } }
+                }
+                on press autoc { emit autoconn_flip }
+                on press disc { emit leave_net }
+
+                // the networks
+                text "NETWORKS" { at: cx0, top + 212; anchor: left center; size: 10.5; weight: 700; color: accent }
+                zone box scan_btn { from: cx0 + cw - 96, top + 199; size: 96, 26; corner: 13; cursor: pointer; show: wifi_on }
+                box { from: cx0 + cw - 96, top + 199; size: 96, 26; corner: 13; color: hover; opacity: 70%; show: wifi_on }
+                image ic_refresh { at: cx0 + cw - 84, top + 205; size: 14, 14; tint: ink; show: wifi_on }
+                text if(scanning, "Scanning…", "Scan") { at: cx0 + cw - 64, top + 212; anchor: left center; size: 11; color: ink; show: wifi_on }
+                on press scan_btn { emit scan }
+
+                column netlist {
+                    at: cx0, top + 232
+                    view: cw, H - 63 - 232 - 16
+                    gap: 6
+                    step: 50
+                    for n in nets {
+                        group {
+                            size: cw, 44
+                            prop hot = 0 ~quick
+                            zone box row_hit { from: 0, 0; size: cw, 44; corner: 12; cursor: pointer; label: "{n.ssid}" }
+                            box { from: 0, 0; size: cw, 44; corner: 12; color: if(n.active, accent, if(hot, hover, panel)); opacity: if(n.active, 18%, if(hot, 100%, 55%)) }
+                            box { from: 0, 0; size: cw, 44; corner: 12; stroke: 1; color: if(n.active, accent, edge); opacity: if(n.active, 70%, 100%) }
+                            image ic_wifi_s { at: 14, 14; size: 16, 16; tint: if(n.active, accent, ink) }
+                            text n.ssid { at: 42, 22; anchor: left center; size: 13; weight: if(n.active, 700, 400); width: cw - 230; lines: 1; color: ink }
+                            text pick(n.active * 2 + n.known * (1 - n.active), "", "Saved", "Connected") { at: cw - 150, 22; anchor: left center; size: 11; color: if(n.active, accent, subink) }
+                            image ic_lock { at: cw - 76, 14; size: 16, 16; tint: subink; show: n.secure }
+                            text "{n.strength}%" { at: cw - 14, 22; anchor: right center; size: 11; color: subink; family: "monospace" }
+                            on enter row_hit { hot: 1 }
+                            on leave row_hit { hot: 0 }
+                            on press row_hit { emit join(n.index) }
+                        }
+                    }
+                }
+                text if(wifi_on, "Looking for networks…", "Wi-Fi is off") { at: cx0 + cw / 2, top + 320; anchor: center; size: 13; color: subink; show: nets.count == 0 }
+
+                // password for a new locked network
+                group {
+                    show: asking
+                    let by = oy + H - 92
+                    zone box pw_card { from: cx0, by; size: cw, 76; corner: 14 }
+                    body { color: #1f1f24; border: 1, accent; shadow: 0, 8, 24, 40%
+                        box { from: cx0, by; size: cw, 76; corner: 14 } }
+                    text "Password for {ask_ssid}" { at: cx0 + 16, by + 20; anchor: left center; size: 12; weight: 700; width: cw - 32; lines: 1; color: ink }
+                    box { from: cx0 + 16, by + 34; size: cw - 220, 30; corner: 10; color: hover }
+                    input pw { at: cx0 + 28, by + 41; width: cw - 244; size: 13; color: ink; placeholder: "Password"; secret: true; label: "Wi-Fi password" }
+                    zone box pw_go { from: cx0 + cw - 196, by + 34; size: 96, 30; corner: 15; cursor: pointer; label: "Connect" }
+                    box { from: cx0 + cw - 196, by + 34; size: 96, 30; corner: 15; color: accent }
+                    text "Connect" { at: cx0 + cw - 148, by + 49; anchor: center; size: 12; weight: 600; color: onacc }
+                    zone box pw_no { from: cx0 + cw - 92, by + 34; size: 76, 30; corner: 15; cursor: pointer; label: "Cancel" }
+                    box { from: cx0 + cw - 92, by + 34; size: 76, 30; corner: 15; color: hover }
+                    text "Cancel" { at: cx0 + cw - 54, by + 49; anchor: center; size: 12; color: ink }
+                    on press pw_go { emit pw_ok }
+                    on press pw_no { emit pw_cancel }
+                }
+                on change asking while asking { focus pw }
+            }
+
+            // ---- page: Audio ----
+            group {
+                show: page == audio
+                text "Audio" { at: cx0, top + 34; anchor: left center; size: 20; weight: 700; color: ink }
+                text "Speakers, microphones and apps" { at: cx0, top + 58; anchor: left center; size: 12; color: subink }
+
+                // the default output (or input), with its volume and mute
+                group {
+                    show: atab != apps
+                    let hy = top + 132
+                    let isin = atab == ins
+                    box { from: cx0, hy; size: cw, 96; corner: 14; color: panel; opacity: 60% }
+                    box { from: cx0, hy; size: cw, 96; corner: 14; stroke: 1; color: edge }
+                    ellipse { at: cx0 + 36, hy + 32; radius: 20; color: accent; opacity: 90% }
+                    image ic_spk { at: cx0 + 26, hy + 22; size: 20, 20; tint: onacc; show: not isin }
+                    image ic_mic { at: cx0 + 26, hy + 22; size: 20, 20; tint: onacc; show: isin }
+                    text pick(atab, out_name, in_name, "") { at: cx0 + 68, hy + 24; anchor: left center; size: 14; weight: 700; width: cw - 140; lines: 1; color: ink }
+                    text pick(atab, "Default output", "Default input", "") { at: cx0 + 68, hy + 43; anchor: left center; size: 11; color: subink }
+                    // mute
+                    zone box mute_btn { at: cx0 + cw - 34, hy + 32; size: 36, 36; corner: 18; cursor: pointer; label: "Mute"; role: toggle }
+                    box { at: cx0 + cw - 34, hy + 32; size: 36, 36; corner: 18; color: if(if(isin, in_muted, out_muted), #f094aa, hover); opacity: if(if(isin, in_muted, out_muted), 25%, 80%) }
+                    image ic_spk_mute { at: cx0 + cw - 44, hy + 22; size: 20, 20; tint: if(out_muted, #f094aa, ink); show: not isin }
+                    image ic_mic_mute { at: cx0 + cw - 44, hy + 22; size: 20, 20; tint: if(in_muted, #f094aa, ink); show: isin }
+                    on press mute_btn { emit mute_flip }
+                    group {
+                        move: cx0 + 20, hy + 60
+                        Slider(if(isin, in_vol, out_vol), set_vol, "Volume", cw - 100)
+                    }
+                    text "{round(if(isin, in_vol, out_vol) * 100)}%" { at: cx0 + cw - 18, hy + 72; anchor: right center; size: 12; color: ink; family: "monospace" }
+                }
+
+                // Outputs / Inputs / Apps
+                let ty = top + 80
+                box { from: cx0, ty; size: 330, 38; corner: 19; color: hover; opacity: 50% }
+                box { from: cx0, ty; size: 330, 38; corner: 19; stroke: 1; color: edge }
+                prop tabx = 0 ~spring(380, 30)
+                follow tabx = pick(atab, 0, 1, 2)
+                box { from: cx0 + 4 + tabx * 108, ty + 4; size: 106, 30; corner: 15; color: accent; opacity: 92% }
+                repeat t in 0..3 {
+                    zone box tab.$t { from: cx0 + 4 + t * 108, ty + 4; size: 106, 30; corner: 15; cursor: pointer; role: tab }
+                    text pick(t, "Outputs", "Inputs", "Apps") { at: cx0 + 57 + t * 108, ty + 19; anchor: center; size: 12; weight: if(atab == t, 600, 400); color: if(atab == t, onacc, ink) }
+                }
+                on press tab.0 { atab = outs }
+                on press tab.1 { atab = ins }
+                on press tab.2 { atab = apps }
+
+                // devices: press one to make it the default
+                column devlist {
+                    show: atab != apps
+                    at: cx0, top + 240
+                    view: cw, H - 63 - 240 - 16
+                    gap: 6
+                    step: 50
+                    for d in devs {
+                        group {
+                            size: cw, 48
+                            prop hot = 0 ~quick
+                            zone box dev_hit { from: 0, 0; size: cw, 48; corner: 12; cursor: pointer; label: "{d.name}" }
+                            box { from: 0, 0; size: cw, 48; corner: 12; color: if(d.default, accent, if(hot, hover, panel)); opacity: if(d.default, 18%, if(hot, 100%, 55%)) }
+                            box { from: 0, 0; size: cw, 48; corner: 12; stroke: 1; color: if(d.default, accent, edge); opacity: if(d.default, 70%, 100%) }
+                            image ic_spk { at: 14, 14; size: 20, 20; tint: if(d.default, accent, ink); show: atab == outs }
+                            image ic_mic { at: 14, 14; size: 20, 20; tint: if(d.default, accent, ink); show: atab == ins }
+                            text d.name { at: 46, 24; anchor: left center; size: 13; weight: if(d.default, 700, 400); width: cw - 190; lines: 1; color: ink }
+                            text if(d.default, "Active default", "") { at: cw - 16, 24; anchor: right center; size: 11; color: accent }
+                            on enter dev_hit { hot: 1 }
+                            on leave dev_hit { hot: 0 }
+                            on press dev_hit { emit make_default(d.index) }
+                        }
+                    }
+                }
+                text pick(atab, "No output devices", "No input devices", "") { at: cx0 + cw / 2, top + 300; anchor: center; size: 13; color: subink; show: atab != apps and devs.count == 0 }
+
+                // apps that are playing, each with its own volume
+                column applist {
+                    show: atab == apps
+                    at: cx0, top + 132
+                    view: cw, H - 63 - 132 - 16
+                    gap: 6
+                    step: 50
+                    for a in apps {
+                        group {
+                            size: cw, 64
+                            box { from: 0, 0; size: cw, 64; corner: 12; color: panel; opacity: 55% }
+                            box { from: 0, 0; size: cw, 64; corner: 12; stroke: 1; color: edge }
+                            image a.icon { at: 14, 12; size: 20, 20 }
+                            text a.name { at: 44, 22; anchor: left center; size: 13; weight: 600; width: 200; lines: 1; color: ink }
+                            text a.title { at: 250, 22; anchor: left center; size: 11; width: cw - 320; lines: 1; color: subink }
+                            zone box amute { at: cw - 30, 22; size: 30, 30; corner: 15; cursor: pointer; label: "Mute {a.name}"; role: toggle }
+                            box { at: cw - 30, 22; size: 30, 30; corner: 15; color: if(a.muted, #f094aa, hover); opacity: if(a.muted, 25%, 80%) }
+                            image ic_spk_mute { at: cw - 40, 12; size: 20, 20; tint: if(a.muted, #f094aa, ink) }
+                            on press amute { app_sel = a.index; emit app_mute }
+                            // its slider (written out here, so it knows which app)
+                            let aw = cw - 90
+                            zone box aslide { from: 14, 40; size: aw, 20; cursor: pointer; label: "Volume of {a.name}"; role: slider }
+                            box { from: 14, 47; size: aw, 6; corner: 3; color: subink; opacity: 30% }
+                            body { gradient: 14, 0 to 14 + aw, 0, #4f9a7b, accent
+                                box { from: 14, 47; size: max(6, aw * clamp(a.volume, 0, 1)), 6; corner: 3 } }
+                            body { color: accent; border: 2, #f4fbf8
+                                ellipse { at: 14 + max(6, aw * clamp(a.volume, 0, 1)) - 3, 50; radius: 6 } }
+                            text "{round(a.volume * 100)}%" { at: cw - 16, 50; anchor: right center; size: 11; color: ink; family: "monospace" }
+                            on press aslide { app_sel = a.index; emit app_vol(clamp((local.x - 14) / aw, 0, 1)) }
+                            on drag aslide { app_sel = a.index; emit app_vol(clamp((local.x - 14) / aw, 0, 1)) }
+                        }
+                    }
+                }
+                text "Nothing is playing" { at: cx0 + cw / 2, top + 220; anchor: center; size: 13; color: subink; show: atab == apps and apps.count == 0 }
+            }
+
+            // ---- page: Bluetooth ----
+            group {
+                show: page == bluetooth
+                text "Bluetooth" { at: cx0, top + 34; anchor: left center; size: 20; weight: 700; color: ink }
+                text "Headphones, keyboards and more" { at: cx0, top + 58; anchor: left center; size: 12; color: subink }
+
+                let sy = top + 80
+                box { from: cx0, sy; size: cw, 68; corner: 14; color: panel; opacity: 60% }
+                box { from: cx0, sy; size: cw, 68; corner: 14; stroke: 1; color: edge }
+                ellipse { at: cx0 + 36, sy + 34; radius: 20; color: accent; opacity: if(bt_on, 90%, 22%) }
+                image ic_bt_big { at: cx0 + 25, sy + 23; size: 22, 22; tint: onacc; show: bt_on }
+                image ic_bt_off { at: cx0 + 25, sy + 23; size: 22, 22; tint: subink; show: not bt_on }
+                text "Bluetooth" { at: cx0 + 68, sy + 25; anchor: left center; size: 14; weight: 700; color: ink }
+                text bt_status { at: cx0 + 68, sy + 45; anchor: left center; size: 11; width: cw - 160; lines: 1; color: subink }
+                group {
+                    show: bt_present
+                    move: cx0 + cw - 62, sy + 21
+                    Switch(bt_on, bt_flip, "Bluetooth")
+                }
+
+                text "DEVICES" { at: cx0, top + 176; anchor: left center; size: 10.5; weight: 700; color: accent }
+                zone box bscan { from: cx0 + cw - 110, top + 163; size: 110, 26; corner: 13; cursor: pointer; show: bt_on }
+                box { from: cx0 + cw - 110, top + 163; size: 110, 26; corner: 13; color: if(bt_scan, accent, hover); opacity: if(bt_scan, 25%, 70%); show: bt_on }
+                image ic_refresh { at: cx0 + cw - 98, top + 169; size: 14, 14; tint: ink; show: bt_on }
+                text if(bt_scan, "Scanning…", "Scan") { at: cx0 + cw - 78, top + 176; anchor: left center; size: 11; color: ink; show: bt_on }
+                on press bscan { emit bt_scan_flip }
+
+                column btlist {
+                    at: cx0, top + 196
+                    view: cw, H - 63 - 196 - 16
+                    gap: 6
+                    step: 50
+                    for bd in bdevs {
+                        group {
+                            size: cw, 48
+                            prop hot = 0 ~quick
+                            zone box bt_hit { from: 0, 0; size: cw, 48; corner: 12; cursor: pointer; label: "{bd.name}" }
+                            box { from: 0, 0; size: cw, 48; corner: 12; color: if(bd.connected, accent, if(hot, hover, panel)); opacity: if(bd.connected, 18%, if(hot, 100%, 55%)) }
+                            box { from: 0, 0; size: cw, 48; corner: 12; stroke: 1; color: if(bd.connected, accent, edge); opacity: if(bd.connected, 70%, 100%) }
+                            image bd.icon { at: 14, 14; size: 20, 20 }
+                            text bd.name { at: 46, 24; anchor: left center; size: 13; weight: if(bd.connected, 700, 400); width: cw - 290; lines: 1; color: ink }
+                            text pick(bd.busy * 3 + (1 - bd.busy) * (bd.connected * 2 + bd.paired * (1 - bd.connected)), "New", "Paired", "Connected", "Working…") { at: cw - 190, 24; anchor: left center; size: 11; color: if(bd.connected or bd.busy, accent, subink) }
+                            text "{round(bd.battery * 100)}%" { at: cw - 96, 24; anchor: right center; size: 11; color: subink; family: "monospace"; show: bd.battery >= 0 }
+                            on enter bt_hit { hot: 1 }
+                            on leave bt_hit { hot: 0 }
+                            on press bt_hit { emit bt_tap(bd.index) }
+                            // forget, for paired ones (declared after the row so it wins)
+                            zone box bt_del { at: cw - 34, 24; size: 30, 30; corner: 15; cursor: pointer; show: bd.paired; label: "Forget {bd.name}" }
+                            box { at: cw - 34, 24; size: 30, 30; corner: 15; color: hover; opacity: 80%; show: bd.paired }
+                            image ic_trash { at: cw - 42, 16; size: 16, 16; tint: #f094aa; show: bd.paired }
+                            on press bt_del { bt_sel = bd.index; emit bt_forget }
+                        }
+                    }
+                }
+                text pick(bt_present * (1 + bt_on), "No Bluetooth adapter", "Bluetooth is off", "Press Scan to find devices") { at: cx0 + cw / 2, top + 300; anchor: center; size: 13; color: subink; show: bdevs.count == 0 }
+
+                // a device asks something while pairing
+                group {
+                    show: pair_kind != none
+                    let by = oy + H - 104
+                    zone box pair_card { from: cx0, by; size: cw, 88; corner: 14 }
+                    body { color: #1f1f24; border: 1, accent; shadow: 0, 8, 24, 40%
+                        box { from: cx0, by; size: cw, 88; corner: 14 } }
+                    text pick(pair_kind, "", "Type the PIN for {pair_name}", "Does {pair_name} show this number?", "Type this on {pair_name}, then press Enter there", "Let {pair_name} pair?") { at: cx0 + 16, by + 22; anchor: left center; size: 12; weight: 700; width: cw - 32; lines: 1; color: ink }
+                    text pair_code { at: cx0 + 16, by + 58; anchor: left center; size: 24; weight: 700; color: accent; family: "monospace"; show: pair_kind == confirm or pair_kind == display }
+                    group {
+                        show: pair_kind == code
+                        box { from: cx0 + 16, by + 42; size: cw - 220, 30; corner: 10; color: hover }
+                        input pair_in { at: cx0 + 28, by + 49; width: cw - 244; size: 13; color: ink; placeholder: "PIN"; label: "Pairing PIN" }
+                    }
+                    zone box pair_ok { from: cx0 + cw - 196, by + 42; size: 96, 30; corner: 15; cursor: pointer; show: pair_kind != display; label: "Yes" }
+                    box { from: cx0 + cw - 196, by + 42; size: 96, 30; corner: 15; color: accent; show: pair_kind != display }
+                    text pick(pair_kind, "", "OK", "Yes", "", "Yes") { at: cx0 + cw - 148, by + 57; anchor: center; size: 12; weight: 600; color: onacc; show: pair_kind != display }
+                    zone box pair_cancel { from: cx0 + cw - 92, by + 42; size: 76, 30; corner: 15; cursor: pointer; label: "No" }
+                    box { from: cx0 + cw - 92, by + 42; size: 76, 30; corner: 15; color: hover }
+                    text if(pair_kind == code or pair_kind == display, "Cancel", "No") { at: cx0 + cw - 54, by + 57; anchor: center; size: 12; color: ink }
+                    on press pair_ok { emit pair_yes }
+                    on press pair_cancel { emit pair_no }
+                }
+                on change pair_kind while pair_kind == code { focus pair_in }
+            }
+
+            // ---- the picture picker, over the page ----
+            group {
+                opacity: pick_in
+                show: pick_in > 0.01
+                // dim the page; pressing outside the card closes it
+                zone box scrim { from: ox + side + 1, top; size: W - side - 1, H - 63; label: "Close picker" }
+                box { from: ox + side + 1, top; size: W - side - 1, H - 63; color: #000000; opacity: 35% }
+                on press scrim { picking = false }
+
+                let px = ox + side + 17
+                let py = top + 16
+                let pw = W - side - 33
+                let ph = H - 63 - 32
+                group {
+                    move: 0, (1 - pick_in) * 16
+                    zone box sheet { from: px, py; size: pw, ph; corner: 16 }
+                    body {
+                        color: #1f1f24
+                        border: 1, edge
+                        shadow: 0, 10, 30, 35%
+                        box { from: px, py; size: pw, ph; corner: 16 }
+                    }
+                    // header: up, home, where we are, close
+                    zone box up { from: px + 14, py + 14; size: 34, 34; corner: 10; cursor: pointer; label: "Up a folder" }
+                    box { from: px + 14, py + 14; size: 34, 34; corner: 10; color: panel; opacity: 50% }
+                    image ic_up { at: px + 22, py + 22; size: 18, 18; tint: ink }
+                    zone box home { from: px + 56, py + 14; size: 34, 34; corner: 10; cursor: pointer; label: "Home folder" }
+                    box { from: px + 56, py + 14; size: 34, 34; corner: 10; color: panel; opacity: 50% }
+                    image ic_home { at: px + 64, py + 22; size: 18, 18; tint: ink }
+                    text folder { at: px + 102, py + 31; anchor: left center; size: 12; width: pw - 160; lines: 1; color: subink }
+                    zone box pclose { at: px + pw - 31, py + 31; size: 32, 32; corner: 16; cursor: pointer; label: "Close picker" }
+                    box { at: px + pw - 31, py + 31; size: 32, 32; corner: 16; color: hover; opacity: 60% }
+                    image ic_close { at: px + pw - 38, py + 24; size: 14, 14; tint: ink }
+                    on press up { emit go_up }
+                    on press home { emit go_home }
+                    on press pclose { picking = false }
+
+                    // the folder: folders first, then pictures
+                    column scroller {
+                      at: px + 14, py + 62
+                      view: pw - 28, ph - 76
+                      step: 80
+                      row grid {
+                        gap: 10
+                        wrap: 4
+                        for e in entries {
+                            group {
+                                size: (pw - 28 - 30) / 4, 118
+                                let cw2 = (pw - 28 - 30) / 4
+                                prop hot = 0 ~quick
+                                zone box cell { from: 0, 0; size: cw2, 118; corner: 10; cursor: pointer; label: "{e.name}" }
+                                box { from: 0, 0; size: cw2, 118; corner: 10; color: if(hot, hover, panel); opacity: if(hot, 100%, 55%) }
+                                image ic_folder { at: cw2 / 2 - 24, 18; size: 48, 48; show: e.dir }
+                                group {
+                                    show: not e.dir
+                                    clip box { from: 6, 6; size: cw2 - 12, 84; corner: 6 }
+                                    box { from: 6, 6; size: cw2 - 12, 84; color: #000000; opacity: 40% }
+                                    image e.pic { at: 6 + (cw2 - 12 - 149) / 2, 6; size: 149, 84 }
+                                }
+                                text e.name { at: cw2 / 2, 104; anchor: center; size: 10.5; width: cw2 - 12; lines: 1; align: center; color: ink }
+                                on enter cell { hot: 1 }
+                                on leave cell { hot: 0 }
+                                on press cell { emit enter_entry(e.index) }
+                            }
+                        }
+                      }
+                    }
+                    text "No pictures or folders here" { at: px + pw / 2, py + ph / 2; anchor: center; size: 13; color: subink; show: entries.count == 0 }
+                }
+            }
+        }
+
+        on key Escape while asking { emit pw_cancel }
+        on key Escape while picking { picking = false }
+        on key Escape while open and not picking and not asking { open = false }
+    }
+}

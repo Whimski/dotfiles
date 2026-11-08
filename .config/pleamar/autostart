@@ -5,3 +5,15 @@
 # Whiskey, the desktop cat. It starts in its data folder, which is where its
 # Claude Code chats are kept (claude --resume works from there).
 cd ~/.local/share/pleamar/whiskey && exec ~/.local/bin/pleamar --scene ~/.config/pleamar/shells/whiskey/whiskey.plm --no-hud
+
+# The bar pill (hold Left Alt) and the volume pop-up — replacing pastel-bar's.
+exec ~/.local/bin/pleamar --scene ~/.config/pleamar/shells/pastel/pastel.plm --no-hud
+
+# The settings window (Super+O) and the wallpaper on every screen.
+exec ~/.local/bin/pleamar --scene ~/.config/pleamar/shells/settings/settings.plm --no-hud
+
+# The app launcher (Super+D).
+exec ~/.local/bin/pleamar --scene ~/.config/pleamar/shells/launcher/launcher.plm --no-hud
+
+# The password dialog for admin tasks (polkit agent).
+exec ~/.local/bin/pleamar --scene ~/.config/pleamar/shells/password/password.plm --no-hud
