@@ -41,6 +41,7 @@ scene Pastel {
 
     // ---- what is being shared right now: mic, the computer's sound, screen, camera ----
     model shares max 6 { kind: mic | sound | screen | camera; app: text }
+    text share_ignore = ""                 // apps to leave out, "A|B" (from Settings → Privacy)
     image ic_sh_mic = icon "audio-input-microphone-symbolic", 14, 14
     image ic_sh_sound = icon "audio-speakers-symbolic", 14, 14
     image ic_sh_screen = icon "video-display-symbolic", 14, 14
@@ -83,12 +84,15 @@ scene Pastel {
     measure tm
     measure dm
     measure pm
+    measure mtm                                   // the song's title, in the pill
+    measure mam                                   // and its artist
     measure om
     let has_bat = bat.present and bat.percent > 0
     let low = has_bat and not bat.charging and bat.percent <= 20
     let batw = 16 + 14 + 5 + pm.width
     let sharew = if(shares.count > 0, 12 + shares.count * 28 + (shares.count - 1) * 6, 0)
-    let toprow = max(tm.width, dm.width) + sharew + if(has_bat, 12 + batw, 0)
+    let musicw = if(has_media, 32 + 9 + max(mtm.width, mam.width) + 16, 0)   // cover, words, gap
+    let toprow = musicw + max(tm.width, dm.width) + sharew + if(has_bat, 12 + batw, 0)
     let expw = 36 + toprow
     let exph = 12 + tm.height + dm.height
     let osdw = 28 + 17 + 10 + 130 + 10 + max(38, om.width)
@@ -131,18 +135,40 @@ scene Pastel {
         // ---------- expanded: clock + date, battery ----------
         group {
             opacity: osd == none
+            // the music, on the left: cover, title, artist (press: the control center)
+            group {
+                show: has_media
+                opacity: smooth(0.2, 0.9, bloom)
+                move: (1 - smooth(0.2, 0.9, bloom)) * -20, 0
+                let mx0 = cx - toprow / 2
+                let my0 = top + 6 + (tm.height + dm.height) / 2
+                zone box pill_music { from: mx0, my0 - 18; size: musicw - 10, 36; corner: 8; cursor: pointer; label: "{m_title}, {m_artist}" }
+                body { gradient: mx0, my0 - 16 to mx0 + 32, my0 + 16, art0, art1
+                    box { from: mx0, my0 - 16; size: 32, 32; corner: (7) * rk } }
+                group {
+                    clip box { from: mx0, my0 - 16; size: 32, 32; corner: (7) * rk }
+                    image cover { at: mx0, my0 - 16; size: 32, 32; fit: cover }
+                }
+                // a tiny equalizer on the cover's corner while it plays
+                repeat k in 0..3 {
+                    box { at: mx0 + 26 + k * 3 - 3, my0 + 12 - (2 + min(6, eq.$k * 0.6)) / 2; size: 2, 2 + min(6, eq.$k * 0.6); corner: 1; color: #ffffff; opacity: if(m_playing, 90%, 0) }
+                }
+                text m_title { family: Theme.face; at: mx0 + 41, my0 - 7; anchor: left center; size: 12; weight: 600; width: 150; tight: true; lines: 1; color: ink; measure: mtm }
+                text m_artist { family: Theme.face; at: mx0 + 41, my0 + 9; anchor: left center; size: 10.5; width: 150; tight: true; lines: 1; color: art0; measure: mam }
+                on press pill_music { emit cc_toggle }
+            }
             // clock + date drop in first
             group {
                 opacity: smooth(0, 0.6, bloom)
                 move: 0, (1 - smooth(0, 0.6, bloom)) * -10
-                let colx = cx - toprow / 2 + max(tm.width, dm.width) / 2
+                let colx = cx - toprow / 2 + musicw + max(tm.width, dm.width) / 2
                 text now.time { family: Theme.face; at: colx, top + 6 + tm.height / 2; anchor: center; size: 20; weight: 700; color: ink; measure: tm }
                 text now.date { family: Theme.face; at: colx, top + 6 + tm.height + dm.height / 2; anchor: center; size: 11; color: subink; measure: dm }
             }
             // what is in use: a small ring for each, coloured by kind, right of the time
             row sharerow {
                 show: shares.count > 0
-                at: cx - toprow / 2 + max(tm.width, dm.width) + 12, top + 6 + (tm.height + dm.height) / 2
+                at: cx - toprow / 2 + musicw + max(tm.width, dm.width) + 12, top + 6 + (tm.height + dm.height) / 2
                 anchor: left middle
                 gap: 6
                 opacity: smooth(0.3, 1, bloom)
@@ -165,7 +191,7 @@ scene Pastel {
                 show: has_bat
                 opacity: smooth(0.3, 1, bloom)
                 move: (1 - smooth(0.3, 1, bloom)) * 28, 0
-                let bx = cx - toprow / 2 + max(tm.width, dm.width) + sharew + 12
+                let bx = cx - toprow / 2 + musicw + max(tm.width, dm.width) + sharew + 12
                 box { from: bx, cy - 13; size: batw, 26; corner: (13) * rk; color: if(low, danger, hover); opacity: if(low, 18%, 50%) }
                 box { from: bx, cy - 13; size: batw, 26; corner: (13) * rk; stroke: (1.4) * line; color: danger; opacity: if(low, 80%, 0) }
                 // battery glyph

@@ -14,14 +14,14 @@ import "../../theme.plm"
 
 scene Settings {
     permissions {
-        services: "files", "files.write", "network", "network.*", "audio", "audio.*", "bluetooth", "bluetooth.*"
+        services: "files", "files.write", "network", "network.*", "audio", "audio.*", "bluetooth", "bluetooth.*", "say:pastel"
         run: "hyprctl monitors -j", "find", "nmcli", "cp", "pactl"
     }
 
 
     // ---- state ----
     fact open = false
-    fact page: wallpaper | wifi | audio | bluetooth = wallpaper
+    fact page: wallpaper | wifi | audio | bluetooth | privacy = wallpaper
     event toggle ->                  // the logic opens it on the focused monitor
     event open_page ->               // open it on a page: 0 wallpaper, 1 wifi, 2 audio, 3 bluetooth
     text here = ""                   // which monitor the window is on
@@ -58,6 +58,7 @@ scene Settings {
     image ic_wifi = icon "network-wireless-symbolic", 18, 18
     image ic_audio = icon "audio-volume-high-symbolic", 18, 18
     image ic_bt = icon "bluetooth-active-symbolic", 18, 18
+    image ic_privacy = icon "security-high-symbolic", 18, 18
     image ic_close = icon "window-close-symbolic", 14, 14
     image ic_up = icon "go-up-symbolic", 18, 18
     image ic_home = icon "go-home-symbolic", 18, 18
@@ -85,6 +86,17 @@ scene Settings {
     model nets max 30 { ssid: text; strength: number; secure: bool; known: bool; active: bool }
     fact asking = false              // a password is wanted
     text pw = ""                     // what is typed in the password field
+
+    // ---- Privacy: apps the pill's sharing rings ignore ----
+    text seen_apps = ""              // the pill says which apps it has seen, "A|B|…"
+    model seen max 12 { name: text; ignored: bool }
+    model ignored max 24 { name: text }
+    text ignore_new = ""             // a name typed in to ignore
+    fact typing_ignore = false
+    event ignore_flip ->             // a seen app's button: its index
+    event unignore ->                // an ignored app's ×: its index
+    event ignore_add ->
+    event share_sync ->              // the pill asks for the list (when it starts)
     text ask_ssid = ""
     event wifi_flip ->
     event scan ->
@@ -216,6 +228,8 @@ scene Settings {
     on go_wifi { page = wifi }
     on go_audio { page = audio }
     on go_bt { page = bluetooth }
+    event go_privacy
+    on go_privacy { page = privacy }
 
     surface panel {
         size: 1140, 880
@@ -264,10 +278,10 @@ scene Settings {
             // the highlight slides to the page chosen, stretching a little
             // on the way like something soft, and takes on its colour
             prop navy = 0 ~spring(300, 22)
-            follow navy = pick(page, 0, 1, 2, 3) * 50
+            follow navy = pick(page, 0, 1, 2, 3, 4) * 50
             let stretch = min(18, abs(vel(navy)) * 0.025)
             box { from: ox + 14, top + 14 + navy - stretch / 2; size: 196, 42 + stretch; corner: (12) * rk
-                  color: pick(page, col_pink, col_blue, col_green, col_violet); opacity: 92% }
+                  color: pick(page, col_pink, col_blue, col_green, col_violet, col_yellow); opacity: 92% }
             column {
                 at: ox + 14, top + 14
                 gap: 8
@@ -275,6 +289,7 @@ scene Settings {
                 NavItem("Wi-Fi", ic_wifi, page == wifi, go: go_wifi, tone: col_blue)
                 NavItem("Audio", ic_audio, page == audio, go: go_audio, tone: col_green)
                 NavItem("Bluetooth", ic_bt, page == bluetooth, go: go_bt, tone: col_violet)
+                NavItem("Privacy", ic_privacy, page == privacy, go: go_privacy, tone: col_yellow)
             }
             box { from: ox + side, top; size: 1, H - 63; color: edge }
 
@@ -699,6 +714,69 @@ scene Settings {
                     on press pair_cancel { emit pair_no }
                 }
                 on change pair_kind while pair_kind == code { focus pair_in }
+            }
+
+            // ---- page: Privacy ----
+            group {
+                show: page == privacy
+                opacity: pg
+                move: 0, (1 - pg) * 18
+                text "Privacy" { family: Theme.face; at: cx0, top + 34; anchor: left center; size: 20; weight: 700; color: ink }
+                text "Which apps the pill's sharing rings leave out" { family: Theme.face; at: cx0, top + 58; anchor: left center; size: 12; color: subink }
+
+                // apps the pill has seen using the mic, sound, screen or camera
+                text "IN USE RECENTLY" { family: Theme.face; at: cx0, top + 92; anchor: left center; size: 10.5; weight: 700; color: col_yellow }
+                text "Nothing has used your mic, sound, screen or camera yet" { family: Theme.face; at: cx0, top + 122; anchor: left center; size: 12; color: subink; show: seen.count == 0 }
+                column {
+                    at: cx0, top + 106
+                    gap: 6
+                    for sa in seen {
+                        group {
+                            size: cw, 42
+                            box { from: 0, 0; size: cw, 42; corner: (12) * rk; color: panel; opacity: 55% }
+                            box { from: 0, 0; size: cw, 42; corner: (12) * rk; stroke: (1) * line; color: edge }
+                            text sa.name { family: Theme.face; at: 16, 21; anchor: left center; size: 13; weight: 600; width: cw - 170; lines: 1; color: if(sa.ignored, subink, ink) }
+                            zone box ign_btn { from: cw - 124, 8; size: 112, 26; corner: (13) * rk; cursor: pointer; label: if(sa.ignored, "Stop ignoring {sa.name}", "Ignore {sa.name}") }
+                            box { from: cw - 124, 8; size: 112, 26; corner: (13) * rk; color: if(sa.ignored, hover, col_yellow); opacity: if(sa.ignored, 100%, 90%) }
+                            text if(sa.ignored, "Ignored", "Ignore") { family: Theme.face; at: cw - 68, 21; anchor: center; size: 11.5; weight: 600; color: if(sa.ignored, subink, onacc) }
+                            on press ign_btn { emit ignore_flip(sa.index) }
+                        }
+                    }
+                }
+
+                // the ignore list, and a field to add one by name
+                let iy = top + 106 + max(1, seen.count) * 48 + 30
+                text "IGNORED" { family: Theme.face; at: cx0, iy; anchor: left center; size: 10.5; weight: 700; color: col_yellow }
+                box { from: cx0, iy + 14; size: cw - 110, 32; corner: (10) * rk; color: field }
+                box { from: cx0, iy + 14; size: cw - 110, 32; corner: (10) * rk; stroke: (1) * line; color: edge }
+                text "Add an app by its name…" { family: Theme.face; at: cx0 + 12, iy + 30; anchor: left center; size: 12; color: subink; show: not typing_ignore }
+                input ignore_new { family: Theme.face; at: cx0 + 12, iy + 21; width: cw - 134; size: 12; color: ink; label: "App to ignore" }
+                zone box add_ign { from: cx0 + cw - 98, iy + 14; size: 98, 32; corner: (16) * rk; cursor: pointer; label: "Add to ignored" }
+                box { from: cx0 + cw - 98, iy + 14; size: 98, 32; corner: (16) * rk; color: col_yellow }
+                text "Add" { family: Theme.face; at: cx0 + cw - 49, iy + 30; anchor: center; size: 12; weight: 600; color: onacc }
+                on press add_ign { emit ignore_add }
+                on submit ignore_new { emit ignore_add }
+                row {
+                    at: cx0, iy + 58
+                    gap: 8
+                    wrap: 4
+                    for ig in ignored {
+                        row {
+                            padding: 7
+                            gap: 8
+                            fill: hover 100%
+                            corner: (13) * rk
+                            text ig.name { family: Theme.face; size: 12; color: ink; width: 160; tight: true; lines: 1 }
+                            group {
+                                size: 14, 14
+                                zone box unign { from: -4, -4; size: 22, 22; corner: 11; cursor: pointer; label: "Stop ignoring {ig.name}" }
+                                image ic_close { at: 0, 0; size: 14, 14; tint: subink }
+                                on press unign { emit unignore(ig.index) }
+                            }
+                        }
+                    }
+                }
+                text "Nothing ignored" { family: Theme.face; at: cx0, iy + 72; anchor: left center; size: 12; color: subink; show: ignored.count == 0 }
             }
 
             // ---- the picture picker, over the page ----

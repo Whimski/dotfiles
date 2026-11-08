@@ -231,13 +231,30 @@ local function pretty(name)
     return (name:gsub("^%l", string.upper))
 end
 
+-- every app seen using one since the pill started, newest first, for
+-- Settings → Privacy (where some can be ignored)
+local recent = {}
+local function remember(name)
+    for _, n in ipairs(recent) do
+        if n == name then return end      -- already known: nothing new to say
+    end
+    table.insert(recent, 1, name)
+    while #recent > 12 do table.remove(recent) end
+    pcall(sys.call, "say", "settings", "text seen_apps " .. table.concat(recent, "|"))
+end
+
 local function scan_shares()
     local found, seen, left = {}, {}, 3
+    local ignore = {}
+    for n in (text.share_ignore or ""):gmatch("[^|]+") do ignore[string.lower(n)] = true end
     local function add(kind, app)
-        local key = kind .. ":" .. string.lower(app or "")
+        local name = pretty(app)
+        remember(name)
+        if ignore[string.lower(name)] then return end
+        local key = kind .. ":" .. string.lower(name)
         if seen[key] then return end
         seen[key] = true
-        table.insert(found, { kind = kind, app = pretty(app) })
+        table.insert(found, { kind = kind, app = name })
     end
     local function done()
         left = left - 1
@@ -360,6 +377,8 @@ every(1000, function()
     if fact.expanded or tick % 5 == 0 then scan_shares() end
 end)
 scan_shares()
+-- ask Settings for the ignore list (it also sends it whenever it changes)
+pcall(sys.call, "say", "settings", "emit share_sync")
 
 -- ---------------- the music's bass and beat (beat.py) ----------------
 -- Runs only while the control center is open and music plays; stopped

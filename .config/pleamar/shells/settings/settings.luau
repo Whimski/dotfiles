@@ -66,7 +66,7 @@ read_monitors()
 every(10000, function() read_monitors() end)    -- a monitor plugged in or out
 
 -- Open on a given page (the control center's right-click on a tile).
-local PAGES = { [0] = "wallpaper", "wifi", "audio", "bluetooth" }
+local PAGES = { [0] = "wallpaper", "wifi", "audio", "bluetooth", "privacy" }
 on("open_page", function(p)
     fact.page = PAGES[p] or "wallpaper"
     if not fact.open then read_monitors(function() fact.open = true end) end
@@ -560,3 +560,81 @@ on("set_style", function(k)
         save()
     end)
 end)
+
+
+-- ---------------- Privacy: apps the pill's sharing rings ignore ----------------
+-- The list lives in settings.json ("share_ignore") and is handed to the pill
+-- (`text share_ignore A|B`), which in turn says which apps it has seen
+-- (`text seen_apps A|B`).
+-- (read through ign(): a reload of settings.json can leave the list out)
+local function ign()
+    if type(settings.share_ignore) ~= "table" then settings.share_ignore = {} end
+    return settings.share_ignore
+end
+
+local function ignoring(name)
+    local low = string.lower(name or "")
+    for i, n in ipairs(ign()) do
+        if string.lower(n) == low then return i end
+    end
+    return nil
+end
+
+local seen_list = {}
+local function show_privacy()
+    local rows = {}
+    for i, n in ipairs(seen_list) do
+        if i > 12 then break end
+        rows[i] = { name = n, ignored = ignoring(n) ~= nil }
+    end
+    model.seen = rows
+    local irows = {}
+    for i, n in ipairs(ign()) do
+        if i > 24 then break end
+        irows[i] = { name = n }
+    end
+    model.ignored = irows
+end
+
+local function push_ignore()
+    pcall(sys.call, "say", "pastel", "text share_ignore " .. table.concat(ign(), "|"))
+end
+
+local function changed()
+    save()
+    show_privacy()
+    push_ignore()
+end
+
+on("ignore_flip", function(i)
+    local n = seen_list[i + 1]
+    if not n then return end
+    local at = ignoring(n)
+    if at then table.remove(ign(), at) else table.insert(ign(), n) end
+    changed()
+end)
+on("unignore", function(i)
+    if ign()[i + 1] then table.remove(ign(), i + 1); changed() end
+end)
+on("ignore_add", function()
+    local n = (text.ignore_new or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    if n ~= "" and not ignoring(n) then table.insert(ign(), n); changed() end
+    text.ignore_new = ""
+    fact.typing_ignore = false
+end)
+on("text:ignore_new", function(v) fact.typing_ignore = (v or "") ~= "" end)
+on("share_sync", push_ignore)
+
+-- what the pill has seen (it sets text.seen_apps)
+local last_seen = nil
+every(1000, function()
+    local v = text.seen_apps or ""
+    if v == last_seen then return end
+    last_seen = v
+    seen_list = {}
+    for n in v:gmatch("[^|]+") do table.insert(seen_list, n) end
+    show_privacy()
+end)
+
+show_privacy()
+push_ignore()
