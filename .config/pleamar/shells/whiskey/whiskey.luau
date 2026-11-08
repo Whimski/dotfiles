@@ -5,34 +5,65 @@ pcall(function() math.randomseed(os.time()) end)
 
 --  ── Wandering ───────────────────────────────────────────────────────────────
 --  Every few seconds: walk somewhere near, sit still, or (now and then) nap.
---  Stopped, it sits (most often), washes, yawns or lies down: fact.mood 0, 1, 2, 3.
---  A yawn plays once and it sits again; it meows (4) when its bubble opens.
+--  Stopped, it sits (most often), washes, yawns or lies down: fact.mood (the
+--  scene has the list). A yawn plays once and it sits again; it meows when its
+--  bubble opens; lying down, it yawns, washes or meows without getting up.
 local SIT, WASH, YAWN, LIE, MEOW = 0, 1, 2, 3, 4
+local BODY, LIE_YAWN, LIE_WASH, LIE_MEOW, STAND_MEOW = 5, 6, 7, 8, 9
+local LOOK_UP, SWIPE, FRONT_YAWN, FRONT_WASH = 10, 11, 12, 13
+local lying = { [LIE] = true, [LIE_YAWN] = true, [LIE_WASH] = true, [LIE_MEOW] = true }
 local gx, gy = fact.gx, fact.gy
 local home = function() end            -- defined with the monitors, below
 on("fact:gx", function(v) gx = v; home() end)   -- a click or a drag puts the cat somewhere
 on("fact:gy", function(v) gy = v; home() end)
 
 local once = nil
-local function set_mood(m, for_ms)
+--  `for_ms`: it plays that long, then goes back to `back` (sitting, if not said).
+local function set_mood(m, for_ms, back)
     if once then cancel(once); once = nil end
     fact.tick = 0                         -- an animation starts from its first frame
     fact.mood = m
     if for_ms then
-        once = after(for_ms, function() once = nil; fact.mood = SIT end)
+        once = after(for_ms, function() once = nil; fact.tick = 0; fact.mood = back or SIT end)
     end
+end
+
+--  Lying down, now and then it yawns, washes or meows without getting up.
+local function while_lying()
+    if not lying[fact.mood] or fact.asleep or fact.menu then return end
+    local r = math.random()
+    if r < 0.3 then set_mood(LIE_YAWN, 1100, LIE)
+    elseif r < 0.55 then set_mood(LIE_WASH, math.random(2, 4) * 875, LIE)   -- 7 frames a wash
+    elseif r < 0.65 then set_mood(LIE_MEOW, 750, LIE) end
+    after(math.random(3000, 7000), while_lying)
 end
 
 local function pick_mood()
     local r = math.random()
-    if r < 0.4 then set_mood(SIT)
-    elseif r < 0.65 then set_mood(WASH)
-    elseif r < 0.8 then set_mood(YAWN, 1000)  -- 8 frames of 125 ms
-    else set_mood(LIE) end
+    if r < 0.28 then set_mood(SIT)
+    elseif r < 0.43 then set_mood(WASH)
+    elseif r < 0.53 then set_mood(BODY)
+    elseif r < 0.59 then set_mood(FRONT_WASH)
+    elseif r < 0.67 then set_mood(YAWN, 1000)          -- 8 frames of 125 ms
+    elseif r < 0.73 then set_mood(FRONT_YAWN, 1100)
+    elseif r < 0.77 then set_mood(STAND_MEOW, 1000)
+    elseif r < 0.81 then set_mood(LOOK_UP, 1800)
+    else
+        set_mood(LIE)
+        after(math.random(2500, 5000), while_lying)
+    end
 end
 
 on("fact:menu", function(open)
-    if open then set_mood(MEOW, 750) end
+    if open then
+        if lying[fact.mood] then set_mood(LIE_MEOW, 750, LIE) else set_mood(MEOW, 750) end
+    end
+end)
+--  Waiting for Claude's answer, it looks up; when it comes, it meows standing.
+on("fact:thinking", function(t)
+    if t then set_mood(LOOK_UP)
+    elseif fact.menu then set_mood(STAND_MEOW, 1000)
+    elseif fact.mood == LOOK_UP then set_mood(SIT) end
 end)
 
 --  ── The monitors ────────────────────────────────────────────────────────────
@@ -52,6 +83,12 @@ end
 
 for k = 0, 3 do
     on("text:screen." .. k .. ".name", function(name) screens[k] = name; publish() end)
+end
+--  …and the names it already has: after the logic reloads (an edit to this file)
+--  none of them changes, so without this every copy would draw the cat nowhere.
+for k = 0, 3 do
+    local name = text["screen." .. k .. ".name"]
+    if type(name) == "string" and name ~= "" then screens[k] = name end
 end
 
 --  Where it may stand on a monitor: its feet below its height, inside the edges.
@@ -176,10 +213,11 @@ end)
 
 local function wander()
     local here, r = monitor_at(gx, gy)
-    if here and not fact.menu and not fact.asleep and not fact.held and not fact.calling then
+    if here and not fact.menu and not fact.asleep and not fact.held and not fact.calling and not fact.hunting then
         local roll = math.random()
         local next_to = neighbours(here)
         if roll < 0.12 then
+            fact.sprawl = math.random() < 0.4       -- stretched out, or curled up
             fact.asleep = true
             after(math.random(20000, 45000), function() fact.asleep = false end)
         elseif roll < 0.32 and #next_to > 0 then
@@ -378,3 +416,50 @@ on("fact:calling", function(on_)
         after(3300, pick_mood)
     end
 end)
+
+--  ── Hunting the mouse ───────────────────────────────────────────────────────
+--  While it is awake and idle, now and then it looks where the mouse is (from
+--  Hyprland). If the pointer rests near it, it may creep up on it, crouched,
+--  and bat at it with a paw, towards wherever the pointer is by then. Then it
+--  leaves the mouse alone for a while.
+local rest_until = 0
+local function way_to(dx, dy)            -- 0 right, 1 right-down, 2 down … 7 right-up
+    local a = math.deg((math.atan2 or math.atan)(dy, dx))
+    return math.floor((a / 45) + 0.5) % 8
+end
+local SWIPE_FRAMES = { [0] = 7, 9, 9, 9, 7, 5, 5, 5 }
+local function swipe_at()
+    run("hyprctl", { "cursorpos", "-j" }, function(out, code)
+        local ok, c = pcall(json.decode, out or "")
+        if fact.held or fact.menu or fact.calling then fact.hunting = false; return end
+        local w = (ok and type(c) == "table" and c.x) and way_to(c.x - gx, (c.y - 40) - gy) or (fact.facing == 1 and 0 or 4)
+        fact.hunting = false
+        fact.swipe_way = w
+        set_mood(SWIPE, SWIPE_FRAMES[w] * 125 + 250)
+        rest_until = os.time() + 25
+    end)
+end
+local function hunt()
+    if fact.asleep or fact.menu or fact.held or fact.calling or fact.hunting
+        or os.time() < rest_until or not fact.ready then return end
+    run("hyprctl", { "cursorpos", "-j" }, function(out, code)
+        if code ~= 0 then return end
+        local ok, c = pcall(json.decode, out)
+        if not ok or type(c) ~= "table" or not c.x then return end
+        local dx, dy = c.x - gx, (c.y + 50) - gy          -- the mouse, from its feet
+        local d = math.sqrt(dx * dx + dy * dy)
+        if d < 70 or d > 300 or math.random() > 0.35 then return end
+        local _, r = monitor_at(c.x, c.y)
+        if not r then return end
+        local x0, x1, y0, y1 = area(r)
+        fact.hunting = true
+        set_mood(SIT)
+        -- stop a paw's length short of it
+        local stop = math.max(0, d - 55) / d
+        walk_to(math.clamp(gx + dx * stop, x0, x1), math.clamp(gy + dy * stop, y0, y1))
+        after(2600, function()
+            if fact.hunting then swipe_at() end
+        end)
+    end)
+end
+every(1500, hunt)

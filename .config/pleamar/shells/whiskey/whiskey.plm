@@ -47,7 +47,13 @@ scene Whiskey {
     let k = 4
 
     fact facing = 0         //  0 left, 1 right: which way it last walked (from the logic)
-    fact mood = 0           //  stopped: 0 sit, 1 wash, 2 yawn, 3 lie, 4 meow (from the logic)
+    //  stopped (from the logic): 0 sit, 1 wash, 2 yawn, 3 lie (breathing), 4 meow,
+    //  5 wash its body, 6 yawn lying, 7 wash lying, 8 meow lying, 9 meow standing,
+    //  10 look up, 11 swipe a paw (at swipe_way), 12 yawn facing us, 13 wash facing us
+    fact mood = 0
+    fact hunting = false    //  creeping up on the mouse: the crouched walk
+    fact sprawl = false     //  asleep stretched out, instead of curled up (from the logic)
+    fact swipe_way = 0      //  which way the paw goes, the same eight as walking
     fact tick = 0           //  the clock of its little animations, only while one plays
     fact held = false       //  picked up by the mouse
     fact dragged = false    //  …and moved, so letting go is a drop, not a click
@@ -81,11 +87,33 @@ scene Whiskey {
     //  right, right-down, down, left-down, left, left-up, up, right-up
     let walk_row   = pick(way, 6, 9, 4, 8, 7, 11, 5, 10)
     let walk_count = pick(way, 8, 6, 4, 6, 8, 6, 4, 6)
+    //  The crouched stalk, the same eight ways (8 frames each).
+    let stalk_row  = pick(way, 23, 25, 20, 24, 22, 27, 21, 26)
+    let swipe_row = pick(swipe_way, 47, 49, 44, 48, 46, 51, 45, 50)
+    let swipe_n   = pick(swipe_way, 7, 9, 9, 9, 7, 5, 5, 5)
     let frame = if(held, 575,
                 if(hop > 1, 574,
-                if(walking > 0.15, walk_row * 11 + mod(floor(stride / 14), walk_count),
-                if(napping, 176 + facing * 11 + mod(floor(tick / 8), 2),
-                pick(mood, 0, 396 + mod(tick, 9), 352 + mod(tick, 8), 33 + facing, 308 + mod(tick, 3))))))
+                if(walking > 0.15,
+                    if(hunting, stalk_row * 11 + mod(floor(stride / 10), 8),
+                    walk_row * 11 + mod(floor(stride / 14), walk_count)),
+                //  asleep: curled up (rows 16, 17) or stretched out on its side
+                //  (rows 18 head right, 19 head left), breathing
+                if(napping, if(sprawl, 198 + (1 - facing) * 11, 176 + facing * 11) + mod(floor(tick / 8), 2),
+                pick(mood,
+                    0,                                      //  0 sit
+                    396 + mod(tick, 9),                     //  1 wash
+                    352 + mod(tick, 8),                     //  2 yawn
+                    132 + facing * 11 + mod(floor(tick / 8), 2),   //  3 lie, breathing
+                    308 + mod(tick, 3),                     //  4 meow
+                    429 + facing * 11 + mod(tick, 11),      //  5 wash its body
+                    385 + min(tick, 7),                     //  6 yawn lying
+                    418 + mod(tick, 7),                     //  7 wash lying
+                    341 + mod(tick, 3),                     //  8 meow lying
+                    451 + facing * 11 + mod(floor(tick / 2), 2),   //  9 meow standing
+                    473,                                    // 10 look up
+                    swipe_row * 11 + min(tick, swipe_n - 1),       // 11 swipe
+                    374 + min(tick, 7),                     // 12 yawn facing us
+                    407 + mod(tick, 9))))))                 // 13 wash facing us
     //  The monitor the cat is heading to (from the logic): used for the bubble
     //  only while the cat is over no monitor at all (carried over a gap).
     fact gox = 0
@@ -112,7 +140,7 @@ scene Whiskey {
     let hw = if(on0, mon[0].w, if(on1, mon[1].w, if(on2, mon[2].w, if(on3, mon[3].w, gow))))
     let hh = if(on0, mon[0].h, if(on1, mon[1].h, if(on2, mon[2].h, if(on3, mon[3].h, goh))))
 
-    every 125ms while walking < 0.15 and (napping or mood == 1 or mood == 2 or mood == 4) { tick = mod(tick + 1, 72) }
+    every 125ms while walking < 0.15 and (napping or (mood > 0 and mood != 10)) { tick = mod(tick + 1, 5544) }
 
     gesture joy asked {
         170ms out_quad hold 200ms { hop: 16 }
@@ -128,10 +156,17 @@ scene Whiskey {
     //  Each copy draws the cat less where its own monitor is (`mon[screen.index]`,
     //  read per copy in what is drawn), so it shows on the monitor it is over and
     //  on both while it crosses from one to the next.
-    image cat {
-        at: X - 16 * k - mon.$screen.ox, Y - 25 * k - mon.$screen.oy
-        size: 32 * k, 32 * k; cell: frame, 11, 53
-        show: ready and X > mon.$screen.ox - 70 and X < mon.$screen.ox + screen.width + 70 and Y > mon.$screen.oy - 20 and Y < mon.$screen.oy + screen.height + 120
+    //  Lying, the sheet only yawns, washes and meows facing left (rows 35, 38,
+    //  31): facing right, those are drawn mirrored, so it does not turn round.
+    let mirrored = facing == 1 and walking <= 0.15 and not held and not napping and hop <= 1 and (mood == 6 or mood == 7 or mood == 8)
+    group {
+        pivot: X - mon.$screen.ox, Y - mon.$screen.oy
+        scale: if(mirrored, -1, 1), 1
+        image cat {
+            at: X - 16 * k - mon.$screen.ox, Y - 25 * k - mon.$screen.oy
+            size: 32 * k, 32 * k; cell: frame, 11, 53
+            show: ready and X > mon.$screen.ox - 70 and X < mon.$screen.ox + screen.width + 70 and Y > mon.$screen.oy - 20 and Y < mon.$screen.oy + screen.height + 120
+        }
     }
 
     zone box catzone {
