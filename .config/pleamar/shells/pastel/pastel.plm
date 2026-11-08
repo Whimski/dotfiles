@@ -21,7 +21,7 @@ scene Pastel {
     }
     permissions {
         services: "clock", "audio", "audio.*", "battery", "brightness", "brightness.*", "notifications", "notifications.*", "network", "network.*", "bluetooth", "bluetooth.*", "media", "media.*", "say:settings"
-        run: "hyprctl monitors -j", "curl", "magick"
+        run: "hyprctl monitors -j", "curl", "magick", "pactl", "pw-dump", "fuser", "ps", "python3 /home/tobi/.config/pleamar/shells/pastel/miclevel.py", "python3 /home/tobi/.config/pleamar/shells/pastel/beat.py"
     }
 
     service clock as now { time: text = "--:--"; date: text }
@@ -38,6 +38,13 @@ scene Pastel {
     fact osd_n = 0                                 // bumped on each key press
     fact ready = false                             // ignore the first reports
     event nudge ->                                 // wheel over the pill → volume
+
+    // ---- what is being shared right now: mic, the computer's sound, screen, camera ----
+    model shares max 6 { kind: mic | sound | screen | camera; app: text }
+    image ic_sh_mic = icon "audio-input-microphone-symbolic", 14, 14
+    image ic_sh_sound = icon "audio-speakers-symbolic", 14, 14
+    image ic_sh_screen = icon "video-display-symbolic", 14, 14
+    image ic_sh_cam = icon "camera-web-symbolic", 14, 14
 
     // ---- notifications (the logic fills these) ----
     model notes max 20 { title: text; body: text; app: text }  // newest first (the pill shows 3)
@@ -80,7 +87,9 @@ scene Pastel {
     let has_bat = bat.present and bat.percent > 0
     let low = has_bat and not bat.charging and bat.percent <= 20
     let batw = 16 + 14 + 5 + pm.width
-    let expw = 36 + max(tm.width, dm.width) + if(has_bat, 12 + batw, 0)
+    let sharew = if(shares.count > 0, 12 + shares.count * 28 + (shares.count - 1) * 6, 0)
+    let toprow = max(tm.width, dm.width) + sharew + if(has_bat, 12 + batw, 0)
+    let expw = 36 + toprow
     let exph = 12 + tm.height + dm.height
     let osdw = 28 + 17 + 10 + 130 + 10 + max(38, om.width)
     let osdh = 12 + 22
@@ -111,13 +120,13 @@ scene Pastel {
             tint: 72%
             border: 1 * line, mix(edge, accent, 0.35 * flare)
             shadow: sh_x, 8 * sh_k + sh_hard, 22 * sh_k + sh_min, min(1, 34% * sh_a), sh_color
-            box { at: cx, cy; size: pw, ph; corner: (ph / 2) * rk }
+            box { at: cx, cy; size: pw, ph; corner: (16) * rk }
         }
-        shader Theme.aurora { at: cx - (pw) / 2, cy - (ph) / 2; size: pw, ph; corner: (ph / 2) * rk; values: aur_k; colors: glow_a, glow_b; show: aur_k > 0 }   // midnight's aurora
+        shader Theme.aurora { at: cx - (pw) / 2, cy - (ph) / 2; size: pw, ph; corner: (16) * rk; values: aur_k; colors: glow_a, glow_b; show: aur_k > 0 }   // midnight's aurora
         // soft outer glow ring while it flares
         box { at: cx, cy; size: pw + 2, ph + 2; corner: (ph / 2 + 1) * rk; stroke: (2) * line; color: accent; opacity: 18% * flare }
 
-        zone box pill { at: cx, cy; size: pw, ph; corner: (ph / 2) * rk; label: "Pastel bar" }
+        zone box pill { at: cx, cy; size: pw, ph; corner: (16) * rk; label: "Pastel bar" }
 
         // ---------- expanded: clock + date, battery ----------
         group {
@@ -126,16 +135,37 @@ scene Pastel {
             group {
                 opacity: smooth(0, 0.6, bloom)
                 move: 0, (1 - smooth(0, 0.6, bloom)) * -10
-                let colx = left + 18 + max(tm.width, dm.width) / 2
+                let colx = cx - toprow / 2 + max(tm.width, dm.width) / 2
                 text now.time { family: Theme.face; at: colx, top + 6 + tm.height / 2; anchor: center; size: 20; weight: 700; color: ink; measure: tm }
                 text now.date { family: Theme.face; at: colx, top + 6 + tm.height + dm.height / 2; anchor: center; size: 11; color: subink; measure: dm }
+            }
+            // what is in use: a small ring for each, coloured by kind, right of the time
+            row sharerow {
+                show: shares.count > 0
+                at: cx - toprow / 2 + max(tm.width, dm.width) + 12, top + 6 + (tm.height + dm.height) / 2
+                anchor: left middle
+                gap: 6
+                opacity: smooth(0.3, 1, bloom)
+                for sh in shares {
+                    group {
+                        size: 28, 28
+                        let ring = pick(sh.kind, col_yellow, col_pink, danger, col_green)
+                        zone box sh_hit { from: 0, 0; size: 28, 28; corner: 14; label: "{sh.app}" }
+                        ellipse { at: 14, 14; radius: 13; color: ring; opacity: 14% }
+                        ellipse { at: 14, 14; radius: 13; stroke: 1.5; color: ring }
+                        image ic_sh_mic { at: 7, 7; size: 14, 14; tint: ring; show: sh.kind == mic }
+                        image ic_sh_sound { at: 7, 7; size: 14, 14; tint: ring; show: sh.kind == sound }
+                        image ic_sh_screen { at: 7, 7; size: 14, 14; tint: ring; show: sh.kind == screen }
+                        image ic_sh_cam { at: 7, 7; size: 14, 14; tint: ring; show: sh.kind == camera }
+                    }
+                }
             }
             // battery pill unfurls from the right
             group {
                 show: has_bat
                 opacity: smooth(0.3, 1, bloom)
                 move: (1 - smooth(0.3, 1, bloom)) * 28, 0
-                let bx = left + 18 + max(tm.width, dm.width) + 12
+                let bx = cx - toprow / 2 + max(tm.width, dm.width) + sharew + 12
                 box { from: bx, cy - 13; size: batw, 26; corner: (13) * rk; color: if(low, danger, hover); opacity: if(low, 18%, 50%) }
                 box { from: bx, cy - 13; size: batw, 26; corner: (13) * rk; stroke: (1.4) * line; color: danger; opacity: if(low, 80%, 0) }
                 // battery glyph
@@ -311,12 +341,19 @@ scene Pastel {
     prop ring = 1 ~1100ms
     prop play_hot = 0 ~spring(400, 22)
     prop play_pr = 0 ~spring(600, 26)
-    repeat k in 0..3 { prop eq.$k = 0 ~spring(70, 7) }   // slow, soft bounces
-    every 820ms while cc_open and m_playing { impulse beat 0.55 }
-    every 1400ms while cc_open and m_playing { ring: 0 ~0ms; ring: 1 after 16ms }
-    every 760ms while cc_open and m_playing { impulse eq.0 110 }
-    every 940ms while cc_open and m_playing { impulse eq.1 90 }
-    every 1130ms while cc_open and m_playing { impulse eq.2 125 }
+    // what the music sounds like, from beat.py while the drawer is open and it
+    // plays: bass, mids and highs (0..1), and a beat on each sudden bass hit
+    fact bass = 0
+    fact mid = 0
+    fact high = 0
+    event beat_hit
+    prop bassp = 0 ~spring(700, 40)                 // quick, no wobble
+    follow bassp = bass
+    repeat k in 0..3 {
+        prop eq.$k = 0 ~spring(600, 34)
+        follow eq.$k = pick(k, bass, mid, high) * 10
+    }
+    on beat_hit { impulse beat 0.7; ring: 0 ~0ms; ring: 1 after 16ms }
     follow cc_in = if(cc_open, 1, 0)
     image ic_gear = icon "emblem-system-symbolic", 18, 18
     image ic_close = icon "window-close-symbolic", 16, 16
@@ -503,7 +540,7 @@ scene Pastel {
             opacity: clamp(cc_in * 2.5, 0, 1)
             move: if(cc_in > 0.995, 0, (1 - cc_in) * -380), 0
             zone box media_sheet { from: mx, ty; size: 340, mh; corner: (22) * rk }
-            shader Theme.glowblob { at: mx - 70, ty - 70; size: 340 + 140, mh + 140; values: 70, glow_k; colors: art0, art1; show: glow_k > 0 }   // midnight's glow (the cover's colours)
+            shader Theme.glowblob { at: mx - 70, ty - 70; size: 340 + 140, mh + 140; values: 70, glow_k * (0.75 + 0.5 * bassp); colors: art0, art1; show: glow_k > 0 }   // midnight's glow (the cover's colours)
             body {
                 color: panel
                 glass: 100% * glassy
@@ -525,7 +562,7 @@ scene Pastel {
             group {
                 opacity: smooth(0.1, 0.6, cc_in)
                 pivot: mx + 170, ty + 144
-                scale: (0.9 + 0.1 * smooth(0.1, 0.7, cc_in)) * (1 + beat)
+                scale: (0.9 + 0.1 * smooth(0.1, 0.7, cc_in)) * (1 + beat + 0.03 * bassp)
                 body { gradient: mx + 76, ty + 50 to mx + 264, ty + 238, art0, #3f6b58
                     box { from: mx + 76, ty + 50; size: 188, 188; corner: (16) * rk } }
                 image ic_music { at: mx + 146, ty + 120; size: 48, 48; tint: onacc; opacity: 60% }

@@ -212,3 +212,178 @@ on("seek_to", function(f)
         fact.elapsed = f * len
     end
 end)
+
+-- ---------------- what is being shared: mic, sound, screen, camera ----------------
+-- Shown as chips in the Alt pill. Looked for every second while the pill is
+-- open, and every five seconds otherwise, so it is ready when Alt is held.
+--   mic / sound: apps recording a source (pactl source-outputs); a ".monitor"
+--                source is the computer's own sound, anything else a microphone
+--   screen:      the screen-share portal's video node, running, and who reads it
+--   camera:      a camera's video node, running, or an app holding /dev/video*
+local QUIET = { easyeffects = true, pleamar = true, pipewire = true, wireplumber = true,
+                pavucontrol = true, ["pipewire-pulse"] = true, parec = true,
+                ["pleamar-miclevel"] = true, python3 = true }
+local MICLEVEL = "/home/tobi/.config/pleamar/shells/pastel/miclevel.py"
+local SPEAKING = 0.03     -- a mic counts as in use only above this (0..1)
+
+local function pretty(name)
+    name = name or "?"
+    return (name:gsub("^%l", string.upper))
+end
+
+local function scan_shares()
+    local found, seen, left = {}, {}, 3
+    local function add(kind, app)
+        local key = kind .. ":" .. string.lower(app or "")
+        if seen[key] then return end
+        seen[key] = true
+        table.insert(found, { kind = kind, app = pretty(app) })
+    end
+    local function done()
+        left = left - 1
+        if left > 0 then return end
+        local order = { screen = 1, camera = 2, mic = 3, sound = 4 }
+        table.sort(found, function(a, b) return order[a.kind] < order[b.kind] end)
+        local rows = {}
+        for i = 1, math.min(6, #found) do rows[i] = found[i] end
+        model.shares = rows
+    end
+
+    -- audio being recorded: the computer's sound (a ".monitor" source) counts
+    -- as soon as an app records it; a microphone only while sound comes in
+    run("pactl", { "-f", "json", "list", "sources" }, function(sout, scode)
+        local monitor, names = {}, {}
+        if scode == 0 and sout then
+            local ok, srcs = pcall(json.decode, sout)
+            if ok and type(srcs) == "table" then
+                for _, src in ipairs(srcs) do
+                    names[src.index] = src.name
+                    monitor[src.index] = (src.name or ""):match("%.monitor$") ~= nil
+                end
+            end
+        end
+        run("pactl", { "-f", "json", "list", "source-outputs" }, function(out, code)
+            local mics = {}          -- source index → the apps recording it
+            if code == 0 and out then
+                local ok, list = pcall(json.decode, out)
+                if ok and type(list) == "table" then
+                    for _, so in ipairs(list) do
+                        local p = so.properties or {}
+                        local bin = string.lower(p["application.process.binary"] or "")
+                        local app = p["application.name"] or bin
+                        local media = p["media.name"] or ""
+                        if not QUIET[bin] and not QUIET[string.lower(app)]
+                           and not media:find("[Pp]eak detect") and not so.corked and not so.mute then
+                            if monitor[so.source] then add("sound", app)
+                            elseif names[so.source] then
+                                mics[so.source] = mics[so.source] or {}
+                                table.insert(mics[so.source], app)
+                            end
+                        end
+                    end
+                end
+            end
+            -- listen to each microphone in use for a moment
+            local pending = 0
+            for _ in pairs(mics) do pending = pending + 1 end
+            if pending == 0 then done(); return end
+            for src, apps in pairs(mics) do
+                run("python3", { MICLEVEL, names[src] }, function(level)
+                    if (tonumber(level) or 0) > SPEAKING then
+                        for _, a in ipairs(apps) do add("mic", a) end
+                    end
+                    pending = pending - 1
+                    if pending == 0 then done() end
+                end)
+            end
+        end)
+    end)
+
+    -- screen share and cameras, from PipeWire's graph
+    run("pw-dump", {}, function(out, code)
+        if code == 0 and out then
+            local ok, objs = pcall(json.decode, out)
+            if ok and type(objs) == "table" then
+                local nodes, links = {}, {}
+                for _, o in ipairs(objs) do
+                    if o.type == "PipeWire:Interface:Node" then nodes[o.id] = o
+                    elseif o.type == "PipeWire:Interface:Link" then table.insert(links, o) end
+                end
+                local function readers(id)
+                    local apps = {}
+                    for _, l in ipairs(links) do
+                        local i = l.info or {}
+                        if i["output-node-id"] == id then
+                            local n = nodes[i["input-node-id"]]
+                            local p = n and n.info and n.info.props or {}
+                            table.insert(apps, p["application.name"] or p["node.name"] or "an app")
+                        end
+                    end
+                    return apps
+                end
+                for id, n in pairs(nodes) do
+                    local info = n.info or {}
+                    local p = info.props or {}
+                    local name = p["node.name"] or ""
+                    if info.state == "running" and p["media.class"] == "Video/Source" then
+                        local kind = name:find("xdg%-desktop%-portal") and "screen"
+                                  or (name:find("^v4l2") or p["device.api"] == "v4l2" or p["api.v4l2.path"]) and "camera"
+                        if kind then
+                            local apps = readers(id)
+                            if #apps == 0 then add(kind, kind == "screen" and "Sharing screen" or "Camera on") end
+                            for _, a in ipairs(apps) do add(kind, a) end
+                        end
+                    end
+                end
+            end
+        end
+        done()
+    end)
+
+    -- apps that open the camera directly
+    run("fuser", { "/dev/video0", "/dev/video1", "/dev/video2", "/dev/video3" }, function(out)
+        local pids = {}
+        for pid in (out or ""):gmatch("(%d+)") do table.insert(pids, pid) end
+        if #pids == 0 then done(); return end
+        run("ps", { "-o", "comm=", "-p", table.concat(pids, ",") }, function(names)
+            for n in (names or ""):gmatch("[^\n]+") do
+                if not QUIET[string.lower(n)] then add("camera", n) end
+            end
+            done()
+        end)
+    end, { errors = false })
+end
+
+local tick = 0
+every(1000, function()
+    tick = tick + 1
+    if fact.expanded or tick % 5 == 0 then scan_shares() end
+end)
+scan_shares()
+
+-- ---------------- the music's bass and beat (beat.py) ----------------
+-- Runs only while the control center is open and music plays; stopped
+-- otherwise, so it costs nothing the rest of the time.
+local BEAT = "/home/tobi/.config/pleamar/shells/pastel/beat.py"
+local beat_id = nil
+
+local function stop_beat()
+    if beat_id then kill(beat_id); beat_id = nil end
+    fact.bass = 0; fact.mid = 0; fact.high = 0
+end
+
+every(500, function()
+    local want = fact.cc_open and fact.m_playing
+    if want and not beat_id then
+        beat_id = spawn("python3", { BEAT }, function(line)
+            local b, m, h, hit = line:match("^(%S+) (%S+) (%S+) (%d)")
+            if not b then return end
+            fact.bass = tonumber(b) or 0
+            fact.mid = tonumber(m) or 0
+            fact.high = tonumber(h) or 0
+            if hit == "1" then emit("beat_hit") end
+        end, function() beat_id = nil end)
+    elseif not want and beat_id then
+        stop_beat()
+    end
+end)
