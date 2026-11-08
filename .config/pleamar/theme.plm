@@ -40,7 +40,7 @@ library Theme {
 
     // glows behind cards (themes/glow.wgsl)
     shader glowblob = file "themes/glow.wgsl"
-    let glow_k    = 1
+    let glow_k    = 0        // off: no blobs behind cards (the music particles stand in)
     let glow_a    = #ff7eb3    // pink, top right
     let glow_b    = #6ea8ff    // blue, bottom left
 

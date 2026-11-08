@@ -1,7 +1,20 @@
 -- pastel: the wheel over the pill nudges the volume, 5 % a notch (like pastel-bar).
+-- The volume goes up to 200 %: the audio service stops at 100 %, so past it
+-- pactl sets it (it is in the scene's run permissions).
+local snd = {}          -- the audio service's last report
+local VOL_MAX = 2
+local function set_volume(v)
+    v = math.max(0, math.min(VOL_MAX, v))
+    v = math.floor(v * 100 + 0.5) / 100
+    if v <= 1 then
+        sys.call("audio.volume", v)
+    else
+        run("pactl", { "set-sink-volume", "@DEFAULT_SINK@", tostring(math.floor(v * 100 + 0.5)) .. "%" }, function() end)
+    end
+end
 on("nudge", function(notches)
     if notches == nil or notches == 0 then return end
-    sys.call("audio.step", notches > 0 and 0.05 or -0.05)
+    set_volume((snd.volume or 0) + (notches > 0 and 0.05 or -0.05))
 end)
 
 -- Notifications: pleamar is the notification server. They are kept until
@@ -98,7 +111,6 @@ sys.watch("bluetooth", function(b)
 end)
 on("bt_flip", function() sys.call("bluetooth.power", not bt.powered) end)
 
-local snd = {}
 sys.watch("audio", function(a)
     snd = a or {}
     local name = ""
@@ -106,7 +118,7 @@ sys.watch("audio", function(a)
     text.out_name = snd.muted and "Muted" or name
 end)
 on("mute_flip", function() sys.call("audio.mute", not snd.muted) end)
-on("set_vol", function(v) sys.call("audio.volume", v) end)
+on("set_vol", function(v) set_volume(v) end)
 on("set_lit", function(v) sys.call("brightness.level", v) end)
 
 on("fact:dnd", function(d) text.dnd_sub = d and "On" or "Off" end)
@@ -184,7 +196,10 @@ sys.watch("media", function(m)
     fact.m_playing = music and song.playing == true
     fact.m_len = music and (tonumber(song.length) or 0) or 0
     fact.m_seek = music and song.can_seek == true
-    text.m_title = music and (song.title or "") or ""
+    local title = music and (song.title or "") or ""
+    local who = music and (song.artist or "") or ""
+    if title ~= text.m_title or who ~= text.m_artist then fact.song_n = fact.song_n + 1 end  -- a new song: the scene slides it in
+    text.m_title = title
     text.m_artist = music and (song.artist or "") or ""
     fact.elapsed = music and (tonumber(song.position) or 0) or 0
     cover(music and song.art or "")

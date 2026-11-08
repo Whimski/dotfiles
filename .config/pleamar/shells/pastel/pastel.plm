@@ -101,7 +101,8 @@ scene Pastel {
     follow ph = if(osd != none, osdh, exph)
 
     let val = if(osd == brightness, lit.level, if(vol.muted, 0, vol.volume))
-    follow meter = 130 * clamp(val, 0, 1)
+    let vtop = if(osd == brightness, 1, 2)          // the volume goes up to 200 %
+    follow meter = 130 * clamp(val / vtop, 0, 1)
 
     // ---- geometry ----
     let cx = 260
@@ -217,12 +218,20 @@ scene Pastel {
             let mx = left + 14 + 17 + 10
             box { from: mx, cy - 3; size: 130, 6; corner: (3) * rk; color: subink; opacity: 30% }
             body {
-                gradient: mx, 0 to mx + 130, 0, accent_lo, if(osd == brightness, col_yellow, col_green)
+                show: osd == brightness
+                gradient: mx, 0 to mx + 130, 0, accent_lo, col_yellow
                 box { from: mx, cy - 3; size: max(6, meter), 6; corner: (3) * rk }
             }
+            // the volume: green up to 100 %, warming to red as it is boosted past it
+            body {
+                show: osd != brightness
+                gradient: mx, 0 to mx + 130, 0, accent_lo 0%, col_green 50%, col_yellow 72%, danger 100%
+                box { from: mx, cy - 3; size: max(6, meter), 6; corner: (3) * rk }
+            }
+            box { at: mx + 65, cy; size: 2, 10; corner: (1) * rk; color: ink; opacity: if(osd == brightness, 0, 45%) }   // 100 %
             // glowing knob riding the fill's edge
             body {
-                color: if(osd == brightness, col_yellow, col_green)
+                color: if(osd == brightness, col_yellow, mix(col_green, danger, clamp(val - 1, 0, 1)))
                 border: 2 * line, knob
                 ellipse { at: mx + max(6, meter) - 3, cy; radius: 6 * (1 + 0.3 * kick) }
             }
@@ -381,6 +390,33 @@ scene Pastel {
     }
     on beat_hit { impulse beat 0.7; ring: 0 ~0ms; ring: 1 after 16ms }
     follow cc_in = if(cc_open, 1, 0)
+    // smoothing: particles fade in and out, the card's height travels, the
+    // play/pause icons crossfade, a new song slides in, buttons answer the mouse
+    prop pt_on = 0 ~900ms                  // the particles, while music plays
+    follow pt_on = if(m_playing and cc_open, 1, 0)
+    prop cc_h = 420 ~spring(260, 24)       // the control center's height
+    prop pp = 0 ~spring(220, 20)           // 0: play shown, 1: pause shown
+    follow pp = if(m_playing, 1, 0)
+    prop song_in = 1 ~520ms                // 0 → 1 each time the song changes
+    fact song_n = 0                        // bumped by the logic on each new song
+    on change song_n { song_in: 0 ~0ms; song_in: 1 after 16ms }
+    prop clr_k = 0 ~quick                  // "Clear all" / "No notifications"
+    follow clr_k = if(notes.count > 0, 1, 0)
+    prop prev_hot = 0 ~spring(400, 22)
+    prop prev_pr = 0 ~spring(600, 26)
+    prop next_hot = 0 ~spring(400, 22)
+    prop next_pr = 0 ~spring(600, 26)
+    prop gear_hot = 0 ~spring(260, 16)
+    prop x_hot = 0 ~spring(400, 22)
+    // each tile's particles go clear when it is off, coloured when on
+    prop t_wifi = 0 ~400ms
+    prop t_bt = 0 ~400ms
+    prop t_audio = 0 ~400ms
+    prop t_dnd = 0 ~400ms
+    follow t_wifi = if(net.wifi, 1, 0)
+    follow t_bt = if(bt_on, 1, 0)
+    follow t_audio = if(vol.muted, 0, 1)
+    follow t_dnd = if(dnd, 1, 0)
     image ic_gear = icon "emblem-system-symbolic", 18, 18
     image ic_close = icon "window-close-symbolic", 16, 16
     image ic_wifi = icon "network-wireless-symbolic", 20, 20
@@ -397,25 +433,29 @@ scene Pastel {
     image ic_pause = icon "media-playback-pause-symbolic", 22, 22
     image ic_music = icon "folder-music-symbolic", 48, 48
     image cover = from m_art, 0, 0
-    let art0 = mix(accent, rgb(art_r.0, art_g.0, art_b.0), glow_k)
-    let art1 = mix(accent_lo, rgb(art_r.1, art_g.1, art_b.1), glow_k)
+    let art0 = mix(accent, rgb(art_r.0, art_g.0, art_b.0), aur_k)
+    let art1 = mix(accent_lo, rgb(art_r.1, art_g.1, art_b.1), aur_k)
 
     // a slider, 0..1 (pastel-bar's: a label and value above the track)
-    component CcSlider(label: text, value: number, moved: event, icon: image, tone: color = accent) {
+    component CcSlider(label: text, value: number, moved: event, icon: image, tone: color = accent, top: number = 1) {
         size: 340, 44
         prop v = 0 ~spring(400, 30)
-        follow v = clamp(value, 0, 1)
+        follow v = clamp(value / top, 0, 1)
         image icon { at: 0, 2; size: 16, 16; tint: subink }
         text label { family: Theme.face; at: 24, 10; anchor: left center; size: 12; weight: 600; color: ink }
         text "{round(value * 100)}%" { at: 340, 10; anchor: right center; size: 11; color: subink; family: Theme.mono }
         zone box hit { from: 0, 22; size: 340, 22; cursor: pointer; label: label; role: slider }
         box { from: 0, 30; size: 340, 6; corner: (3) * rk; color: subink; opacity: 30% }
-        body { gradient: 0, 0 to 340, 0, accent_lo, tone
+        body { show: top <= 1; gradient: 0, 0 to 340, 0, accent_lo, tone
             box { from: 0, 30; size: max(6, 340 * v), 6; corner: (3) * rk } }
-        body { color: tone; border: 2 * line, knob
+        // past 100 % (top: 2, the volume): green to 100, warming to red at 200
+        body { show: top > 1; gradient: 0, 0 to 340, 0, accent_lo 0%, tone 50%, col_yellow 72%, danger 100%
+            box { from: 0, 30; size: max(6, 340 * v), 6; corner: (3) * rk } }
+        box { at: 340 / top, 33; size: 2, 12; corner: (1) * rk; color: ink; opacity: if(top > 1, 45%, 0) }   // 100 %
+        body { color: mix(tone, danger, clamp((value - 1) / max(top - 1, 0.01), 0, 1)); border: 2 * line, knob
             ellipse { at: max(6, 340 * v) - 3, 33; radius: 7 } }
-        on press hit { emit moved(clamp(local.x / 340, 0, 1)) }
-        on drag hit { emit moved(clamp(local.x / 340, 0, 1)) }
+        on press hit { emit moved(clamp(local.x / 340, 0, 1) * top) }
+        on drag hit { emit moved(clamp(local.x / 340, 0, 1) * top) }
     }
 
     // a quick toggle tile: accent when on; right-click opens its settings page
@@ -463,12 +503,31 @@ scene Pastel {
 
         // ---------------- right: the control center ----------------
         let rx = W - 14 - 380
-        let rh = min(H - ty - 24, 20 + 30 + 14 + 126 + 14 + if(lit.present, 102, 50) + 14 + 30 + max(60, min(notes.count, 5) * 68) + 14)
+        follow cc_h = min(H - ty - 24, 20 + 30 + 14 + 126 + 14 + if(lit.present, 102, 50) + 14 + 30 + max(60, min(notes.count, 5) * 68) + 14)
+        let rh = cc_h
         group {
             opacity: clamp(cc_in * 2.5, 0, 1)
             move: if(cc_in > 0.995, 0, (1 - cc_in) * 420), 0
             zone box cc_sheet { from: rx, ty; size: 380, rh; corner: (22) * rk }
-            shader Theme.glowblob { at: rx - 70, ty - 70; size: 380 + 140, rh + 140; values: 70, glow_k; colors: glow_a, glow_b; show: glow_k > 0 }   // midnight's glow
+            // midnight's glow, like the music player's: little lights in each tile's
+            // colour drift out from behind the card near where that tile sits —
+            // Wi-Fi and Bluetooth up top, Audio and DND below — while music plays: coloured when the toggle is on, clear when off
+            let cc_spark = aur_k > 0 and m_playing and cc_in > 0.9
+            let clear_pt = #f4f6ff              // a toggle that is off: clear, glassy lights
+            group {
+                glow: 14, 100%
+                opacity: pt_on
+                // Wi-Fi, blue: the top edge's left half and the left edge's upper half
+                particles { at: rx + 100, ty + 6; area: 180, 12; count: 70; life: 2.5s .. 4.5s; speed: 14 .. 40; direction: -90deg; spread: 120deg; gravity: 0, -6; drag: 0.2; size: 6, 2; colors: mix(clear_pt, col_blue, t_wifi), mix(clear_pt, col_blue, t_wifi); opacity: 45% + 40% * t_wifi, 0%; shape: dot; emit: cc_spark }
+                particles { at: rx + 6, ty + rh * 0.25; area: 12, rh * 0.5 - 20; count: 70; life: 2.5s .. 4.5s; speed: 14 .. 40; direction: 180deg; spread: 120deg; gravity: 0, -6; drag: 0.2; size: 6, 2; colors: mix(clear_pt, col_blue, t_wifi), mix(clear_pt, col_blue, t_wifi); opacity: 45% + 40% * t_wifi, 0%; shape: dot; emit: cc_spark }
+                // Bluetooth, pink: the top edge's right half (the right edge is the screen's)
+                particles { at: rx + 280, ty + 6; area: 180, 12; count: 120; life: 2.5s .. 4.5s; speed: 14 .. 40; direction: -90deg; spread: 120deg; gravity: 0, -6; drag: 0.2; size: 6, 2; colors: mix(clear_pt, col_pink, t_bt), mix(clear_pt, col_pink, t_bt); opacity: 45% + 40% * t_bt, 0%; shape: dot; emit: cc_spark }
+                // Audio, green: the left edge's lower half and the bottom edge's left half
+                particles { at: rx + 6, ty + rh * 0.75; area: 12, rh * 0.5 - 20; count: 70; life: 2.5s .. 4.5s; speed: 14 .. 40; direction: 180deg; spread: 120deg; gravity: 0, -6; drag: 0.2; size: 6, 2; colors: mix(clear_pt, col_green, t_audio), mix(clear_pt, col_green, t_audio); opacity: 45% + 40% * t_audio, 0%; shape: dot; emit: cc_spark }
+                particles { at: rx + 100, ty + rh - 6; area: 180, 12; count: 70; life: 2.5s .. 4.5s; speed: 14 .. 40; direction: 90deg; spread: 120deg; gravity: 0, -6; drag: 0.2; size: 6, 2; colors: mix(clear_pt, col_green, t_audio), mix(clear_pt, col_green, t_audio); opacity: 45% + 40% * t_audio, 0%; shape: dot; emit: cc_spark }
+                // DND, yellow: the bottom edge's right half
+                particles { at: rx + 280, ty + rh - 6; area: 180, 12; count: 120; life: 2.5s .. 4.5s; speed: 14 .. 40; direction: 90deg; spread: 120deg; gravity: 0, -6; drag: 0.2; size: 6, 2; colors: mix(clear_pt, col_yellow, t_dnd), mix(clear_pt, col_yellow, t_dnd); opacity: 45% + 40% * t_dnd, 0%; shape: dot; emit: cc_spark }
+            }
             body {
                 color: panel
                 glass: 100% * glassy
@@ -485,9 +544,23 @@ scene Pastel {
             // header
             text "Control Center" { family: Theme.face; at: ix, iy + 12; anchor: left center; size: 17; weight: 700; color: ink }
             zone box gear { at: ix + 340 - 44, iy + 12; size: 30, 30; corner: (15) * rk; cursor: pointer; label: "Settings" }
-            image ic_gear { at: ix + 340 - 53, iy + 3; size: 18, 18; tint: subink }
+            box { at: ix + 340 - 44, iy + 12; size: 30, 30; corner: (15) * rk; color: hover; opacity: gear_hot }
+            group {
+                pivot: ix + 340 - 44, iy + 12
+                rotate: 60deg * gear_hot
+                image ic_gear { at: ix + 340 - 53, iy + 3; size: 18, 18; tint: mix(subink, ink, gear_hot) }
+            }
             zone box cc_x { at: ix + 340 - 9, iy + 12; size: 30, 30; corner: (15) * rk; cursor: pointer; label: "Close" }
-            image ic_close { at: ix + 340 - 17, iy + 4; size: 16, 16; tint: subink }
+            box { at: ix + 340 - 9, iy + 12; size: 30, 30; corner: (15) * rk; color: hover; opacity: x_hot }
+            group {
+                pivot: ix + 340 - 9, iy + 12
+                scale: 1 + 0.12 * x_hot
+                image ic_close { at: ix + 340 - 17, iy + 4; size: 16, 16; tint: mix(subink, ink, x_hot) }
+            }
+            on enter gear { gear_hot: 1 }
+            on leave gear { gear_hot: 0 }
+            on enter cc_x { x_hot: 1 }
+            on leave cc_x { x_hot: 0 }
             on press gear { emit open_settings(-1) }
             on press cc_x { cc_open = false }
 
@@ -514,7 +587,7 @@ scene Pastel {
                 column {
                     at: ix, iy + 44 + 126 + 14
                     gap: 14
-                    CcSlider("Volume", if(vol.muted, 0, vol.volume), set_vol, ic_spk, tone: col_green)
+                    CcSlider("Volume", if(vol.muted, 0, vol.volume), set_vol, ic_spk, tone: col_green, top: 2)
                     group { show: lit.present; size: 340, 44
                         CcSlider("Brightness", lit.level, set_lit, ic_sun2, tone: col_yellow) }
                 }
@@ -526,12 +599,12 @@ scene Pastel {
                 opacity: smooth(0.3, 0.8, cc_in)
                 move: (1 - smooth(0.3, 0.8, cc_in)) * 48, 0
                 text "Notifications" { family: Theme.face; at: ix, ny + 10; anchor: left center; size: 13; weight: 700; color: ink }
-                zone box clear_all { from: ix + 340 - 70, ny - 2; size: 70, 24; corner: (12) * rk; cursor: pointer; show: notes.count > 0 }
-                box { from: ix + 340 - 70, ny - 2; size: 70, 24; corner: (12) * rk; color: hover; opacity: 80%; show: notes.count > 0 }
-                text "Clear all" { family: Theme.face; at: ix + 340 - 35, ny + 10; anchor: center; size: 11; color: ink; show: notes.count > 0 }
+                zone box clear_all { from: ix + 340 - 70, ny - 2; size: 70, 24; corner: (12) * rk; cursor: pointer; active: notes.count > 0 }
+                box { from: ix + 340 - 70, ny - 2; size: 70, 24; corner: (12) * rk; color: hover; opacity: 80% * clr_k }
+                text "Clear all" { family: Theme.face; at: ix + 340 - 35, ny + 10; anchor: center; size: 11; color: ink; opacity: clr_k }
                 on press clear_all { emit clear_notes }
-                text "No notifications" { family: Theme.face; at: ix + 170, ny + 50; anchor: center; size: 12; color: subink; show: notes.count == 0 }
-                column {
+                text "No notifications" { family: Theme.face; at: ix + 170, ny + 50; anchor: center; size: 12; color: subink; opacity: 1 - clr_k }
+                column ~quick {                    // cards travel to their new place when one goes
                     at: ix, ny + 30
                     view: 340, max(10, ty + rh - 14 - (ny + 30))
                     gap: 6
@@ -566,7 +639,24 @@ scene Pastel {
             opacity: clamp(cc_in * 2.5, 0, 1)
             move: if(cc_in > 0.995, 0, (1 - cc_in) * -380), 0
             zone box media_sheet { from: mx, ty; size: 340, mh; corner: (22) * rk }
-            shader Theme.glowblob { at: mx - 70, ty - 70; size: 340 + 140, mh + 140; values: 70, glow_k * (0.75 + 0.5 * bassp); colors: art0, art1; show: glow_k > 0 }   // midnight's glow (the cover's colours)
+            // midnight's glow (the cover's colours), only while it plays: little
+            // lights drifting out from behind the card's edges, and a puff on
+            // each bass hit. Born behind the card, so they seem to come from it
+            let sparkle = aur_k > 0 and m_playing and cc_in > 0.9
+            group {
+                glow: 14 + 10 * bassp, 100%
+                opacity: pt_on
+                // top edge, rising
+                particles { at: mx + 170, ty + 6; area: 300, 12; count: 110; life: 2.5s .. 4.5s; speed: 14 .. 40; direction: -90deg; spread: 120deg; gravity: 0, -6; drag: 0.2; size: 6, 2; colors: art0, art1; opacity: 85%, 0%; shape: dot; emit: sparkle }
+                // right edge, wandering out
+                particles { at: mx + 334, ty + mh / 2; area: 12, mh - 40; count: 130; life: 2.5s .. 4.5s; speed: 14 .. 42; direction: 0deg; spread: 140deg; gravity: 0, -8; drag: 0.2; size: 6, 2; colors: art1, art0; opacity: 85%, 0%; shape: dot; emit: sparkle }
+                // bottom edge, sinking a little
+                particles { at: mx + 170, ty + mh - 6; area: 300, 12; count: 100; life: 2.5s .. 4.5s; speed: 12 .. 34; direction: 90deg; spread: 120deg; gravity: 0, -4; drag: 0.2; size: 6, 2; colors: art1, art0; opacity: 85%, 0%; shape: dot; emit: sparkle }
+                // big soft motes, slower, out of focus
+                particles { at: mx + 200, ty + mh / 2; area: 300, mh - 20; count: 24; life: 4s .. 7s; speed: 4 .. 14; spread: 360deg; gravity: 0, -3; size: 20, 34; colors: art0, art1; opacity: 22%, 0%; shape: dot; emit: sparkle }
+                // a puff off the cover's side on each beat
+                particles { at: mx + 300, ty + 160; area: 40, 180; count: 120; life: 0.8s .. 1.6s; speed: 40 .. 110; direction: 0deg; spread: 70deg; drag: 1.6; size: 6, 2; colors: art0, art1; opacity: 90%, 0%; shape: dot; burst: beat_hit }
+            }
             body {
                 color: panel
                 glass: 100% * glassy
@@ -586,9 +676,9 @@ scene Pastel {
 
             // the cover (or a gradient with a note when there is none)
             group {
-                opacity: smooth(0.1, 0.6, cc_in)
+                opacity: smooth(0.1, 0.6, cc_in) * song_in
                 pivot: mx + 170, ty + 144
-                scale: (0.9 + 0.1 * smooth(0.1, 0.7, cc_in)) * (1 + beat + 0.03 * bassp)
+                scale: (0.9 + 0.1 * smooth(0.1, 0.7, cc_in)) * (1 + beat + 0.03 * bassp) * (0.94 + 0.06 * song_in)
                 body { gradient: mx + 76, ty + 50 to mx + 264, ty + 238, art0, #3f6b58
                     box { from: mx + 76, ty + 50; size: 188, 188; corner: (16) * rk } }
                 image ic_music { at: mx + 146, ty + 120; size: 48, 48; tint: onacc; opacity: 60% }
@@ -600,8 +690,12 @@ scene Pastel {
             }
 
             // title, artist
+            group {
+                opacity: song_in
+                move: 0, 10 * (1 - song_in)
             text m_title { family: Theme.face; at: mx + 170, ty + 266; anchor: center; size: 19; weight: 700; width: 300; lines: 1; align: center; color: ink }
             text m_artist { family: Theme.face; at: mx + 170, ty + 290; anchor: center; size: 13; width: 300; lines: 1; align: center; color: subink }
+            }
 
             // seek bar + times
             let sx = mx + 20
@@ -618,8 +712,16 @@ scene Pastel {
 
             // transport
             zone box prev { at: mx + 100, ty + 392; size: 40, 40; corner: (20) * rk; cursor: pointer; label: "Previous" }
-            box { at: mx + 100, ty + 392; size: 40, 40; corner: (20) * rk; color: hover; opacity: 80% }
-            image ic_prev { at: mx + 91, ty + 383; size: 18, 18; tint: ink }
+            group {
+                pivot: mx + 100, ty + 392
+                scale: 1 + 0.08 * prev_hot - 0.12 * prev_pr
+                box { at: mx + 100, ty + 392; size: 40, 40; corner: (20) * rk; color: mix(hover, art0, 0.18 * prev_hot); opacity: 80% + 20% * prev_hot }
+                image ic_prev { at: mx + 91, ty + 383; size: 18, 18; tint: ink }
+            }
+            on enter prev { prev_hot: 1 }
+            on leave prev { prev_hot: 0; prev_pr: 0 }
+            on press prev { prev_pr: 1 }
+            on release prev { prev_pr: 0 }
             zone box play { at: mx + 170, ty + 392; size: 52, 52; corner: (26) * rk; cursor: pointer; label: if(m_playing, "Pause", "Play") }
             // a ring ripples out of it while it plays
             ellipse { at: mx + 170, ty + 392; radius: 26 + 18 * ring; stroke: 2; color: art0; opacity: (1 - ring) * 60% * m_playing }
@@ -627,15 +729,35 @@ scene Pastel {
                 pivot: mx + 170, ty + 392
                 scale: 1 + 0.06 * play_hot - 0.1 * play_pr
                 box { at: mx + 170, ty + 392; size: 52, 52; corner: (26) * rk; color: art0 }
-                image ic_play { at: mx + 159, ty + 381; size: 22, 22; tint: onacc; show: not m_playing }
-                image ic_pause { at: mx + 159, ty + 381; size: 22, 22; tint: onacc; show: m_playing }
+                group {
+                    pivot: mx + 170, ty + 392
+                    rotate: -90deg * pp
+                    scale: 1 - 0.5 * pp
+                    opacity: 1 - pp
+                    image ic_play { at: mx + 159, ty + 381; size: 22, 22; tint: onacc }
+                }
+                group {
+                    pivot: mx + 170, ty + 392
+                    rotate: 90deg * (1 - pp)
+                    scale: 0.5 + 0.5 * pp
+                    opacity: pp
+                    image ic_pause { at: mx + 159, ty + 381; size: 22, 22; tint: onacc }
+                }
             }
             on enter play { play_hot: 1 }
             on leave play { play_hot: 0; play_pr: 0 }
             on release play { play_pr: 0 }
             zone box next { at: mx + 240, ty + 392; size: 40, 40; corner: (20) * rk; cursor: pointer; label: "Next" }
-            box { at: mx + 240, ty + 392; size: 40, 40; corner: (20) * rk; color: hover; opacity: 80% }
-            image ic_next { at: mx + 231, ty + 383; size: 18, 18; tint: ink }
+            group {
+                pivot: mx + 240, ty + 392
+                scale: 1 + 0.08 * next_hot - 0.12 * next_pr
+                box { at: mx + 240, ty + 392; size: 40, 40; corner: (20) * rk; color: mix(hover, art0, 0.18 * next_hot); opacity: 80% + 20% * next_hot }
+                image ic_next { at: mx + 231, ty + 383; size: 18, 18; tint: ink }
+            }
+            on enter next { next_hot: 1 }
+            on leave next { next_hot: 0; next_pr: 0 }
+            on press next { next_pr: 1 }
+            on release next { next_pr: 0 }
             on press prev while has_media { emit media_prev }
             on press play { play_pr: 1 }
             on press play while has_media { emit media_play }
