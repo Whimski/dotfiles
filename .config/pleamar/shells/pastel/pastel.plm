@@ -67,6 +67,25 @@ scene Pastel {
     spring pop = 300, 20                           // ≈ OutBack: a little overshoot
     spring drop = 260, 17
 
+    // the theme's glass card, drawn at x, y (top left), w × h: midnight's glow
+    // behind it (blob), the panel with its rim and shadow, the aurora inside.
+    // Every card of the bar is one of these, so a new theme knob goes here once.
+    component Glass(x: number, y: number, w: number, h: number, corner: number, rim: color,
+                    lift: number = 8, blur: number = 22, depth: number = 30%, tint: number = 72%,
+                    blob: bool = true, aur_a: color = glow_a, aur_b: color = glow_b) {
+        shader Theme.glowblob { at: x - 70, y - 70; size: w + 140, h + 140; values: 70, glow_k; colors: glow_a, glow_b; show: blob and glow_k > 0 }
+        body {
+            color: panel
+            glass: 100% * glassy
+            lens: false
+            tint: tint
+            border: 1 * line, rim
+            shadow: sh_x, lift * sh_k + sh_hard, blur * sh_k + sh_min, min(1, depth * sh_a), sh_color
+            box { from: x, y; size: w, h; corner: corner * rk }
+        }
+        shader Theme.aurora { at: x, y; size: w, h; corner: corner * rk; values: aur_k; colors: aur_a, aur_b; show: aur_k > 0 }
+    }
+
     prop shown = 0 ~drop                           // the pill is on screen
     prop bloom = 0 ~520ms                          // expanded content, staggered
     prop osdin = 0 ~quick                          // OSD content
@@ -116,18 +135,7 @@ scene Pastel {
         scale: 0.55 + 0.45 * shown
         opacity: clamp(shown * 1.6, 0, 1)
 
-        shader Theme.glowblob { at: cx - (pw) / 2 - 70, cy - (ph) / 2 - 70; size: pw + 140, ph + 140; values: 70, glow_k; colors: glow_a, glow_b; show: glow_k > 0 }   // midnight's glow
-
-        body {
-            color: panel
-            glass: 100% * glassy
-            lens: false
-            tint: 72%
-            border: 1 * line, mix(edge, accent, 0.35 * flare)
-            shadow: sh_x, 8 * sh_k + sh_hard, 22 * sh_k + sh_min, min(1, 34% * sh_a), sh_color
-            box { at: cx, cy; size: pw, ph; corner: (16) * rk }
-        }
-        shader Theme.aurora { at: cx - (pw) / 2, cy - (ph) / 2; size: pw, ph; corner: (16) * rk; values: aur_k; colors: glow_a, glow_b; show: aur_k > 0 }   // midnight's aurora
+        Glass(left, top, pw, ph, 16, mix(edge, accent, 0.35 * flare), depth: 34%)
         // soft outer glow ring while it flares
         box { at: cx, cy; size: pw + 2, ph + 2; corner: (ph / 2 + 1) * rk; stroke: (2) * line; color: accent; opacity: 18% * flare }
 
@@ -248,17 +256,7 @@ scene Pastel {
         show: toast_in > 0.01
         opacity: clamp(toast_in * 1.5, 0, 1)
         move: 0, (1 - toast_in) * -(thh + 6)
-        shader Theme.glowblob { at: cx - (tw) / 2 - 70, top + thh / 2 - (thh) / 2 - 70; size: tw + 140, thh + 140; values: 70, glow_k; colors: glow_a, glow_b; show: glow_k > 0 }   // midnight's glow
-        body {
-            color: panel
-            glass: 100% * glassy
-            lens: false
-            tint: 72%
-            border: 1 * line, mix(edge, accent, 0.3)
-            shadow: sh_x, 8 * sh_k + sh_hard, 22 * sh_k + sh_min, min(1, 30% * sh_a), sh_color
-            box { at: cx, top + thh / 2; size: tw, thh; corner: (thh / 2) * rk }
-        }
-        shader Theme.aurora { at: cx - (tw) / 2, top + thh / 2 - (thh) / 2; size: tw, thh; corner: (thh / 2) * rk; values: aur_k; colors: glow_a, glow_b; show: aur_k > 0 }   // midnight's aurora
+        Glass(cx - tw / 2, top, tw, thh, thh / 2, mix(edge, accent, 0.3))
         zone box toast_hit { at: cx, top + thh / 2; size: tw, thh; corner: (thh / 2) * rk; cursor: pointer; label: "Open notification" }
         image ic_bell { at: cx - tw / 2 + 11, top + thh / 2 - 6.5; size: 13, 13; tint: accent }
         let tx = cx - tw / 2 + 32
@@ -278,17 +276,7 @@ scene Pastel {
         show: list_in > 0.01
         opacity: list_in
         move: 0, (1 - list_in) * -18
-        shader Theme.glowblob { at: cx - 160 - 70, ly - 70; size: 320 + 140, lh + 140; values: 70, glow_k; colors: glow_a, glow_b; show: glow_k > 0 }   // midnight's glow
-        body {
-            color: panel
-            glass: 100% * glassy
-            lens: false
-            tint: 72%
-            border: 1 * line, mix(edge, accent, 0.4)
-            shadow: sh_x, 10 * sh_k + sh_hard, 24 * sh_k + sh_min, min(1, 30% * sh_a), sh_color
-            box { from: cx - 160, ly; size: 320, lh; corner: (16) * rk }
-        }
-        shader Theme.aurora { at: cx - 160, ly; size: 320, lh; corner: (16) * rk; values: aur_k; colors: glow_a, glow_b; show: aur_k > 0 }   // midnight's aurora
+        Glass(cx - 160, ly, 320, lh, 16, mix(edge, accent, 0.4), lift: 10, blur: 24)
         column {
             at: cx - 152, ly + 8
             gap: 5
@@ -320,9 +308,10 @@ scene Pastel {
     // ---- rules ----
     every 1500ms while not ready { ready = true }
 
-    on change vol.volume while ready { osd = volume; osd_n = osd_n + 1; flare: 1; impulse kick 9 }
-    on change vol.muted while ready { osd = volume; osd_n = osd_n + 1; flare: 1; impulse kick 9 }
-    on change lit.level while ready { osd = brightness; osd_n = osd_n + 1; flare: 1; impulse kick 9 }
+    on change vol.volume while ready { osd = volume; osd_n = osd_n + 1 }
+    on change vol.muted while ready { osd = volume; osd_n = osd_n + 1 }
+    on change lit.level while ready { osd = brightness; osd_n = osd_n + 1 }
+    on change osd_n { flare: 1; impulse kick 9 }      // every OSD pop: the edge flares, the icon kicks
     on still osd_n for 1600ms { osd = none }
 
     on change expanded while expanded { flare: 1 }
@@ -402,10 +391,6 @@ scene Pastel {
     on change song_n { song_in: 0 ~0ms; song_in: 1 after 16ms }
     prop clr_k = 0 ~quick                  // "Clear all" / "No notifications"
     follow clr_k = if(notes.count > 0, 1, 0)
-    prop prev_hot = 0 ~spring(400, 22)
-    prop prev_pr = 0 ~spring(600, 26)
-    prop next_hot = 0 ~spring(400, 22)
-    prop next_pr = 0 ~spring(600, 26)
     prop gear_hot = 0 ~spring(260, 16)
     prop x_hot = 0 ~spring(400, 22)
     // each tile's particles go clear when it is off, coloured when on
@@ -484,6 +469,30 @@ scene Pastel {
         on press right hit { emit more(page) }
     }
 
+    // a tile's lights drifting off the control center's edge, in its tone while
+    // it is on (k: 1) and clear when off; they flow while music plays (cc_spark)
+    component Sparks(x: number, y: number, w: number, h: number, count: number, heading: number, tone: color, k: number) {
+        let lit_pt = mix(#f4f6ff, tone, k)    // #f4f6ff: an off toggle's clear, glassy light
+        particles { at: x, y; area: w, h; count: count; life: 2.5s .. 4.5s; speed: 14 .. 40; direction: heading; spread: 120deg; gravity: 0, -6; drag: 0.2; size: 6, 2; colors: lit_pt, lit_pt; opacity: 45% + 40% * k, 0%; shape: dot; emit: cc_spark }
+    }
+
+    // previous / next: a round button that grows on hover and dips when pressed
+    component SkipBtn(x: number, y: number, icon: image, label: text, go: event) {
+        prop hot = 0 ~spring(400, 22)
+        prop pr = 0 ~spring(600, 26)
+        zone box hit { at: x, y; size: 40, 40; corner: (20) * rk; cursor: pointer; label: label }
+        group {
+            pivot: x, y
+            scale: 1 + 0.08 * hot - 0.12 * pr
+            box { at: x, y; size: 40, 40; corner: (20) * rk; color: mix(hover, art0, 0.18 * hot); opacity: 80% + 20% * hot }
+            image icon { at: x - 9, y - 9; size: 18, 18; tint: ink }
+        }
+        on enter hit { hot: 1 }
+        on leave hit { hot: 0; pr: 0 }
+        on press hit { pr: 1; emit go }       // the logic plays it only to a music player
+        on release hit { pr: 0 }
+    }
+
     surface cc {
         size: full, full
         anchor: top
@@ -513,31 +522,21 @@ scene Pastel {
             // colour drift out from behind the card near where that tile sits —
             // Wi-Fi and Bluetooth up top, Audio and DND below — while music plays: coloured when the toggle is on, clear when off
             let cc_spark = aur_k > 0 and m_playing and cc_in > 0.9
-            let clear_pt = #f4f6ff              // a toggle that is off: clear, glassy lights
             group {
                 glow: 14, 100%
                 opacity: pt_on
                 // Wi-Fi, blue: the top edge's left half and the left edge's upper half
-                particles { at: rx + 100, ty + 6; area: 180, 12; count: 70; life: 2.5s .. 4.5s; speed: 14 .. 40; direction: -90deg; spread: 120deg; gravity: 0, -6; drag: 0.2; size: 6, 2; colors: mix(clear_pt, col_blue, t_wifi), mix(clear_pt, col_blue, t_wifi); opacity: 45% + 40% * t_wifi, 0%; shape: dot; emit: cc_spark }
-                particles { at: rx + 6, ty + rh * 0.25; area: 12, rh * 0.5 - 20; count: 70; life: 2.5s .. 4.5s; speed: 14 .. 40; direction: 180deg; spread: 120deg; gravity: 0, -6; drag: 0.2; size: 6, 2; colors: mix(clear_pt, col_blue, t_wifi), mix(clear_pt, col_blue, t_wifi); opacity: 45% + 40% * t_wifi, 0%; shape: dot; emit: cc_spark }
+                Sparks(rx + 100, ty + 6, 180, 12, 70, -90deg, col_blue, t_wifi)
+                Sparks(rx + 6, ty + rh * 0.25, 12, rh * 0.5 - 20, 70, 180deg, col_blue, t_wifi)
                 // Bluetooth, pink: the top edge's right half (the right edge is the screen's)
-                particles { at: rx + 280, ty + 6; area: 180, 12; count: 120; life: 2.5s .. 4.5s; speed: 14 .. 40; direction: -90deg; spread: 120deg; gravity: 0, -6; drag: 0.2; size: 6, 2; colors: mix(clear_pt, col_pink, t_bt), mix(clear_pt, col_pink, t_bt); opacity: 45% + 40% * t_bt, 0%; shape: dot; emit: cc_spark }
+                Sparks(rx + 280, ty + 6, 180, 12, 120, -90deg, col_pink, t_bt)
                 // Audio, green: the left edge's lower half and the bottom edge's left half
-                particles { at: rx + 6, ty + rh * 0.75; area: 12, rh * 0.5 - 20; count: 70; life: 2.5s .. 4.5s; speed: 14 .. 40; direction: 180deg; spread: 120deg; gravity: 0, -6; drag: 0.2; size: 6, 2; colors: mix(clear_pt, col_green, t_audio), mix(clear_pt, col_green, t_audio); opacity: 45% + 40% * t_audio, 0%; shape: dot; emit: cc_spark }
-                particles { at: rx + 100, ty + rh - 6; area: 180, 12; count: 70; life: 2.5s .. 4.5s; speed: 14 .. 40; direction: 90deg; spread: 120deg; gravity: 0, -6; drag: 0.2; size: 6, 2; colors: mix(clear_pt, col_green, t_audio), mix(clear_pt, col_green, t_audio); opacity: 45% + 40% * t_audio, 0%; shape: dot; emit: cc_spark }
+                Sparks(rx + 6, ty + rh * 0.75, 12, rh * 0.5 - 20, 70, 180deg, col_green, t_audio)
+                Sparks(rx + 100, ty + rh - 6, 180, 12, 70, 90deg, col_green, t_audio)
                 // DND, yellow: the bottom edge's right half
-                particles { at: rx + 280, ty + rh - 6; area: 180, 12; count: 120; life: 2.5s .. 4.5s; speed: 14 .. 40; direction: 90deg; spread: 120deg; gravity: 0, -6; drag: 0.2; size: 6, 2; colors: mix(clear_pt, col_yellow, t_dnd), mix(clear_pt, col_yellow, t_dnd); opacity: 45% + 40% * t_dnd, 0%; shape: dot; emit: cc_spark }
+                Sparks(rx + 280, ty + rh - 6, 180, 12, 120, 90deg, col_yellow, t_dnd)
             }
-            body {
-                color: panel
-                glass: 100% * glassy
-                lens: false
-                tint: 78%
-                border: 1 * line, mix(edge, accent, 0.35)
-                shadow: sh_x, 18 * sh_k + sh_hard, 44 * sh_k + sh_min, min(1, 40% * sh_a), sh_color
-                box { from: rx, ty; size: 380, rh; corner: (22) * rk }
-            }
-            shader Theme.aurora { at: rx, ty; size: 380, rh; corner: (22) * rk; values: aur_k; colors: glow_a, glow_b; show: aur_k > 0 }   // midnight's aurora
+            Glass(rx, ty, 380, rh, 22, mix(edge, accent, 0.35), lift: 18, blur: 44, depth: 40%, tint: 78%, blob: false)
             let ix = rx + 20
             let iy = ty + 20
 
@@ -657,16 +656,7 @@ scene Pastel {
                 // a puff off the cover's side on each beat
                 particles { at: mx + 300, ty + 160; area: 40, 180; count: 120; life: 0.8s .. 1.6s; speed: 40 .. 110; direction: 0deg; spread: 70deg; drag: 1.6; size: 6, 2; colors: art0, art1; opacity: 90%, 0%; shape: dot; burst: beat_hit }
             }
-            body {
-                color: panel
-                glass: 100% * glassy
-                lens: false
-                tint: 78%
-                border: 1 * line, mix(edge, art0, 0.35)
-                shadow: sh_x, 18 * sh_k + sh_hard, 44 * sh_k + sh_min, min(1, 40% * sh_a), sh_color
-                box { from: mx, ty; size: 340, mh; corner: (22) * rk }
-            }
-            shader Theme.aurora { at: mx, ty; size: 340, mh; corner: (22) * rk; values: aur_k; colors: art0, art1; show: aur_k > 0 }   // midnight's aurora
+            Glass(mx, ty, 340, mh, 22, mix(edge, art0, 0.35), lift: 18, blur: 44, depth: 40%, tint: 78%, blob: false, aur_a: art0, aur_b: art1)
             // "Now Playing" tab, with a little equalizer while it plays
             box { at: mx + 170, ty + 26; size: 116, 22; corner: (11) * rk; color: art0; opacity: 18% }
             repeat k in 0..3 {
@@ -711,17 +701,7 @@ scene Pastel {
             text "{m_len, time}" { at: sx + sw, ty + 342; anchor: right center; size: 10; color: subink; family: Theme.mono }
 
             // transport
-            zone box prev { at: mx + 100, ty + 392; size: 40, 40; corner: (20) * rk; cursor: pointer; label: "Previous" }
-            group {
-                pivot: mx + 100, ty + 392
-                scale: 1 + 0.08 * prev_hot - 0.12 * prev_pr
-                box { at: mx + 100, ty + 392; size: 40, 40; corner: (20) * rk; color: mix(hover, art0, 0.18 * prev_hot); opacity: 80% + 20% * prev_hot }
-                image ic_prev { at: mx + 91, ty + 383; size: 18, 18; tint: ink }
-            }
-            on enter prev { prev_hot: 1 }
-            on leave prev { prev_hot: 0; prev_pr: 0 }
-            on press prev { prev_pr: 1 }
-            on release prev { prev_pr: 0 }
+            SkipBtn(mx + 100, ty + 392, ic_prev, "Previous", media_prev)
             zone box play { at: mx + 170, ty + 392; size: 52, 52; corner: (26) * rk; cursor: pointer; label: if(m_playing, "Pause", "Play") }
             // a ring ripples out of it while it plays
             ellipse { at: mx + 170, ty + 392; radius: 26 + 18 * ring; stroke: 2; color: art0; opacity: (1 - ring) * 60% * m_playing }
@@ -747,21 +727,9 @@ scene Pastel {
             on enter play { play_hot: 1 }
             on leave play { play_hot: 0; play_pr: 0 }
             on release play { play_pr: 0 }
-            zone box next { at: mx + 240, ty + 392; size: 40, 40; corner: (20) * rk; cursor: pointer; label: "Next" }
-            group {
-                pivot: mx + 240, ty + 392
-                scale: 1 + 0.08 * next_hot - 0.12 * next_pr
-                box { at: mx + 240, ty + 392; size: 40, 40; corner: (20) * rk; color: mix(hover, art0, 0.18 * next_hot); opacity: 80% + 20% * next_hot }
-                image ic_next { at: mx + 231, ty + 383; size: 18, 18; tint: ink }
-            }
-            on enter next { next_hot: 1 }
-            on leave next { next_hot: 0; next_pr: 0 }
-            on press next { next_pr: 1 }
-            on release next { next_pr: 0 }
-            on press prev while has_media { emit media_prev }
+            SkipBtn(mx + 240, ty + 392, ic_next, "Next", media_next)
             on press play { play_pr: 1 }
             on press play while has_media { emit media_play }
-            on press next while has_media { emit media_next }
         }
     }
     event dnd_flip

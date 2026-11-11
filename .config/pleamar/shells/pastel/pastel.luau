@@ -200,7 +200,7 @@ sys.watch("media", function(m)
     local who = music and (song.artist or "") or ""
     if title ~= text.m_title or who ~= text.m_artist then fact.song_n = fact.song_n + 1 end  -- a new song: the scene slides it in
     text.m_title = title
-    text.m_artist = music and (song.artist or "") or ""
+    text.m_artist = who
     fact.elapsed = music and (tonumber(song.position) or 0) or 0
     cover(music and song.art or "")
 end)
